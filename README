@@ -1,0 +1,5 @@
+vfs-s3-bin.jar - VFS-S3 provider runtime.
+
+vfs-s3-sources.jar - VFS-S3 source code.
+
+build.xml - Ant build file.
