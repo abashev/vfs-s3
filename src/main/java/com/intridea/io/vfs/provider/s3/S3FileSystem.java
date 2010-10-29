@@ -47,7 +47,7 @@ public class S3FileSystem extends AbstractFileSystem {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected void addCapabilities(Collection caps) {
 		caps.addAll(S3FileProvider.capabilities);
 	}

@@ -1,5 +1,16 @@
 package com.intridea.io.vfs.provider.s3;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.Hashtable;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
@@ -21,26 +32,11 @@ import org.jets3t.service.acl.GroupGrantee;
 import org.jets3t.service.acl.Permission;
 import org.jets3t.service.model.S3Bucket;
 import org.jets3t.service.model.S3Object;
-import org.jets3t.service.model.S3Owner;
 import org.jets3t.service.model.StorageOwner;
 import org.jets3t.service.utils.Mimetypes;
 
 import com.intridea.io.vfs.operations.acl.Acl;
 import com.intridea.io.vfs.operations.acl.IAclGetter;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Set;
 
 /**
  * Implementation of the virtual S3 file system object using the Jets3t library.
@@ -140,11 +136,11 @@ public class S3FileObject extends AbstractFileObject {
 	}
 
 	protected void doCreateFolder() throws Exception {
-		if (!Mimetypes.MIMETYPE_JETS3T_DIRECTORY
-				.equals(object.getContentType())) {
-			object.setContentType(Mimetypes.MIMETYPE_JETS3T_DIRECTORY);
-			service.putObject(bucket, object);
-		}
+        if (!Mimetypes.MIMETYPE_JETS3T_DIRECTORY.equals(object.getContentType())) {
+            object.setContentType(Mimetypes.MIMETYPE_JETS3T_DIRECTORY);
+
+            service.putObject(bucket, object);
+        }
 	}
 
 	protected long doGetLastModifiedTime() throws Exception {
@@ -170,9 +166,7 @@ public class S3FileObject extends AbstractFileObject {
 			return FileType.IMAGINARY;
 		}
 
-		String contentType = object.getContentType();
-		if ("".equals(object.getKey())
-				|| Mimetypes.MIMETYPE_JETS3T_DIRECTORY.equals(contentType)) {
+		if ("".equals(object.getKey()) || object.isDirectoryPlaceholder()) {
 			return FileType.FOLDER;
 		}
 
