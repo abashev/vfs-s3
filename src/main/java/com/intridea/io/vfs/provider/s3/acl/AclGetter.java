@@ -7,16 +7,16 @@ import com.intridea.io.vfs.operations.acl.IAclGetter;
 import com.intridea.io.vfs.operations.acl.Acl.Group;
 import com.intridea.io.vfs.provider.s3.S3FileObject;
 
-public class AclGetter implements IAclGetter {
+class AclGetter implements IAclGetter {
 
 	private S3FileObject file;
-	
+
 	private Acl acl;
-	
+
 	public AclGetter (S3FileObject file) {
 		this.file = file;
 	}
-	
+
 	public boolean canRead(Group group) {
 		return acl.isAllowed(group, Acl.Permission.READ);
 	}
