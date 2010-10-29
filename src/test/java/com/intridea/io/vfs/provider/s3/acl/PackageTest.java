@@ -36,7 +36,7 @@ public class PackageTest {
 		bucketName = config.getProperty("s3.testBucket", "vfs-s3-tests");
 
 		fsManager = VFS.getManager();
-		file = fsManager.resolveFile("s3://" + bucketName + "/jonny.zip");
+		file = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
 	}
 
 	@Test
