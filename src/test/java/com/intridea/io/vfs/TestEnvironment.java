@@ -1,22 +1,23 @@
 package com.intridea.io.vfs;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 import org.apache.commons.vfs.FileSystemOptions;
 import org.apache.commons.vfs.auth.StaticUserAuthenticator;
 import org.apache.commons.vfs.impl.DefaultFileSystemConfigBuilder;
+import org.testng.Assert;
 
 import com.intridea.io.vfs.provider.s3.S3FileProvider;
 
-public class TestEnvirounment {
+public class TestEnvironment {
 
-	private static TestEnvirounment instance;
+	private static TestEnvironment instance;
 	static {
 		try {
-			instance = new TestEnvirounment();
+			instance = new TestEnvironment();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -24,16 +25,21 @@ public class TestEnvirounment {
 		}
 	}
 
-	public static TestEnvirounment getInstance () {
+	public static TestEnvironment getInstance () {
 		return instance;
 	}
 
 	private Properties config;
 
-	private TestEnvirounment () throws FileNotFoundException, IOException {
+	private TestEnvironment () throws FileNotFoundException, IOException {
 		// Load configuration
 		config = new Properties();
-		config.load(new FileInputStream("config.properties"));
+
+		InputStream configFile = TestEnvironment.class.getResourceAsStream("/config.properties");
+
+		Assert.assertNotNull(configFile);
+
+        config.load(configFile);
 
 		// Configure logger
 //		PropertyConfigurator.configure(config);
