@@ -8,6 +8,7 @@ import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -447,6 +448,52 @@ public class S3FileObject extends AbstractFileObject {
 		} catch (Exception e) {
 			throw new FileSystemException(e);
 		}
+	}
+
+	/**
+	 * Get direct http url to S3 object.
+	 * @return
+	 */
+	public String getHttpUrl() {
+	    return "http://s3.amazonaws.com/" + bucket.getName() + "/" + object.getKey();
+	}
+
+	/**
+	 * Get private url with access key and secret key.
+	 *
+	 * @return
+	 */
+	public String getPrivateUrl() {
+	    return String.format(
+	            "s3://%s:%s/%s/%s",
+	            service.getProviderCredentials().getAccessKey(),
+	            service.getProviderCredentials().getSecretKey(),
+	            bucket.getName(),
+	            object.getKey()
+	    );
+	}
+
+	/**
+	 * Tempary accessable url for object.
+	 * @param expireInSeconds
+	 * @return
+	 * @throws FileSystemException
+	 */
+	public String getSignedUrl(int expireInSeconds) throws FileSystemException {
+	    final Calendar cal = Calendar.getInstance();
+
+	    cal.add(Calendar.SECOND, expireInSeconds);
+
+	    try {
+            return service.createSignedGetUrl(
+                    bucket.getName(),
+                    object.getKey(),
+                    cal.getTime(),
+                    false
+            );
+        } catch (S3ServiceException e) {
+            throw new FileSystemException(e);
+        }
 	}
 
 	/**

@@ -6,4 +6,7 @@
 	<operationProvider class-name="com.intridea.io.vfs.provider.s3.acl.AclOperationsProvider">
 		<scheme name="s3" />
 	</operationProvider>
+    <operationProvider class-name="com.intridea.io.vfs.provider.s3.url.PublicUrlsOperationsProvider">
+        <scheme name="s3" />
+    </operationProvider>
 </providers>
