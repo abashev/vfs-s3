@@ -1,4 +1,4 @@
-package com.intridea.io.vfs.operations.acl;
+package com.intridea.io.vfs.operations;
 
 import org.apache.commons.vfs.FileSystemException;
 import org.apache.commons.vfs.operations.FileOperation;

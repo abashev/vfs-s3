@@ -1,8 +1,8 @@
-package com.intridea.io.vfs.provider.s3.url;
+package com.intridea.io.vfs.provider.s3.operations;
 
 import org.apache.commons.vfs.FileSystemException;
 
-import com.intridea.io.vfs.operations.url.IPublicUrlsGetter;
+import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 import com.intridea.io.vfs.provider.s3.S3FileObject;
 
 /**

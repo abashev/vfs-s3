@@ -1,4 +1,4 @@
-package com.intridea.io.vfs.operations.acl;
+package com.intridea.io.vfs.operations;
 
 import java.util.Enumeration;
 import java.util.Hashtable;

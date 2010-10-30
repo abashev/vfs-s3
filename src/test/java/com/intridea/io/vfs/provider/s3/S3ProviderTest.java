@@ -22,6 +22,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import com.intridea.io.vfs.TestEnvironment;
+import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 
 @Test(groups={"storage"})
 public class S3ProviderTest {
@@ -202,6 +203,19 @@ public class S3ProviderTest {
 		Assert.assertEquals(backup.getContent().getSize(), 996166);
 	}
 
+    @Test(dependsOnMethods={"upload"})
+    public void getUrls() throws FileSystemException {
+        FileObject backup = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
+
+        Assert.assertTrue(backup.getFileOperations().hasOperation(IPublicUrlsGetter.class));
+
+        IPublicUrlsGetter urlsGetter = (IPublicUrlsGetter) backup.getFileOperations().getOperation(IPublicUrlsGetter.class);
+
+        Assert.assertEquals(urlsGetter.getHttpUrl(), "http://vfs-s3-tests.s3.amazonaws.com/test-place/backup.zip");
+        Assert.assertTrue(urlsGetter.getPrivateUrl().endsWith("/vfs-s3-tests/test-place/backup.zip"));
+        Assert.assertTrue(urlsGetter.getSignedUrl(60).startsWith("https://vfs-s3-tests.s3.amazonaws.com/test-place/backup.zip?AWSAccessKeyId="));
+    }
+
 	@Test(dependsOnMethods={"findFiles", "download"})
 	public void delete () throws FileSystemException {
 		FileObject testsDir = fsManager.resolveFile(dir, "find-tests");
@@ -211,6 +225,8 @@ public class S3ProviderTest {
 		FileObject[] files = testsDir.findFiles(Selectors.SELECT_ALL);
 		Assert.assertEquals(files.length, 1);
 	}
+
+
 
 	@AfterClass
 	public void tearDown () throws FileSystemException {

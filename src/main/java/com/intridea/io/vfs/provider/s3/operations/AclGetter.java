@@ -1,10 +1,10 @@
-package com.intridea.io.vfs.provider.s3.acl;
+package com.intridea.io.vfs.provider.s3.operations;
 
 import org.apache.commons.vfs.FileSystemException;
 
-import com.intridea.io.vfs.operations.acl.Acl;
-import com.intridea.io.vfs.operations.acl.IAclGetter;
-import com.intridea.io.vfs.operations.acl.Acl.Group;
+import com.intridea.io.vfs.operations.Acl;
+import com.intridea.io.vfs.operations.IAclGetter;
+import com.intridea.io.vfs.operations.Acl.Group;
 import com.intridea.io.vfs.provider.s3.S3FileObject;
 
 class AclGetter implements IAclGetter {

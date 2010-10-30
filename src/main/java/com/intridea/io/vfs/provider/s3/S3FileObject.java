@@ -36,8 +36,8 @@ import org.jets3t.service.model.S3Object;
 import org.jets3t.service.model.StorageOwner;
 import org.jets3t.service.utils.Mimetypes;
 
-import com.intridea.io.vfs.operations.acl.Acl;
-import com.intridea.io.vfs.operations.acl.IAclGetter;
+import com.intridea.io.vfs.operations.Acl;
+import com.intridea.io.vfs.operations.IAclGetter;
 
 /**
  * Implementation of the virtual S3 file system object using the Jets3t library.
@@ -455,7 +455,15 @@ public class S3FileObject extends AbstractFileObject {
 	 * @return
 	 */
 	public String getHttpUrl() {
-	    return "http://s3.amazonaws.com/" + bucket.getName() + "/" + object.getKey();
+	    StringBuilder sb = new StringBuilder("http://" + bucket.getName() + ".s3.amazonaws.com/");
+	    String key = getS3Key();
+
+	    // Determine context. Object or Bucket
+	    if ("".equals(key)) {
+	        return sb.toString();
+	    } else {
+            return sb.append(key).toString();
+	    }
 	}
 
 	/**
@@ -469,7 +477,7 @@ public class S3FileObject extends AbstractFileObject {
 	            service.getProviderCredentials().getAccessKey(),
 	            service.getProviderCredentials().getSecretKey(),
 	            bucket.getName(),
-	            object.getKey()
+	            getS3Key()
 	    );
 	}
 
@@ -487,7 +495,7 @@ public class S3FileObject extends AbstractFileObject {
 	    try {
             return service.createSignedGetUrl(
                     bucket.getName(),
-                    object.getKey(),
+                    getS3Key(),
                     cal.getTime(),
                     false
             );

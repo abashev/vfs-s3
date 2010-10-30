@@ -5,9 +5,9 @@ import java.io.IOException;
 import java.util.Properties;
 
 import com.intridea.io.vfs.TestEnvironment;
-import com.intridea.io.vfs.operations.acl.Acl;
-import com.intridea.io.vfs.operations.acl.IAclGetter;
-import com.intridea.io.vfs.operations.acl.IAclSetter;
+import com.intridea.io.vfs.operations.Acl;
+import com.intridea.io.vfs.operations.IAclGetter;
+import com.intridea.io.vfs.operations.IAclSetter;
 
 import org.apache.commons.vfs.FileObject;
 import org.apache.commons.vfs.FileSystemException;

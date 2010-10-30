@@ -3,10 +3,7 @@
     <provider class-name="com.intridea.io.vfs.provider.s3.S3FileProvider">
         <scheme name="s3"/>
     </provider>
-	<operationProvider class-name="com.intridea.io.vfs.provider.s3.acl.AclOperationsProvider">
+	<operationProvider class-name="com.intridea.io.vfs.provider.s3.operations.S3FileOperationsProvider">
 		<scheme name="s3" />
 	</operationProvider>
-    <operationProvider class-name="com.intridea.io.vfs.provider.s3.url.PublicUrlsOperationsProvider">
-        <scheme name="s3" />
-    </operationProvider>
 </providers>
