@@ -61,7 +61,14 @@
         </plugins>
     </build>
 
+    <scm>
+        <connection>${scm.connection}</connection>
+        <developerConnection>${scm.connection}</developerConnection>
+    </scm>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <scm.connection>scm:hg:git+ssh://git@github.com:abashev/vfs-s3.git</scm.connection>
     </properties>
 </project>
