@@ -28,113 +28,113 @@ import java.util.Collections;
  */
 public class S3FileProvider extends AbstractOriginatingFileProvider {
 
-	public final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
-		Capability.CREATE,
-		Capability.DELETE,
-		// TODO: rename not supported by jets3t now
-		//Capability.RENAME,
-		Capability.GET_TYPE,
-		Capability.GET_LAST_MODIFIED,
-		Capability.SET_LAST_MODIFIED_FILE,
-		Capability.SET_LAST_MODIFIED_FOLDER,
-		Capability.LIST_CHILDREN,
-		Capability.READ_CONTENT,
-		Capability.URI,
-		Capability.WRITE_CONTENT
-		//Capability.APPEND_CONTENT
-	));
+    public final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
+        Capability.CREATE,
+        Capability.DELETE,
+        // TODO: rename not supported by jets3t now
+        //Capability.RENAME,
+        Capability.GET_TYPE,
+        Capability.GET_LAST_MODIFIED,
+        Capability.SET_LAST_MODIFIED_FILE,
+        Capability.SET_LAST_MODIFIED_FOLDER,
+        Capability.LIST_CHILDREN,
+        Capability.READ_CONTENT,
+        Capability.URI,
+        Capability.WRITE_CONTENT
+        //Capability.APPEND_CONTENT
+    ));
 
-	/**
-	 * Auth data types necessary for AWS authentification.
-	 */
-	public final static UserAuthenticationData.Type[] AUTHENTICATOR_TYPES = new UserAuthenticationData.Type[] {
-		UserAuthenticationData.USERNAME, UserAuthenticationData.PASSWORD
-	};
+    /**
+     * Auth data types necessary for AWS authentification.
+     */
+    public final static UserAuthenticationData.Type[] AUTHENTICATOR_TYPES = new UserAuthenticationData.Type[] {
+        UserAuthenticationData.USERNAME, UserAuthenticationData.PASSWORD
+    };
 
-	/**
-	 * Default options for S3 file system.
-	 */
-	private static FileSystemOptions defaultOptions = new FileSystemOptions();
+    /**
+     * Default options for S3 file system.
+     */
+    private static FileSystemOptions defaultOptions = new FileSystemOptions();
 
-	/**
-	 * Returns default S3 file system options.
-	 * Use it to set AWS auth credentials.
-	 * @return
-	 */
-	public static FileSystemOptions getDefaultFileSystemOptions () {
-		return defaultOptions;
-	}
+    /**
+     * Returns default S3 file system options.
+     * Use it to set AWS auth credentials.
+     * @return
+     */
+    public static FileSystemOptions getDefaultFileSystemOptions () {
+        return defaultOptions;
+    }
 
-	/**
-	 * S3 service instance
-	 */
-	private S3Service service;
+    /**
+     * S3 service instance
+     */
+    private S3Service service;
 
-	/**
-	 * Logger instance
-	 */
-	private Log logger = LogFactory.getLog(S3FileProvider.class);
+    /**
+     * Logger instance
+     */
+    private Log logger = LogFactory.getLog(S3FileProvider.class);
 
-	public S3FileProvider() {
-		super();
-		setFileNameParser(S3FileNameParser.getInstance());
-	}
+    public S3FileProvider() {
+        super();
+        setFileNameParser(S3FileNameParser.getInstance());
+    }
 
-	/**
-	 * Create a file system with the S3 root provided.
-	 *
-	 * @param fileName the S3 file name that defines the root (bucket)
-	 * @param fileSystemOptions file system options
-	 * @return an S3 file system
-	 * @throws FileSystemException if the file system cannot be created
-	 */
-	protected FileSystem doCreateFileSystem(FileName fileName,
-			FileSystemOptions fileSystemOptions) throws FileSystemException {
+    /**
+     * Create a file system with the S3 root provided.
+     *
+     * @param fileName the S3 file name that defines the root (bucket)
+     * @param fileSystemOptions file system options
+     * @return an S3 file system
+     * @throws FileSystemException if the file system cannot be created
+     */
+    protected FileSystem doCreateFileSystem(FileName fileName,
+            FileSystemOptions fileSystemOptions) throws FileSystemException {
 
-		FileSystemOptions fsOptions = fileSystemOptions != null ?
-				fileSystemOptions : getDefaultFileSystemOptions();
+        FileSystemOptions fsOptions = fileSystemOptions != null ?
+                fileSystemOptions : getDefaultFileSystemOptions();
 
-		// Initialize once S3 service.
-		if (service == null) {
-			UserAuthenticationData authData = null;
-			try {
-				// Read authData from file system options
-				authData = UserAuthenticatorUtils.authenticate(fsOptions, AUTHENTICATOR_TYPES);
+        // Initialize once S3 service.
+        if (service == null) {
+            UserAuthenticationData authData = null;
+            try {
+                // Read authData from file system options
+                authData = UserAuthenticatorUtils.authenticate(fsOptions, AUTHENTICATOR_TYPES);
 
-				logger.info("Initialize Amazon S3 service client ...");
+                logger.info("Initialize Amazon S3 service client ...");
 
-				// Fetch AWS key-id and secret key from authData
-				String keyId = UserAuthenticatorUtils.toString(UserAuthenticatorUtils.getData(authData, UserAuthenticationData.USERNAME, null));
-				String key = UserAuthenticatorUtils.toString(UserAuthenticatorUtils.getData(authData, UserAuthenticationData.PASSWORD, null));
-				if (keyId.length() + key.length() == 0) {
-					throw new FileSystemException("Empty AWS credentials");
-				}
+                // Fetch AWS key-id and secret key from authData
+                String keyId = UserAuthenticatorUtils.toString(UserAuthenticatorUtils.getData(authData, UserAuthenticationData.USERNAME, null));
+                String key = UserAuthenticatorUtils.toString(UserAuthenticatorUtils.getData(authData, UserAuthenticationData.PASSWORD, null));
+                if (keyId.length() + key.length() == 0) {
+                    throw new FileSystemException("Empty AWS credentials");
+                }
 
-				// Initialize S3 service client.
-				AWSCredentials awsCredentials = new AWSCredentials(keyId, key);
-				service = new RestS3Service(awsCredentials);
-				logger.info("... Ok");
+                // Initialize S3 service client.
+                AWSCredentials awsCredentials = new AWSCredentials(keyId, key);
+                service = new RestS3Service(awsCredentials);
+                logger.info("... Ok");
 
-			} catch (S3ServiceException e) {
-				logger.error(String.format("Failed to initialize Amazon S3 service client. Reason: %s",
-						e.getS3ErrorMessage()), e);
-				throw new FileSystemException(e);
-			}
-			finally {
-				UserAuthenticatorUtils.cleanup(authData);
-			}
-		}
+            } catch (S3ServiceException e) {
+                logger.error(String.format("Failed to initialize Amazon S3 service client. Reason: %s",
+                        e.getS3ErrorMessage()), e);
+                throw new FileSystemException(e);
+            }
+            finally {
+                UserAuthenticatorUtils.cleanup(authData);
+            }
+        }
 
-		// Construct S3 file system
-		return new S3FileSystem((S3FileName) fileName, service, fsOptions);
-	}
+        // Construct S3 file system
+        return new S3FileSystem((S3FileName) fileName, service, fsOptions);
+    }
 
-	/**
-	 * Get the capabilities of the file system provider.
-	 *
-	 * @return the file system capabilities
-	 */
-	public Collection<Capability> getCapabilities() {
-		return capabilities;
-	}
+    /**
+     * Get the capabilities of the file system provider.
+     *
+     * @return the file system capabilities
+     */
+    public Collection<Capability> getCapabilities() {
+        return capabilities;
+    }
 }

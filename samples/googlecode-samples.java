@@ -27,7 +27,7 @@ IOUtils.copy(in, out);
 FileObject dir = fsManager.resolveFile("s3://vfs-bucket");
 dir.delete();
 
-/* 
+/*
 * ACL (Access Control List) extension
 */
 FileOperationProvider operationProvider = (FileOperationProvider) new AclOperationsProvider();
@@ -40,11 +40,11 @@ IAclGetter aclGetter = (IAclGetter)remote_file.getFileOperations().getOperation(
 aclGetter.process();
 fileAcl = aclGetter.getAcl();
 if (aclGetter.canRead(Acl.Group.GUEST)) {
-	System.out.println("Anyone can read s3://vfs-bucket/backup.zip");
+    System.out.println("Anyone can read s3://vfs-bucket/backup.zip");
 }
 
 // Permit all authorized users to read remote_file
-fileAcl.allow(Acl.Group.AUTHORIZED, Acl.Right.READ);		
+fileAcl.allow(Acl.Group.AUTHORIZED, Acl.Right.READ);
 IAclSetter aclSetter = (IAclSetter)remote_file.getFileOperations().getOperation(IAclSetter.class);
 aclSetter.setAcl(fileAcl);
 aclSetter.process();

@@ -20,7 +20,7 @@ import org.apache.commons.vfs.FileType;
 import org.apache.commons.vfs.provider.local.LocalFileName;
 
 public class S3FileName extends LocalFileName {
-	protected S3FileName(final String scheme, final String rootFile, final String path, final FileType type) {
-		super(scheme, rootFile, path, type);
-	}
+    protected S3FileName(final String scheme, final String rootFile, final String path, final FileType type) {
+        super(scheme, rootFile, path, type);
+    }
 }

@@ -9,28 +9,28 @@ import com.intridea.io.vfs.provider.s3.S3FileObject;
 
 class AclGetter implements IAclGetter {
 
-	private S3FileObject file;
+    private S3FileObject file;
 
-	private Acl acl;
+    private Acl acl;
 
-	public AclGetter (S3FileObject file) {
-		this.file = file;
-	}
+    public AclGetter (S3FileObject file) {
+        this.file = file;
+    }
 
-	public boolean canRead(Group group) {
-		return acl.isAllowed(group, Acl.Permission.READ);
-	}
+    public boolean canRead(Group group) {
+        return acl.isAllowed(group, Acl.Permission.READ);
+    }
 
-	public boolean canWrite(Group group) {
-		return acl.isAllowed(group, Acl.Permission.WRITE);
-	}
+    public boolean canWrite(Group group) {
+        return acl.isAllowed(group, Acl.Permission.WRITE);
+    }
 
-	public Acl getAcl() {
-		return acl;
-	}
+    public Acl getAcl() {
+        return acl;
+    }
 
-	public void process() throws FileSystemException {
-		acl = file.getAcl();
-	}
+    public void process() throws FileSystemException {
+        acl = file.getAcl();
+    }
 
 }

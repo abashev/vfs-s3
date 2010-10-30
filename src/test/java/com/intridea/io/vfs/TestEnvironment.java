@@ -14,43 +14,43 @@ import com.intridea.io.vfs.provider.s3.S3FileProvider;
 
 public class TestEnvironment {
 
-	private static TestEnvironment instance;
-	static {
-		try {
-			instance = new TestEnvironment();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+    private static TestEnvironment instance;
+    static {
+        try {
+            instance = new TestEnvironment();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-	public static TestEnvironment getInstance () {
-		return instance;
-	}
+    public static TestEnvironment getInstance () {
+        return instance;
+    }
 
-	private Properties config;
+    private Properties config;
 
-	private TestEnvironment () throws FileNotFoundException, IOException {
-		// Load configuration
-		config = new Properties();
+    private TestEnvironment () throws FileNotFoundException, IOException {
+        // Load configuration
+        config = new Properties();
 
-		InputStream configFile = TestEnvironment.class.getResourceAsStream("/config.properties");
+        InputStream configFile = TestEnvironment.class.getResourceAsStream("/config.properties");
 
-		Assert.assertNotNull(configFile);
+        Assert.assertNotNull(configFile);
 
         config.load(configFile);
 
-		// Configure logger
+        // Configure logger
 //		PropertyConfigurator.configure(config);
 
-		// Configure VFS
-		StaticUserAuthenticator auth = new StaticUserAuthenticator(null, config.getProperty("aws.key-id"), config.getProperty("aws.key"));
-		FileSystemOptions opts = S3FileProvider.getDefaultFileSystemOptions();
-		DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
-	}
+        // Configure VFS
+        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, config.getProperty("aws.key-id"), config.getProperty("aws.key"));
+        FileSystemOptions opts = S3FileProvider.getDefaultFileSystemOptions();
+        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
+    }
 
-	public Properties getConfig () {
-		return config;
-	}
+    public Properties getConfig () {
+        return config;
+    }
 }
