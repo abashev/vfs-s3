@@ -33,6 +33,7 @@ import org.jets3t.service.acl.GroupGrantee;
 import org.jets3t.service.acl.Permission;
 import org.jets3t.service.model.S3Bucket;
 import org.jets3t.service.model.S3Object;
+import org.jets3t.service.model.StorageObject;
 import org.jets3t.service.model.StorageOwner;
 import org.jets3t.service.utils.Mimetypes;
 
@@ -61,7 +62,7 @@ public class S3FileObject extends AbstractFileObject {
     /**
      * Amazon S3 object
      */
-    private S3Object object;
+    private StorageObject object;
 
     /**
      * True when content attached to file
@@ -102,7 +103,7 @@ public class S3FileObject extends AbstractFileObject {
         if (!attached) {
             try {
                 // Get an object representing the details of an item WITHOUT content
-                object = service.getObjectDetails(bucket, getS3Key());
+                object = service.getObjectDetails(bucket.getName(), getS3Key());
                 logger.info(String.format("Attach file to S3 Object: %s", object));
             } catch (S3ServiceException e) {
                 object = new S3Object(bucket, getS3Key());
@@ -131,16 +132,16 @@ public class S3FileObject extends AbstractFileObject {
     }
 
     protected void doRename(FileObject newfile) throws Exception {
-        // TODO: implement
-        // jets3t doesn't support AWS copyObject command that is responsible for copying and renaming objects
-        super.doRename(newfile);
+    	S3Object newObject = new S3Object(bucket, getS3Key(newfile.getName()));
+
+    	service.moveObject(bucket.getName(), object.getKey(), bucket.getName(), newObject, false);
     }
 
     protected void doCreateFolder() throws Exception {
         if (!Mimetypes.MIMETYPE_JETS3T_DIRECTORY.equals(object.getContentType())) {
             object.setContentType(Mimetypes.MIMETYPE_JETS3T_DIRECTORY);
 
-            service.putObject(bucket, object);
+            service.putObject(bucket.getName(), object);
         }
     }
 
@@ -159,7 +160,7 @@ public class S3FileObject extends AbstractFileObject {
     }
 
     protected OutputStream doGetOutputStream(boolean bAppend) throws Exception {
-        return new S3OutputStream(Channels.newOutputStream(getCacheFileChannel()), service, object);
+        return new S3OutputStream(Channels.newOutputStream(getCacheFileChannel()), object);
     }
 
     protected FileType doGetType() throws Exception {
@@ -181,7 +182,7 @@ public class S3FileObject extends AbstractFileObject {
             path = path + "/";
         }
 
-        S3Object[] children = service.listObjects(bucket, path, "/");
+        S3Object[] children = service.listObjects(bucket.getName(), path, "/");
         String[] childrenNames = new String[children.length];
         for (int i = 0; i < children.length; i++) {
             if (!children[i].getKey().equals(path)) {
@@ -208,7 +209,7 @@ public class S3FileObject extends AbstractFileObject {
             final String failedMessage = "Failed to download S3 Object %s. %s";
             final String objectPath = getName().getPath();
             try {
-                S3Object obj = service.getObject(bucket, getS3Key());
+                S3Object obj = service.getObject(bucket.getName(), getS3Key());
                 logger.info(String.format("Downloading S3 Object: %s", objectPath));
                 InputStream is = obj.getDataInputStream();
                 if (obj.getContentLength() > 0) {
@@ -238,7 +239,12 @@ public class S3FileObject extends AbstractFileObject {
      * @return the S3 object key
      */
     private String getS3Key() {
-        String path = getName().getPath();
+        return getS3Key(getName());
+    }
+
+    private String getS3Key(FileName fileName) {
+        String path = fileName.getPath();
+
         if ("".equals(path)) {
             return path;
         } else {
@@ -298,7 +304,7 @@ public class S3FileObject extends AbstractFileObject {
             doAttach();
             // Put ACL to S3
             object.setAcl(s3Acl);
-            service.putObjectAcl(bucket, object);
+            service.putObjectAcl(bucket.getName(), object);
         }
     }
 
@@ -512,13 +518,10 @@ public class S3FileObject extends AbstractFileObject {
      */
     private class S3OutputStream extends MonitorOutputStream {
 
-        private S3Service service;
+        private StorageObject object;
 
-        private S3Object object;
-
-        public S3OutputStream(OutputStream out, S3Service service, S3Object object) {
+        public S3OutputStream(OutputStream out, StorageObject object) {
             super(out);
-            this.service = service;
             this.object = object;
         }
 
@@ -526,7 +529,7 @@ public class S3FileObject extends AbstractFileObject {
             object.setDataInputStream(Channels.newInputStream(getCacheFileChannel()));
             try {
                 service.putObject(object.getBucketName(), object);
-            } catch (S3ServiceException e) {
+            } catch (ServiceException e) {
                 throw new IOException(e);
             }
         }

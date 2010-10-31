@@ -31,8 +31,7 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     public final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
         Capability.CREATE,
         Capability.DELETE,
-        // TODO: rename not supported by jets3t now
-        //Capability.RENAME,
+        Capability.RENAME,
         Capability.GET_TYPE,
         Capability.GET_LAST_MODIFIED,
         Capability.SET_LAST_MODIFIED_FILE,
