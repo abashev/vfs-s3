@@ -212,7 +212,7 @@ public class S3ProviderTest {
         IPublicUrlsGetter urlsGetter = (IPublicUrlsGetter) backup.getFileOperations().getOperation(IPublicUrlsGetter.class);
 
         Assert.assertEquals(urlsGetter.getHttpUrl(), "http://vfs-s3-tests.s3.amazonaws.com/test-place/backup.zip");
-        Assert.assertTrue(urlsGetter.getPrivateUrl().endsWith("/vfs-s3-tests/test-place/backup.zip"));
+        Assert.assertTrue(urlsGetter.getPrivateUrl().endsWith("@vfs-s3-tests/test-place/backup.zip"));
         Assert.assertTrue(urlsGetter.getSignedUrl(60).startsWith("https://vfs-s3-tests.s3.amazonaws.com/test-place/backup.zip?AWSAccessKeyId="));
     }
 

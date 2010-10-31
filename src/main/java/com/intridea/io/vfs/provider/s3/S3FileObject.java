@@ -8,15 +8,18 @@ import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.List;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs.FileName;
+import static org.apache.commons.vfs.FileName.*;
 import org.apache.commons.vfs.FileObject;
 import org.apache.commons.vfs.FileSystemException;
 import org.apache.commons.vfs.FileType;
@@ -102,16 +105,39 @@ public class S3FileObject extends AbstractFileObject {
     protected void doAttach() throws Exception {
         if (!attached) {
             try {
-                // Get an object representing the details of an item WITHOUT content
+                // Do we have folder with that name?
+                object = service.getObjectDetails(bucket.getName(), getS3Key() + FileName.SEPARATOR);
+
+                logger.info("Attach folder to S3 Object: " + object);
+
+                attached = true;
+                return;
+            } catch (ServiceException e) {
+                // No, we don't
+            }
+
+            try {
+                // Do we have file with name?
                 object = service.getObjectDetails(bucket.getName(), getS3Key());
-                logger.info(String.format("Attach file to S3 Object: %s", object));
-            } catch (S3ServiceException e) {
+
+                logger.info("Attach file to S3 Object: " + object);
+
+                attached = true;
+                return;
+            } catch (ServiceException e) {
+                // No, we don't
+            }
+
+            // Create a new
+            if (object == null) {
                 object = new S3Object(bucket, getS3Key());
                 object.setLastModifiedDate(new Date());
+
                 logger.info(String.format("Attach file to S3 Object: %s", object));
+
                 downloaded = true;
+                attached = true;
             }
-            attached = true;
         }
     }
 
@@ -138,11 +164,7 @@ public class S3FileObject extends AbstractFileObject {
     }
 
     protected void doCreateFolder() throws Exception {
-        if (!Mimetypes.MIMETYPE_JETS3T_DIRECTORY.equals(object.getContentType())) {
-            object.setContentType(Mimetypes.MIMETYPE_JETS3T_DIRECTORY);
-
-            service.putObject(bucket.getName(), object);
-        }
+        service.putObject(bucket.getName(), new S3Object(object.getKey() + FileName.SEPARATOR));
     }
 
     protected long doGetLastModifiedTime() throws Exception {
@@ -178,20 +200,27 @@ public class S3FileObject extends AbstractFileObject {
     protected String[] doListChildren() throws Exception {
         String path = object.getKey();
         // make sure we add a '/' slash at the end to find children
-        if (!"".equals(path)) {
+        if ((!"".equals(path)) && (!path.endsWith(SEPARATOR))) {
             path = path + "/";
         }
 
-        S3Object[] children = service.listObjects(bucket.getName(), path, "/");
-        String[] childrenNames = new String[children.length];
+        S3Object[] children = service.listObjects(bucket.getName(), path, null);
+        List<String> childrenNames = new ArrayList<String>(children.length);
+
         for (int i = 0; i < children.length; i++) {
             if (!children[i].getKey().equals(path)) {
                 // strip path from name (leave only base name)
-                childrenNames[i] = children[i].getKey().replaceAll("[^/]*//*",
-                        "");
+                final String stripPath = children[i].getKey().substring(path.length());
+
+                // Only one slash in the end OR no slash at all
+                if ((stripPath.endsWith(SEPARATOR) && (stripPath.indexOf(SEPARATOR_CHAR) == stripPath.lastIndexOf(SEPARATOR_CHAR))) ||
+                        (stripPath.indexOf(SEPARATOR_CHAR) == (-1))) {
+                    childrenNames.add(stripPath);
+                }
             }
         }
-        return childrenNames;
+
+        return childrenNames.toArray(new String[childrenNames.size()]);
     }
 
     protected long doGetContentSize() throws Exception {
@@ -479,7 +508,7 @@ public class S3FileObject extends AbstractFileObject {
      */
     public String getPrivateUrl() {
         return String.format(
-                "s3://%s:%s/%s/%s",
+                "s3://%s:%s@%s/%s",
                 service.getProviderCredentials().getAccessKey(),
                 service.getProviderCredentials().getSecretKey(),
                 bucket.getName(),
