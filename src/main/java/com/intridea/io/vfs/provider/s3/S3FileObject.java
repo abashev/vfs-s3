@@ -1,5 +1,8 @@
 package com.intridea.io.vfs.provider.s3;
 
+import static org.apache.commons.vfs.FileName.SEPARATOR;
+import static org.apache.commons.vfs.FileName.SEPARATOR_CHAR;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +22,6 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs.FileName;
-import static org.apache.commons.vfs.FileName.*;
 import org.apache.commons.vfs.FileObject;
 import org.apache.commons.vfs.FileSystemException;
 import org.apache.commons.vfs.FileType;
@@ -38,7 +40,6 @@ import org.jets3t.service.model.S3Bucket;
 import org.jets3t.service.model.S3Object;
 import org.jets3t.service.model.StorageObject;
 import org.jets3t.service.model.StorageOwner;
-import org.jets3t.service.utils.Mimetypes;
 
 import com.intridea.io.vfs.operations.Acl;
 import com.intridea.io.vfs.operations.IAclGetter;
@@ -105,10 +106,10 @@ public class S3FileObject extends AbstractFileObject {
     protected void doAttach() throws Exception {
         if (!attached) {
             try {
-                // Do we have folder with that name?
-                object = service.getObjectDetails(bucket.getName(), getS3Key() + FileName.SEPARATOR);
+                // Do we have file with name?
+                object = service.getObjectDetails(bucket.getName(), getS3Key());
 
-                logger.info("Attach folder to S3 Object: " + object);
+                logger.info("Attach file to S3 Object: " + object);
 
                 attached = true;
                 return;
@@ -117,10 +118,10 @@ public class S3FileObject extends AbstractFileObject {
             }
 
             try {
-                // Do we have file with name?
-                object = service.getObjectDetails(bucket.getName(), getS3Key());
+                // Do we have folder with that name?
+                object = service.getObjectDetails(bucket.getName(), getS3Key() + FileName.SEPARATOR);
 
-                logger.info("Attach file to S3 Object: " + object);
+                logger.info("Attach folder to S3 Object: " + object);
 
                 attached = true;
                 return;
