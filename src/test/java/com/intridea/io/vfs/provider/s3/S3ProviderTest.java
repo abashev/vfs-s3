@@ -1,9 +1,11 @@
 package com.intridea.io.vfs.provider.s3;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 import java.util.Random;
 
@@ -15,6 +17,7 @@ import org.apache.commons.vfs.FileSystemOptions;
 import org.apache.commons.vfs.FileType;
 import org.apache.commons.vfs.Selectors;
 import org.apache.commons.vfs.VFS;
+import static org.jets3t.service.utils.ServiceUtils.*;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -22,10 +25,16 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import com.intridea.io.vfs.TestEnvironment;
+import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 
 @Test(groups={"storage"})
 public class S3ProviderTest {
+
+    /**
+     *
+     */
+    private static final String BACKUP_ZIP = "src/test/resources/backup.zip";
 
     private FileSystemManager fsManager;
 
@@ -120,7 +129,7 @@ public class S3ProviderTest {
         }
 
         // Copy data
-        final File backupFile = new File("src/test/resources/backup.zip");
+        final File backupFile = new File(BACKUP_ZIP);
 
         Assert.assertTrue(backupFile.exists(), "Backup file should exists");
 
@@ -214,6 +223,27 @@ public class S3ProviderTest {
         Assert.assertEquals(urlsGetter.getHttpUrl(), "http://vfs-s3-tests.s3.amazonaws.com/test-place/backup.zip");
         Assert.assertTrue(urlsGetter.getPrivateUrl().endsWith("@vfs-s3-tests/test-place/backup.zip"));
         Assert.assertTrue(urlsGetter.getSignedUrl(60).startsWith("https://vfs-s3-tests.s3.amazonaws.com/test-place/backup.zip?AWSAccessKeyId="));
+    }
+
+    @Test(dependsOnMethods={"upload"})
+    public void getMD5Hash() throws NoSuchAlgorithmException, FileNotFoundException, IOException {
+        FileObject backup = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
+
+        Assert.assertTrue(backup.getFileOperations().hasOperation(IMD5HashGetter.class));
+
+        IMD5HashGetter md5Getter = (IMD5HashGetter) backup.getFileOperations().getOperation(IMD5HashGetter.class);
+
+        String md5Remote = md5Getter.getMD5Hash();
+
+        Assert.assertNotNull(md5Remote);
+
+        final File backupFile = new File(BACKUP_ZIP);
+
+        Assert.assertTrue(backupFile.exists(), "Backup file should exists");
+
+        String md5Local = toHex(computeMD5Hash(new FileInputStream(backupFile)));
+
+        Assert.assertEquals(md5Remote, md5Local, "Local and remote md5 should be equal");
     }
 
     @Test(dependsOnMethods={"findFiles", "download"})

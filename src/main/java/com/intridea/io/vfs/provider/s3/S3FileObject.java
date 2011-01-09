@@ -541,6 +541,28 @@ public class S3FileObject extends AbstractFileObject {
     }
 
     /**
+     * Get MD5 hash for the file
+     * @return
+     * @throws FileSystemException
+     */
+    public String getMD5Hash() throws FileSystemException {
+        final String key = getS3Key();
+        String hash = null;
+
+        try {
+            StorageObject metadata = service.getObjectDetails(bucket.getName(), key);
+
+            if (metadata != null) {
+                hash = metadata.getETag();
+            }
+        } catch (ServiceException e) {
+            throw new FileSystemException(e);
+        }
+
+        return hash;
+    }
+
+    /**
      * Special JetS3FileObject output stream.
      * It saves all contents in temporary file, onClose sends contents to S3.
      *

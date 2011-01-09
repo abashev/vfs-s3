@@ -9,6 +9,7 @@ import org.apache.commons.vfs.operations.FileOperationProvider;
 
 import com.intridea.io.vfs.operations.IAclGetter;
 import com.intridea.io.vfs.operations.IAclSetter;
+import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 import com.intridea.io.vfs.provider.s3.S3FileObject;
 
@@ -20,6 +21,7 @@ public class S3FileOperationsProvider implements FileOperationProvider {
             operationsList.add(AclGetter.class);
             operationsList.add(AclSetter.class);
             operationsList.add(PublicUrlsGetter.class);
+            operationsList.add(MD5HashGetter.class);
         }
     }
 
@@ -38,6 +40,9 @@ public class S3FileOperationsProvider implements FileOperationProvider {
             } else if (operationClass.equals(IPublicUrlsGetter.class)) {
                 // public urls
                 return new PublicUrlsGetter((S3FileObject)file);
+            } else if (operationClass.equals(IMD5HashGetter.class)) {
+                // get md5 hash
+                return new MD5HashGetter((S3FileObject)file);
             }
         }
 
