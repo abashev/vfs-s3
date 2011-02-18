@@ -165,7 +165,17 @@ public class S3FileObject extends AbstractFileObject {
     }
 
     protected void doCreateFolder() throws Exception {
-        service.putObject(bucket.getName(), new S3Object(object.getKey() + FileName.SEPARATOR));
+        if (logger.isDebugEnabled()) {
+            logger.debug(
+                    "Create new folder in bucket [" +
+                    ((bucket != null) ? bucket.getName() : "null") +
+                    "] with key [" +
+                    ((object != null) ? object.getKey() : "null") +
+                    "]"
+            );
+        }
+
+        service.putObject(bucket.getName(), new S3Object(((object != null ) ? object.getKey() : "") + FileName.SEPARATOR));
     }
 
     protected long doGetLastModifiedTime() throws Exception {
