@@ -175,7 +175,11 @@ public class S3FileObject extends AbstractFileObject {
             );
         }
 
-        service.putObject(bucket.getName(), new S3Object(((object != null ) ? object.getKey() : "") + FileName.SEPARATOR));
+        if (object == null) {
+            return;
+        }
+
+        service.putObject(bucket.getName(), new S3Object(object.getKey() + FileName.SEPARATOR));
     }
 
     protected long doGetLastModifiedTime() throws Exception {
