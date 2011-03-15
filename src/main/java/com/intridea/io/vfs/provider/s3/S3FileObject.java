@@ -599,15 +599,11 @@ public class S3FileObject extends AbstractFileObject {
         }
 
         // Locate the files to copy across
-        final ArrayList files = new ArrayList();
+        final List<FileObject> files = new ArrayList<FileObject>();
         file.findFiles(selector, false, files);
 
         // Copy everything across
-        final int count = files.size();
-        for (int i = 0; i < count; i++)
-        {
-            final FileObject srcFile = (FileObject) files.get(i);
-
+        for (FileObject srcFile : files) {
             // Determine the destination file
             final String relPath = file.getName().getRelativeName(srcFile.getName());
             final FileObject destFile = resolveFile(relPath, NameScope.DESCENDENT_OR_SELF);
