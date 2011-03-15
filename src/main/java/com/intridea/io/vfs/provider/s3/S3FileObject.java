@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -23,9 +25,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs.FileName;
 import org.apache.commons.vfs.FileObject;
+import org.apache.commons.vfs.FileSelector;
 import org.apache.commons.vfs.FileSystemException;
 import org.apache.commons.vfs.FileType;
+import org.apache.commons.vfs.FileUtil;
+import org.apache.commons.vfs.NameScope;
+import org.apache.commons.vfs.Selectors;
 import org.apache.commons.vfs.provider.AbstractFileObject;
+import org.apache.commons.vfs.provider.local.LocalFile;
 import org.apache.commons.vfs.util.MonitorOutputStream;
 import org.jets3t.service.S3Service;
 import org.jets3t.service.S3ServiceException;
@@ -40,6 +47,7 @@ import org.jets3t.service.model.S3Bucket;
 import org.jets3t.service.model.S3Object;
 import org.jets3t.service.model.StorageObject;
 import org.jets3t.service.model.StorageOwner;
+import org.jets3t.service.utils.Mimetypes;
 
 import com.intridea.io.vfs.operations.Acl;
 import com.intridea.io.vfs.operations.IAclGetter;
@@ -574,6 +582,123 @@ public class S3FileObject extends AbstractFileObject {
         }
 
         return hash;
+    }
+
+    /* (non-Javadoc)
+     * @see org.apache.commons.vfs.provider.AbstractFileObject#copyFrom(org.apache.commons.vfs.FileObject, org.apache.commons.vfs.FileSelector)
+     */
+    @Override
+    public void copyFrom(FileObject file, FileSelector selector) throws FileSystemException {
+        if (!file.exists())
+        {
+            throw new FileSystemException("vfs.provider/copy-missing-file.error", file);
+        }
+        if (!isWriteable())
+        {
+            throw new FileSystemException("vfs.provider/copy-read-only.error", new Object[]{file.getType(), file.getName(), this}, null);
+        }
+
+        // Locate the files to copy across
+        final ArrayList files = new ArrayList();
+        file.findFiles(selector, false, files);
+
+        // Copy everything across
+        final int count = files.size();
+        for (int i = 0; i < count; i++)
+        {
+            final FileObject srcFile = (FileObject) files.get(i);
+
+            // Determine the destination file
+            final String relPath = file.getName().getRelativeName(srcFile.getName());
+            final FileObject destFile = resolveFile(relPath, NameScope.DESCENDENT_OR_SELF);
+
+            // Clean up the destination file, if necessary
+            if (destFile.exists() && destFile.getType() != srcFile.getType())
+            {
+                // The destination file exists, and is not of the same type,
+                // so delete it
+                // TODO - add a pluggable policy for deleting and overwriting existing files
+                destFile.delete(Selectors.SELECT_ALL);
+            }
+
+            // Copy across
+            try
+            {
+                if (srcFile.getType().hasContent())
+                {
+                    doCopy(srcFile, destFile);
+                }
+                else if (srcFile.getType().hasChildren())
+                {
+                    destFile.createFolder();
+                }
+            }
+            catch (final IOException e)
+            {
+                throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+            }
+        }
+    }
+
+    protected void doCopy(FileObject sourceObj, FileObject targetObj) throws IOException {
+        boolean doStandardCopy = true;
+
+        if ((sourceObj instanceof LocalFile) && (targetObj instanceof S3FileObject)) {
+            if (logger.isInfoEnabled()) {
+                logger.info("Do fast copy from " + sourceObj + " to " + targetObj);
+            }
+
+            try {
+                File file = getLocalFile(sourceObj);
+                S3FileObject s3 = (S3FileObject) targetObj;
+
+                s3.object.setContentLength(file.length());
+                s3.object.setContentType(Mimetypes.getInstance().getMimetype(file));
+                s3.object.setDataInputFile(file);
+
+                s3.object = s3.service.putObject(s3.object.getBucketName(), s3.object);
+
+                refresh();
+
+                doStandardCopy = false;
+            } catch (Exception e) {
+                logger.warn("Unable to do fast copy", e);
+            }
+        }
+
+        if (doStandardCopy) {
+            FileUtil.copyContent(sourceObj, targetObj);
+        }
+    }
+
+    private File getLocalFile(FileObject sourceObj) throws IOException {
+        try {
+            Method method = LocalFile.class.getDeclaredMethod("getLocalFile");
+
+            method.setAccessible(true);
+
+            return (File) method.invoke(sourceObj);
+        } catch (SecurityException e) {
+            logger.warn("Looks like API was changed and fallback to standard impl");
+
+            throw new IOException("API changed");
+        } catch (NoSuchMethodException e) {
+            logger.warn("Looks like API was changed and fallback to standard impl");
+
+            throw new IOException("API changed");
+        } catch (IllegalArgumentException e) {
+            logger.warn("Looks like API was changed and fallback to standard impl");
+
+            throw new IOException("API changed");
+        } catch (IllegalAccessException e) {
+            logger.warn("Looks like API was changed and fallback to standard impl");
+
+            throw new IOException("API changed");
+        } catch (InvocationTargetException e) {
+            logger.warn("Looks like API was changed and fallback to standard impl");
+
+            throw new IOException("API changed");
+        }
     }
 
     /**
