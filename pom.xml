@@ -51,7 +51,9 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
@@ -68,7 +70,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <scm.connection>scm:hg:git+ssh://git@github.com:abashev/vfs-s3.git</scm.connection>
+        <scm.connection>scm:hg:git+ssh://git@github.com:scoyo/vfs-s3.git</scm.connection>
     </properties>
 </project>
