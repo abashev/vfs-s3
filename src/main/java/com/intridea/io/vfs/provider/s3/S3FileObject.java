@@ -61,20 +61,22 @@ import com.intridea.io.vfs.operations.IAclGetter;
  * @author Matthias L. Jugel
  */
 public class S3FileObject extends AbstractFileObject {
+    static final long BIG_FILE_THRESHOLD = 1024 * 1024 * 1024; // 1 Gb
+
     /**
      * Amazon S3 service
      */
-    private final S3Service service;
+    final S3Service service;
 
     /**
      * Amazon S3 bucket
      */
-    private final S3Bucket bucket;
+    final S3Bucket bucket;
 
     /**
      * Amazon S3 object
      */
-    private StorageObject object;
+    StorageObject object;
 
     /**
      * True when content attached to file
@@ -652,8 +654,13 @@ public class S3FileObject extends AbstractFileObject {
                 s3.object.setContentType(Mimetypes.getInstance().getMimetype(file));
                 s3.object.setDataInputFile(file);
 
-                s3.object = s3.service.putObject(s3.object.getBucketName(), s3.object);
+                if (file.length() < BIG_FILE_THRESHOLD) {
+                    S3UploadTool.uploadSmallObject(s3.service, s3.object);
+                } else {
+                    S3UploadTool.uploadLargeObject(s3.service, s3.object);
+                }
 
+                s3.refresh();
                 refresh();
 
                 doStandardCopy = false;
@@ -714,6 +721,7 @@ public class S3FileObject extends AbstractFileObject {
 
         protected void onClose() throws IOException {
             object.setDataInputStream(Channels.newInputStream(getCacheFileChannel()));
+
             try {
                 service.putObject(object.getBucketName(), object);
             } catch (ServiceException e) {
