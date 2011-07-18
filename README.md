@@ -38,3 +38,17 @@ Sample Java Code
 	FileObject dest = fsManager.resolveFile("s3://test-bucket/backup.zip");
 	FileObject src = fsManager.resolveFile(new File("/path/to/local/file.zip").getAbsolutePath());
 	dest.copyFrom(src, Selectors.SELECT_SELF);
+	
+	
+Running the tests
+-----------------
+
+Tu run the tests with Maven you have to edit the
+
+	src/test/resources/config.properties
+
+file. Fill your AWS Key and Id. Then change the bucket name, because it must be globally 
+unique (you can just add a suffix). Finally you have to provide the path to backup.zip which
+is in the same directory.
+
+Make sure that you never commit your credentials!
