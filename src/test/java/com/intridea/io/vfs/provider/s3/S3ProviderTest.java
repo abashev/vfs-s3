@@ -38,7 +38,7 @@ public class S3ProviderTest {
 
     private FileSystemManager fsManager;
 
-    private String fileName, dirName, bucketName;
+    private String fileName, dirName, bucketName, bigFile;
     private FileObject file, dir;
 
     private FileSystemOptions opts;
@@ -52,11 +52,12 @@ public class S3ProviderTest {
         fileName = "vfs-file" + r.nextInt(1000);
         dirName = "vfs-dir" + r.nextInt(1000);
         bucketName = config.getProperty("s3.testBucket", "vfs-s3-tests");
+        bigFile = config.getProperty("big.file");
     }
 
     @Test
     public void createFileOk () throws FileSystemException {
-        file = fsManager.resolveFile("s3://vfs-s3-tests/test-place/" + fileName, opts);
+        file = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + fileName, opts);
         file.createFile();
         Assert.assertTrue(file.exists());
     }
@@ -134,6 +135,27 @@ public class S3ProviderTest {
         Assert.assertTrue(backupFile.exists(), "Backup file should exists");
 
         FileObject src = fsManager.resolveFile(backupFile.getAbsolutePath());
+        dest.copyFrom(src, Selectors.SELECT_SELF);
+
+        Assert.assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
+    }
+
+    @Test(dependsOnMethods={"createFileOk"})
+    public void uploadBigFile() throws FileNotFoundException, IOException {
+        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/big_file.iso");
+
+        // Delete file if exists
+        if (dest.exists()) {
+            dest.delete();
+        }
+
+        // Copy data
+        final File file = new File(bigFile);
+
+        Assert.assertTrue(file.exists(), "Backup file should exists");
+
+        FileObject src = fsManager.resolveFile(file.getAbsolutePath());
+
         dest.copyFrom(src, Selectors.SELECT_SELF);
 
         Assert.assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
@@ -220,9 +242,9 @@ public class S3ProviderTest {
 
         IPublicUrlsGetter urlsGetter = (IPublicUrlsGetter) backup.getFileOperations().getOperation(IPublicUrlsGetter.class);
 
-        Assert.assertEquals(urlsGetter.getHttpUrl(), "http://vfs-s3-tests.s3.amazonaws.com/test-place/backup.zip");
-        Assert.assertTrue(urlsGetter.getPrivateUrl().endsWith("@vfs-s3-tests/test-place/backup.zip"));
-        Assert.assertTrue(urlsGetter.getSignedUrl(60).startsWith("https://vfs-s3-tests.s3.amazonaws.com/test-place/backup.zip?AWSAccessKeyId="));
+        Assert.assertEquals(urlsGetter.getHttpUrl(), "http://" + bucketName + ".s3.amazonaws.com/test-place/backup.zip");
+        Assert.assertTrue(urlsGetter.getPrivateUrl().endsWith("@" + bucketName + "/test-place/backup.zip"));
+        Assert.assertTrue(urlsGetter.getSignedUrl(60).startsWith("https://" + bucketName + ".s3.amazonaws.com/test-place/backup.zip?AWSAccessKeyId="));
     }
 
     @Test(dependsOnMethods={"upload"})
@@ -256,11 +278,12 @@ public class S3ProviderTest {
         Assert.assertEquals(files.length, 1);
     }
 
-
-
     @AfterClass
     public void tearDown () throws FileSystemException {
-        FileObject vfsTestDir = fsManager.resolveFile(dir, "..");
-        vfsTestDir.delete(Selectors.SELECT_ALL);
+        try {
+            FileObject vfsTestDir = fsManager.resolveFile(dir, "..");
+            vfsTestDir.delete(Selectors.SELECT_ALL);
+        } catch (Exception e) {
+        }
     }
 }
