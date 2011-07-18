@@ -141,6 +141,30 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods={"createFileOk"})
+    public void upload_multiple() throws Exception {
+        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
+
+        // Delete file if exists
+        if (dest.exists()) {
+            dest.delete();
+        }
+
+        // Copy data
+        final File backupFile = new File(BACKUP_ZIP);
+
+        Assert.assertTrue(backupFile.exists(), "Backup file should exists");
+
+        FileObject src = fsManager.resolveFile(backupFile.getAbsolutePath());
+
+        // copy twice
+        dest.copyFrom(src, Selectors.SELECT_SELF);
+        Thread.sleep(2000L);
+        dest.copyFrom(src, Selectors.SELECT_SELF);
+
+        Assert.assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
+    }
+
+    @Test(dependsOnMethods={"createFileOk"})
     public void uploadBigFile() throws FileNotFoundException, IOException {
         FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/big_file.iso");
 
