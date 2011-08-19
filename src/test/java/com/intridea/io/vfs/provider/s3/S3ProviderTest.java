@@ -141,7 +141,7 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods={"createFileOk"})
-    public void upload_multiple() throws Exception {
+    public void uploadMultiple() throws Exception {
         FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
 
         // Delete file if exists
