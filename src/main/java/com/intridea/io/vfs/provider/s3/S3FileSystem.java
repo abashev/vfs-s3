@@ -30,7 +30,7 @@ public class S3FileSystem extends AbstractFileSystem {
     public S3FileSystem(S3FileName fileName, S3Service service,
             FileSystemOptions fileSystemOptions) throws FileSystemException {
         super(fileName, null, fileSystemOptions);
-        String bucketId = fileName.getRootFile();
+        String bucketId = fileName.getBucketId();
         try {
             this.service = service;
             bucket = new S3Bucket(bucketId);
