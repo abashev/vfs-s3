@@ -16,8 +16,8 @@
 
 package com.intridea.io.vfs.provider.s3;
 
-import org.apache.commons.vfs.FileType;
-import org.apache.commons.vfs.provider.local.LocalFileName;
+import org.apache.commons.vfs2.FileType;
+import org.apache.commons.vfs2.provider.local.LocalFileName;
 
 public class S3FileName extends LocalFileName {
     protected S3FileName(final String scheme, final String rootFile, final String path, final FileType type) {

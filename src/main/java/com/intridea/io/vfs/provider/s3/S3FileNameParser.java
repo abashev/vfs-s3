@@ -1,16 +1,17 @@
 package com.intridea.io.vfs.provider.s3;
 
-import org.apache.commons.vfs.FileName;
-import org.apache.commons.vfs.FileSystemException;
-import org.apache.commons.vfs.FileType;
-import org.apache.commons.vfs.provider.AbstractFileNameParser;
-import org.apache.commons.vfs.provider.UriParser;
-import org.apache.commons.vfs.provider.VfsComponentContext;
+import org.apache.commons.vfs2.FileName;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileType;
+import org.apache.commons.vfs2.provider.AbstractFileNameParser;
+import org.apache.commons.vfs2.provider.UriParser;
+import org.apache.commons.vfs2.provider.VfsComponentContext;
 
 /**
  * @author Matthias L. Jugel
  */
 public class S3FileNameParser extends AbstractFileNameParser {
+
     /**
      * S3 file name parser instance
      */
@@ -30,10 +31,11 @@ public class S3FileNameParser extends AbstractFileNameParser {
     /**
      * Parses URI and constructs S3 file name.
      */
+    @Override
     public FileName parseUri(final VfsComponentContext context,
             final FileName base, final String filename)
             throws FileSystemException {
-        StringBuffer name = new StringBuffer();
+        StringBuilder name = new StringBuilder();
 
         String scheme = UriParser.extractScheme(filename, name);
         UriParser.canonicalizePath(name, 0, name.length(), this);

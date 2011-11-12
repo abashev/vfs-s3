@@ -1,6 +1,6 @@
 package com.intridea.io.vfs.provider.s3.operations;
 
-import org.apache.commons.vfs.FileSystemException;
+import org.apache.commons.vfs2.FileSystemException;
 
 import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.provider.s3.S3FileObject;

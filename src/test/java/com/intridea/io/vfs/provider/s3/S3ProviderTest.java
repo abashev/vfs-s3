@@ -1,5 +1,8 @@
 package com.intridea.io.vfs.provider.s3;
 
+import static org.jets3t.service.utils.ServiceUtils.computeMD5Hash;
+import static org.jets3t.service.utils.ServiceUtils.toHex;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -10,15 +13,13 @@ import java.util.Properties;
 import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.vfs.FileObject;
-import org.apache.commons.vfs.FileSystemException;
-import org.apache.commons.vfs.FileSystemManager;
-import org.apache.commons.vfs.FileSystemOptions;
-import org.apache.commons.vfs.FileType;
-import org.apache.commons.vfs.Selectors;
-import org.apache.commons.vfs.VFS;
-import static org.jets3t.service.utils.ServiceUtils.*;
-
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemManager;
+import org.apache.commons.vfs2.FileSystemOptions;
+import org.apache.commons.vfs2.FileType;
+import org.apache.commons.vfs2.Selectors;
+import org.apache.commons.vfs2.VFS;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -27,6 +28,7 @@ import org.testng.annotations.Test;
 import com.intridea.io.vfs.TestEnvironment;
 import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.operations.IPublicUrlsGetter;
+
 
 @Test(groups={"storage"})
 public class S3ProviderTest {
