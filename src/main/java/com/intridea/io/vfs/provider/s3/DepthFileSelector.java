@@ -16,8 +16,8 @@
 
 package com.intridea.io.vfs.provider.s3;
 
-import org.apache.commons.vfs.FileSelectInfo;
-import org.apache.commons.vfs.FileSelector;
+import org.apache.commons.vfs2.FileSelectInfo;
+import org.apache.commons.vfs2.FileSelector;
 
 /**
  * A file selector that operates depth of the directory structure and will
@@ -57,11 +57,13 @@ public class DepthFileSelector implements FileSelector {
         maxDepth = max;
     }
 
+    @Override
     public boolean includeFile(FileSelectInfo fileSelectInfo) throws Exception {
         int depth = fileSelectInfo.getDepth();
         return depth >= minDepth && depth <= maxDepth;
     }
 
+    @Override
     public boolean traverseDescendents(FileSelectInfo fileSelectInfo)
             throws Exception {
         return fileSelectInfo.getDepth() < maxDepth;

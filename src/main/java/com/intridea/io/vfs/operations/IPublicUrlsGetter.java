@@ -1,7 +1,7 @@
 package com.intridea.io.vfs.operations;
 
-import org.apache.commons.vfs.FileSystemException;
-import org.apache.commons.vfs.operations.FileOperation;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.operations.FileOperation;
 
 /**
  * File operation for gettin' direct urls to S3 objects.

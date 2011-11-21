@@ -1,7 +1,7 @@
 package com.intridea.io.vfs.operations;
 
-import org.apache.commons.vfs.FileSystemException;
-import org.apache.commons.vfs.operations.FileOperation;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.operations.FileOperation;
 
 /**
  * Interface for getting file Access Control List.
@@ -34,5 +34,6 @@ public interface IAclGetter extends FileOperation {
      * Executes getter operation.
      * Must be called before aby other operation methods
      */
+    @Override
     void process() throws FileSystemException;
 }

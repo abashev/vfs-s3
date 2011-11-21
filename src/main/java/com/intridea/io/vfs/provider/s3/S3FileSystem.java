@@ -4,11 +4,12 @@ import java.util.Collection;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs.FileName;
-import org.apache.commons.vfs.FileObject;
-import org.apache.commons.vfs.FileSystemException;
-import org.apache.commons.vfs.FileSystemOptions;
-import org.apache.commons.vfs.provider.AbstractFileSystem;
+import org.apache.commons.vfs2.Capability;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemOptions;
+import org.apache.commons.vfs2.provider.AbstractFileName;
+import org.apache.commons.vfs2.provider.AbstractFileSystem;
 import org.jets3t.service.S3Service;
 import org.jets3t.service.ServiceException;
 import org.jets3t.service.model.S3Bucket;
@@ -20,6 +21,7 @@ import org.jets3t.service.model.S3Bucket;
  * @author Matthias L. Jugel
  */
 public class S3FileSystem extends AbstractFileSystem {
+
     private S3Service service;
     private S3Bucket bucket;
 
@@ -28,7 +30,7 @@ public class S3FileSystem extends AbstractFileSystem {
     public S3FileSystem(S3FileName fileName, S3Service service,
             FileSystemOptions fileSystemOptions) throws FileSystemException {
         super(fileName, null, fileSystemOptions);
-        String bucketId = fileName.getRootFile();
+        String bucketId = fileName.getBucketId();
         try {
             this.service = service;
             bucket = new S3Bucket(bucketId);
@@ -47,12 +49,14 @@ public class S3FileSystem extends AbstractFileSystem {
         }
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    protected void addCapabilities(Collection caps) {
+    @Override
+    protected void addCapabilities(Collection<Capability> caps) {
         caps.addAll(S3FileProvider.capabilities);
     }
 
-    protected FileObject createFile(FileName fileName) throws Exception {
+    @Override
+    protected FileObject createFile(AbstractFileName fileName) throws Exception {
         return new S3FileObject(fileName, this, service, bucket);
     }
+
 }

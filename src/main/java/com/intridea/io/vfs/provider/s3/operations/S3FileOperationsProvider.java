@@ -2,10 +2,10 @@ package com.intridea.io.vfs.provider.s3.operations;
 
 import java.util.Collection;
 
-import org.apache.commons.vfs.FileObject;
-import org.apache.commons.vfs.FileSystemException;
-import org.apache.commons.vfs.operations.FileOperation;
-import org.apache.commons.vfs.operations.FileOperationProvider;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.operations.FileOperation;
+import org.apache.commons.vfs2.operations.FileOperationProvider;
 
 import com.intridea.io.vfs.operations.IAclGetter;
 import com.intridea.io.vfs.operations.IAclSetter;
@@ -15,6 +15,7 @@ import com.intridea.io.vfs.provider.s3.S3FileObject;
 
 public class S3FileOperationsProvider implements FileOperationProvider {
 
+    @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void collectOperations(Collection operationsList, FileObject file) throws FileSystemException {
         if (file instanceof S3FileObject) {
@@ -28,6 +29,7 @@ public class S3FileOperationsProvider implements FileOperationProvider {
     /**
      * Depending on operationClass return getter/setter for file access control list.
      */
+    @Override
     @SuppressWarnings("rawtypes")
     public FileOperation getOperation(FileObject file, Class operationClass) throws FileSystemException {
         if (file instanceof S3FileObject) {
