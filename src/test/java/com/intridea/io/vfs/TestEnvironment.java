@@ -5,9 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import org.apache.commons.vfs.FileSystemOptions;
-import org.apache.commons.vfs.auth.StaticUserAuthenticator;
-import org.apache.commons.vfs.impl.DefaultFileSystemConfigBuilder;
+import org.apache.commons.vfs2.FileSystemOptions;
+import org.apache.commons.vfs2.auth.StaticUserAuthenticator;
+import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.testng.Assert;
 
 import com.intridea.io.vfs.provider.s3.S3FileProvider;

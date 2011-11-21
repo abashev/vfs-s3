@@ -1,23 +1,23 @@
 package com.intridea.io.vfs.provider.s3;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs.Capability;
-import org.apache.commons.vfs.FileName;
-import org.apache.commons.vfs.FileSystem;
-import org.apache.commons.vfs.FileSystemException;
-import org.apache.commons.vfs.FileSystemOptions;
-import org.apache.commons.vfs.provider.AbstractOriginatingFileProvider;
-import org.apache.commons.vfs.util.UserAuthenticatorUtils;
-import org.apache.commons.vfs.UserAuthenticationData;
+import org.apache.commons.vfs2.Capability;
+import org.apache.commons.vfs2.FileName;
+import org.apache.commons.vfs2.FileSystem;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemOptions;
+import org.apache.commons.vfs2.UserAuthenticationData;
+import org.apache.commons.vfs2.provider.AbstractOriginatingFileProvider;
+import org.apache.commons.vfs2.util.UserAuthenticatorUtils;
 import org.jets3t.service.S3Service;
 import org.jets3t.service.S3ServiceException;
 import org.jets3t.service.impl.rest.httpclient.RestS3Service;
 import org.jets3t.service.security.AWSCredentials;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * An S3 file provider. Create an S3 file system out of an S3 file name. Also
@@ -87,6 +87,7 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
      * @return an S3 file system
      * @throws FileSystemException if the file system cannot be created
      */
+    @Override
     protected FileSystem doCreateFileSystem(FileName fileName,
             FileSystemOptions fileSystemOptions) throws FileSystemException {
 
@@ -133,6 +134,7 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
      *
      * @return the file system capabilities
      */
+    @Override
     public Collection<Capability> getCapabilities() {
         return capabilities;
     }

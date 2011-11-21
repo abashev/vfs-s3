@@ -1,7 +1,7 @@
 package com.intridea.io.vfs.provider.s3;
 
-import static org.apache.commons.vfs.FileName.SEPARATOR;
-import static org.apache.commons.vfs.FileName.SEPARATOR_CHAR;
+import static org.apache.commons.vfs2.FileName.SEPARATOR;
+import static org.apache.commons.vfs2.FileName.SEPARATOR_CHAR;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,17 +23,18 @@ import java.util.List;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs.FileName;
-import org.apache.commons.vfs.FileObject;
-import org.apache.commons.vfs.FileSelector;
-import org.apache.commons.vfs.FileSystemException;
-import org.apache.commons.vfs.FileType;
-import org.apache.commons.vfs.FileUtil;
-import org.apache.commons.vfs.NameScope;
-import org.apache.commons.vfs.Selectors;
-import org.apache.commons.vfs.provider.AbstractFileObject;
-import org.apache.commons.vfs.provider.local.LocalFile;
-import org.apache.commons.vfs.util.MonitorOutputStream;
+import org.apache.commons.vfs2.FileName;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSelector;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileType;
+import org.apache.commons.vfs2.FileUtil;
+import org.apache.commons.vfs2.NameScope;
+import org.apache.commons.vfs2.Selectors;
+import org.apache.commons.vfs2.provider.AbstractFileName;
+import org.apache.commons.vfs2.provider.AbstractFileObject;
+import org.apache.commons.vfs2.provider.local.LocalFile;
+import org.apache.commons.vfs2.util.MonitorOutputStream;
 import org.jets3t.service.S3Service;
 import org.jets3t.service.S3ServiceException;
 import org.jets3t.service.ServiceException;
@@ -105,7 +106,7 @@ public class S3FileObject extends AbstractFileObject {
     private Log logger = LogFactory.getLog(S3FileObject.class);
 
 
-    public S3FileObject(FileName fileName, S3FileSystem fileSystem,
+    public S3FileObject(AbstractFileName fileName, S3FileSystem fileSystem,
             S3Service service, S3Bucket bucket) throws FileSystemException {
 
         super(fileName, fileSystem);
@@ -113,6 +114,7 @@ public class S3FileObject extends AbstractFileObject {
         this.bucket = bucket;
     }
 
+    @Override
     protected void doAttach() throws Exception {
         if (!attached) {
             try {
@@ -152,6 +154,7 @@ public class S3FileObject extends AbstractFileObject {
         }
     }
 
+    @Override
     protected void doDetach() throws Exception {
         if (attached) {
             object = null;
@@ -164,16 +167,19 @@ public class S3FileObject extends AbstractFileObject {
         }
     }
 
+    @Override
     protected void doDelete() throws Exception {
         service.deleteObject(bucket, object.getKey());
     }
 
+    @Override
     protected void doRename(FileObject newfile) throws Exception {
     	S3Object newObject = new S3Object(bucket, getS3Key(newfile.getName()));
 
     	service.moveObject(bucket.getName(), object.getKey(), bucket.getName(), newObject, false);
     }
 
+    @Override
     protected void doCreateFolder() throws Exception {
         if (logger.isDebugEnabled()) {
             logger.debug(
@@ -192,24 +198,30 @@ public class S3FileObject extends AbstractFileObject {
         service.putObject(bucket.getName(), new S3Object(object.getKey() + FileName.SEPARATOR));
     }
 
+    @Override
     protected long doGetLastModifiedTime() throws Exception {
         return object.getLastModifiedDate().getTime();
     }
 
-    protected void doSetLastModifiedTime(final long modtime) throws Exception {
-        // TODO: last modified date will be changed only when content changed
+    @Override
+    protected boolean doSetLastModifiedTime(final long modtime) throws Exception {
+        // TODO: last modified date will be changed only when content changed, otherwise return false
         object.setLastModifiedDate(new Date(modtime));
+        return true;
     }
 
+    @Override
     protected InputStream doGetInputStream() throws Exception {
         downloadOnce();
         return Channels.newInputStream(getCacheFileChannel());
     }
 
+    @Override
     protected OutputStream doGetOutputStream(boolean bAppend) throws Exception {
         return new S3OutputStream(Channels.newOutputStream(getCacheFileChannel()), object);
     }
 
+    @Override
     protected FileType doGetType() throws Exception {
         if (null == object.getContentType()) {
             return FileType.IMAGINARY;
@@ -222,6 +234,7 @@ public class S3FileObject extends AbstractFileObject {
         return FileType.FILE;
     }
 
+    @Override
     protected String[] doListChildren() throws Exception {
         String path = object.getKey();
         // make sure we add a '/' slash at the end to find children
@@ -248,6 +261,7 @@ public class S3FileObject extends AbstractFileObject {
         return childrenNames.toArray(new String[childrenNames.size()]);
     }
 
+    @Override
     protected long doGetContentSize() throws Exception {
         return object.getContentLength();
     }
@@ -719,6 +733,7 @@ public class S3FileObject extends AbstractFileObject {
             this.object = object;
         }
 
+        @Override
         protected void onClose() throws IOException {
             object.setDataInputStream(Channels.newInputStream(getCacheFileChannel()));
 
