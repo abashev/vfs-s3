@@ -14,11 +14,11 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
@@ -42,10 +42,16 @@ import com.amazonaws.services.s3.internal.Mimetypes;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.CanonicalGrantee;
+import com.amazonaws.services.s3.model.Grant;
+import com.amazonaws.services.s3.model.Grantee;
 import com.amazonaws.services.s3.model.GroupGrantee;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.Owner;
+import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.intridea.io.vfs.operations.Acl;
 import com.intridea.io.vfs.operations.IAclGetter;
 
@@ -60,9 +66,11 @@ import com.intridea.io.vfs.operations.IAclGetter;
  */
 public class S3FileObject extends AbstractFileObject {
 
+    private static final Log logger = LogFactory.getLog(S3FileObject.class);
+
     static final long BIG_FILE_THRESHOLD = 1024 * 1024 * 1024; // 1 Gb
 
-    private static final Log logger = LogFactory.getLog(S3FileObject.class);
+    private static final String MIMETYPE_JETS3T_DIRECTORY = "application/x-directory";
 
     /**
      * Amazon S3 service
@@ -107,7 +115,7 @@ public class S3FileObject extends AbstractFileObject {
     }
 
     @Override
-    protected void doAttach() throws Exception {
+    protected void doAttach() {
         if (!attached) {
             try {
                 // Do we have file with name?
@@ -222,7 +230,7 @@ public class S3FileObject extends AbstractFileObject {
             return FileType.IMAGINARY;
         }
 
-        if ("".equals(object.getKey()) || object.isDirectoryPlaceholder()) {
+        if ("".equals(object.getKey()) || isDirectoryPlaceholder()) {
             return FileType.FOLDER;
         }
 
@@ -237,13 +245,22 @@ public class S3FileObject extends AbstractFileObject {
             path = path + "/";
         }
 
-        S3Object[] children = service.listObjects(bucket.getName(), path, null);
-        List<String> childrenNames = new ArrayList<String>(children.length);
+        ObjectListing listing = service.listObjects(bucket.getName(), path);
+        final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>(listing.getObjectSummaries());
+        while (listing.isTruncated()) {
+            final ListObjectsRequest loReq = new ListObjectsRequest();
+            loReq.setBucketName(bucket.getName());
+            loReq.setMarker(listing.getNextMarker());
+            listing = service.listObjects(loReq);
+            summaries.addAll(listing.getObjectSummaries());
+        }
 
-        for (int i = 0; i < children.length; i++) {
-            if (!children[i].getKey().equals(path)) {
+        List<String> childrenNames = new ArrayList<String>(summaries.size());
+
+        for (S3ObjectSummary summary : summaries) {
+            if (!summary.getKey().equals(path)) {
                 // strip path from name (leave only base name)
-                final String stripPath = children[i].getKey().substring(path.length());
+                final String stripPath = summary.getKey().substring(path.length());
 
                 // Only one slash in the end OR no slash at all
                 if ((stripPath.endsWith(SEPARATOR) && (stripPath.indexOf(SEPARATOR_CHAR) == stripPath.lastIndexOf(SEPARATOR_CHAR))) ||
@@ -294,6 +311,37 @@ public class S3FileObject extends AbstractFileObject {
         }
 
     }
+
+    /**
+     * Same as in Jets3t library, to be compatible.
+     */
+    private boolean isDirectoryPlaceholder() {
+        // Recognize "standard" directory place-holder indications used by
+        // Amazon's AWS Console and Panic's Transmit.
+        if (object.getKey().endsWith("/") && object.getObjectMetadata().getContentLength() == 0) {
+            return true;
+        }
+
+        // Recognize s3sync.rb directory placeholders by MD5/ETag value.
+        if ("d66759af42f282e1ba19144df2d405d0".equals(object.getObjectMetadata().getETag())) {
+            return true;
+        }
+
+        // Recognize place-holder objects created by the Google Storage console
+        // or S3 Organizer Firefox extension.
+        if (object.getKey().endsWith("_$folder$") && (object.getObjectMetadata().getContentLength() == 0)) {
+            return true;
+        }
+
+        // Recognize legacy JetS3t directory place-holder objects, only gives
+        // accurate results if an object's metadata is populated.
+        if (object.getObjectMetadata().getContentLength() == 0
+                && MIMETYPE_JETS3T_DIRECTORY.equals(object.getObjectMetadata().getContentType())) {
+            return true;
+        }
+        return false;
+    }
+
 
     /**
      * Create an S3 key from a commons-vfs path. This simply strips the slash
@@ -355,18 +403,16 @@ public class S3FileObject extends AbstractFileObject {
      * @param s3Acl
      * @throws Exception
      */
-    private void putS3Acl (AccessControlList s3Acl) throws Exception {
+    private void putS3Acl (AccessControlList s3Acl) {
         String key = getS3Key();
         // Determine context. Object or Bucket
         if ("".equals(key)) {
-            bucket.setAcl(s3Acl);
-            service.putBucketAcl(bucket);
+            service.setBucketAcl(bucket.getName(), s3Acl);
         } else {
             // Before any operations with object it must be attached
             doAttach();
             // Put ACL to S3
-            object.setAcl(s3Acl);
-            service.putObjectAcl(bucket.getName(), object);
+            service.setObjectAcl(bucket.getName(), object.getKey(), s3Acl);
         }
     }
 
@@ -386,27 +432,27 @@ public class S3FileObject extends AbstractFileObject {
         AccessControlList s3Acl;
         try {
             s3Acl = getS3Acl();
-        } catch (S3ServiceException e) {
+        } catch (AmazonServiceException e) {
             throw new FileSystemException(e);
         }
 
         // Get S3 file owner
-        StorageOwner owner = s3Acl.getOwner();
+        Owner owner = s3Acl.getOwner();
         fileOwner = owner;
 
         // Read S3 ACL list and build VFS ACL.
-        GrantAndPermission[] grants = s3Acl.getGrantAndPermissions();
+        Set<Grant> grants = s3Acl.getGrants();
 
-        for (GrantAndPermission item : grants) {
+        for (Grant item : grants) {
             // Map enums to jets3t ones
             Permission perm = item.getPermission();
             Acl.Permission[] rights;
-            if (perm.equals(Permission.PERMISSION_FULL_CONTROL)) {
+            if (perm.equals(Permission.FullControl)) {
                 rights = Acl.Permission.values();
-            } else if (perm.equals(Permission.PERMISSION_READ)) {
+            } else if (perm.equals(Permission.Read)) {
                 rights = new Acl.Permission[1];
                 rights[0] = Acl.Permission.READ;
-            } else if (perm.equals(Permission.PERMISSION_WRITE)) {
+            } else if (perm.equals(Permission.Write)) {
                 rights = new Acl.Permission[1];
                 rights[0] = Acl.Permission.WRITE;
             } else {
@@ -418,10 +464,10 @@ public class S3FileObject extends AbstractFileObject {
             // Set permissions for groups
             if (item.getGrantee() instanceof GroupGrantee) {
                 GroupGrantee grantee = (GroupGrantee)item.getGrantee();
-                if (GroupGrantee.ALL_USERS.equals(grantee)) {
+                if (GroupGrantee.AllUsers.equals(grantee)) {
                     // Allow rights to GUEST
                     myAcl.allow(Acl.Group.EVERYONE, rights);
-                } else if (GroupGrantee.AUTHENTICATED_USERS.equals(grantee)) {
+                } else if (GroupGrantee.AuthenticatedUsers.equals(grantee)) {
                     // Allow rights to AUTHORIZED
                     myAcl.allow(Acl.Group.AUTHORIZED, rights);
                 }
@@ -455,10 +501,10 @@ public class S3FileObject extends AbstractFileObject {
         AccessControlList s3Acl = new AccessControlList();
 
         // Get file owner
-        StorageOwner owner;
+        Owner owner;
         try {
             owner = getS3Owner();
-        } catch (S3ServiceException e) {
+        } catch (AmazonServiceException e) {
             throw new FileSystemException(e);
         }
         s3Acl.setOwner(owner);
@@ -483,24 +529,24 @@ public class S3FileObject extends AbstractFileObject {
                 // JRE1.6 enum[].equals behavior is very strange:
                 // Two equal by elements arrays are not equal
                 // Yeah, AFAIK its like that for any array.
-                perm = Permission.PERMISSION_FULL_CONTROL;
+                perm = Permission.FullControl;
             } else if (acl.isAllowed(group, Acl.Permission.READ)) {
-                perm = Permission.PERMISSION_READ;
+                perm = Permission.Read;
             } else if (acl.isAllowed(group, Acl.Permission.WRITE)) {
-                perm = Permission.PERMISSION_WRITE;
+                perm = Permission.Write;
             } else {
                 logger.error(String.format("Skip unknown set of rights %s", rights.toString()));
                 continue;
             }
 
             // Set grantee
-            GranteeInterface grantee;
+            Grantee grantee;
             if (group.equals(Acl.Group.EVERYONE)) {
-                grantee = GroupGrantee.ALL_USERS;
+                grantee = GroupGrantee.AllUsers;
             } else if (group.equals(Acl.Group.AUTHORIZED)) {
-                grantee = GroupGrantee.AUTHENTICATED_USERS;
+                grantee = GroupGrantee.AuthenticatedUsers;
             } else if (group.equals(Acl.Group.OWNER)) {
-                grantee = new CanonicalGrantee(owner.getId());
+               grantee = new CanonicalGrantee(owner.getId());
             } else {
                 logger.error(String.format("Skip unknown group %s", group));
                 continue;
@@ -539,15 +585,15 @@ public class S3FileObject extends AbstractFileObject {
      *
      * @return
      */
-    public String getPrivateUrl() {
-        return String.format(
-                "s3://%s:%s@%s/%s",
-                service.getProviderCredentials().getAccessKey(),
-                service.getProviderCredentials().getSecretKey(),
-                bucket.getName(),
-                getS3Key()
-        );
-    }
+//    public String getPrivateUrl() {
+//        return String.format(
+//                "s3://%s:%s@%s/%s",
+//                service.getProviderCredentials().getAccessKey(),
+//                service.getProviderCredentials().getSecretKey(),
+//                bucket.getName(),
+//                getS3Key()
+//        );
+//    }
 
     /**
      * Tempary accessable url for object.
@@ -555,22 +601,22 @@ public class S3FileObject extends AbstractFileObject {
      * @return
      * @throws FileSystemException
      */
-    public String getSignedUrl(int expireInSeconds) throws FileSystemException {
-        final Calendar cal = Calendar.getInstance();
-
-        cal.add(Calendar.SECOND, expireInSeconds);
-
-        try {
-            return service.createSignedGetUrl(
-                    bucket.getName(),
-                    getS3Key(),
-                    cal.getTime(),
-                    false
-            );
-        } catch (AmazonServiceException e) {
-            throw new FileSystemException(e);
-        }
-    }
+//    public String getSignedUrl(int expireInSeconds) throws FileSystemException {
+//        final Calendar cal = Calendar.getInstance();
+//
+//        cal.add(Calendar.SECOND, expireInSeconds);
+//
+//        try {
+//            return service.createSignedGetUrl(
+//                    bucket.getName(),
+//                    getS3Key(),
+//                    cal.getTime(),
+//                    false
+//            );
+//        } catch (AmazonServiceException e) {
+//            throw new FileSystemException(e);
+//        }
+//    }
 
     /**
      * Get MD5 hash for the file
