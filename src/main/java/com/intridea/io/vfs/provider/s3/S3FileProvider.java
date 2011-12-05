@@ -14,10 +14,11 @@ import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.UserAuthenticationData;
 import org.apache.commons.vfs2.provider.AbstractOriginatingFileProvider;
 import org.apache.commons.vfs2.util.UserAuthenticatorUtils;
-import org.jets3t.service.S3Service;
-import org.jets3t.service.S3ServiceException;
-import org.jets3t.service.impl.rest.httpclient.RestS3Service;
-import org.jets3t.service.security.AWSCredentials;
+
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
 
 /**
  * An S3 file provider. Create an S3 file system out of an S3 file name. Also
@@ -25,6 +26,7 @@ import org.jets3t.service.security.AWSCredentials;
  *
  * @author Marat Komarov
  * @author Matthias L. Jugel
+ * @author Moritz Siuts
  */
 public class S3FileProvider extends AbstractOriginatingFileProvider {
 
@@ -67,12 +69,12 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     /**
      * S3 service instance
      */
-    private S3Service service;
+    private AmazonS3 service;
 
     /**
      * Logger instance
      */
-    private Log logger = LogFactory.getLog(S3FileProvider.class);
+    private final Log logger = LogFactory.getLog(S3FileProvider.class);
 
     public S3FileProvider() {
         super();
@@ -111,16 +113,11 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
                 }
 
                 // Initialize S3 service client.
-                AWSCredentials awsCredentials = new AWSCredentials(keyId, key);
-                service = new RestS3Service(awsCredentials);
+                AWSCredentials awsCredentials = new BasicAWSCredentials(keyId, key);
+                service = new AmazonS3Client(awsCredentials);
                 logger.info("... Ok");
 
-            } catch (S3ServiceException e) {
-                logger.error(String.format("Failed to initialize Amazon S3 service client. Reason: %s",
-                        e.getS3ErrorMessage()), e);
-                throw new FileSystemException(e);
-            }
-            finally {
+            } finally {
                 UserAuthenticatorUtils.cleanup(authData);
             }
         }

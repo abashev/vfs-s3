@@ -1,10 +1,6 @@
 package com.intridea.io.vfs.provider.s3;
 
-import static org.jets3t.service.utils.ServiceUtils.computeMD5Hash;
-import static org.jets3t.service.utils.ServiceUtils.toHex;
-
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -33,9 +29,6 @@ import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 @Test(groups={"storage"})
 public class S3ProviderTest {
 
-    /**
-     *
-     */
     private static final String BACKUP_ZIP = "src/test/resources/backup.zip";
 
     private FileSystemManager fsManager;
@@ -289,7 +282,7 @@ public class S3ProviderTest {
 
         Assert.assertTrue(backupFile.exists(), "Backup file should exists");
 
-        String md5Local = toHex(computeMD5Hash(new FileInputStream(backupFile)));
+        String md5Local = "";// FIXME toHex(computeMD5Hash(new FileInputStream(backupFile)));
 
         Assert.assertEquals(md5Remote, md5Local, "Local and remote md5 should be equal");
     }

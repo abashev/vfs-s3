@@ -5,27 +5,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.jets3t.service.S3Service;
-import org.jets3t.service.ServiceException;
-import org.jets3t.service.model.MultipartUpload;
-import org.jets3t.service.model.S3Object;
-import org.jets3t.service.model.StorageObject;
-import org.jets3t.service.multi.StorageServiceEventAdaptor;
-import org.jets3t.service.multi.ThreadWatcher;
-import org.jets3t.service.multi.event.CreateObjectsEvent;
-import org.jets3t.service.multi.event.DeleteObjectsEvent;
-import org.jets3t.service.multi.event.DownloadObjectsEvent;
-import org.jets3t.service.multi.event.GetObjectHeadsEvent;
-import org.jets3t.service.multi.event.ServiceEvent;
-import org.jets3t.service.multi.s3.MultipartCompletesEvent;
-import org.jets3t.service.multi.s3.MultipartStartsEvent;
-import org.jets3t.service.multi.s3.MultipartUploadAndParts;
-import org.jets3t.service.multi.s3.MultipartUploadsEvent;
-import org.jets3t.service.multi.s3.S3ServiceEventAdaptor;
-import org.jets3t.service.multi.s3.ThreadedS3Service;
-import org.jets3t.service.utils.ByteFormatter;
-import org.jets3t.service.utils.MultipartUtils;
-import org.jets3t.service.utils.TimeFormatter;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.MultipartUpload;
+import com.amazonaws.services.s3.model.S3Object;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
@@ -37,12 +20,10 @@ public class S3UploadTool {
     private static final ByteFormatter byteFormatter = new ByteFormatter();
     private static final TimeFormatter timeFormatter = new TimeFormatter();
 
-    public static void uploadSmallObject(
-            S3Service service, StorageObject targetObject
-    ) throws Exception {
+    public static void uploadSmallObject(AmazonS3 service, StorageObject targetObject) throws Exception {
         try {
             service.putObject(targetObject.getBucketName(), targetObject);
-        } catch (ServiceException e) {
+        } catch (AmazonServiceException e) {
             if ("EntityTooLarge".equals(e.getErrorCode())) {
                 throw new IOException("Source object [" + targetObject.getDataInputFile() + "] too large for copying into S3");
             } else {
@@ -53,8 +34,7 @@ public class S3UploadTool {
         }
     }
 
-    public static void uploadLargeObject(
-            S3Service service, StorageObject targetObject
+    public static void uploadLargeObject(S3Service service, StorageObject targetObject
     ) throws Exception {
         final List<MultipartUpload> multipartUploadList = new ArrayList<MultipartUpload>();
         final List<MultipartUploadAndParts> uploadAndPartsList = new ArrayList<MultipartUploadAndParts>();
