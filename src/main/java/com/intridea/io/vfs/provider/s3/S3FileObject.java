@@ -3,6 +3,7 @@ package com.intridea.io.vfs.provider.s3;
 import static org.apache.commons.vfs2.FileName.SEPARATOR;
 import static org.apache.commons.vfs2.FileName.SEPARATOR_CHAR;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,6 +51,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.Owner;
 import com.amazonaws.services.s3.model.Permission;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.intridea.io.vfs.operations.Acl;
@@ -195,7 +197,10 @@ public class S3FileObject extends AbstractFileObject {
             return;
         }
 
-        service.putObject(bucket.getName(), object.getKey() + FileName.SEPARATOR, null);
+        InputStream input = new ByteArrayInputStream(new byte[0]);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(0);
+        service.putObject(new PutObjectRequest(bucket.getName(), object.getKey() + FileName.SEPARATOR, input, metadata));
     }
 
     @Override
@@ -705,9 +710,10 @@ public class S3FileObject extends AbstractFileObject {
                // FIXME s3.object.setDataInputFile(file);
 
                 if (file.length() < BIG_FILE_THRESHOLD) {
-                    S3UploadTool.uploadSmallObject(s3.service, s3.object);
+                    S3UploadTool.uploadSmallObject(s3.service, s3.object, file);
                 } else {
-                    S3UploadTool.uploadLargeObject(s3.service, s3.object);
+//                    S3UploadTool.uploadLargeObject(s3.service, s3.object); FIXME
+                    logger.error("Big files not supported!");
                 }
 
                 s3.refresh();
