@@ -1,10 +1,15 @@
 package com.intridea.io.vfs.provider.s3;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.Random;
 
@@ -282,7 +287,7 @@ public class S3ProviderTest {
 
         Assert.assertTrue(backupFile.exists(), "Backup file should exists");
 
-        String md5Local = "";// FIXME toHex(computeMD5Hash(new FileInputStream(backupFile)));
+        String md5Local = toHex(computeMD5Hash(new FileInputStream(backupFile)));
 
         Assert.assertEquals(md5Remote, md5Local, "Local and remote md5 should be equal");
     }
@@ -303,6 +308,49 @@ public class S3ProviderTest {
             FileObject vfsTestDir = fsManager.resolveFile(dir, "..");
             vfsTestDir.delete(Selectors.SELECT_ALL);
         } catch (Exception e) {
+        }
+    }
+
+
+    /**
+     * Converts byte data to a Hex-encoded string.
+     *
+     * @param data data to hex encode.
+     * @return hex-encoded string.
+     */
+    private String toHex(byte[] data) {
+        StringBuilder sb = new StringBuilder(data.length * 2);
+        for (int i = 0; i < data.length; i++) {
+            String hex = Integer.toHexString(data[i]);
+            if (hex.length() == 1) {
+                // Append leading zero.
+                sb.append("0");
+            } else if (hex.length() == 8) {
+                // Remove ff prefix from negative numbers.
+                hex = hex.substring(6);
+            }
+            sb.append(hex);
+        }
+        return sb.toString().toLowerCase(Locale.getDefault());
+    }
+
+
+    private byte[] computeMD5Hash(InputStream is) throws NoSuchAlgorithmException, IOException {
+        BufferedInputStream bis = new BufferedInputStream(is);
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            byte[] buffer = new byte[16384];
+            int bytesRead = -1;
+            while ((bytesRead = bis.read(buffer, 0, buffer.length)) != -1) {
+                messageDigest.update(buffer, 0, bytesRead);
+            }
+            return messageDigest.digest();
+        } finally {
+            try {
+                bis.close();
+            } catch (Exception e) {
+                System.err.println("Unable to close input stream of hash candidate: " + e);
+            }
         }
     }
 }
