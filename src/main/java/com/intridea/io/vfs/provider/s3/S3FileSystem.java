@@ -38,6 +38,7 @@ public class S3FileSystem extends AbstractFileSystem {
                 bucket = new Bucket(bucketId);
             } else {
                 bucket = service.createBucket(bucketId);
+                logger.debug("Created new bucket.");
             }
             logger.info(String.format("Created new S3 FileSystem " + bucketId));
         } catch (AmazonServiceException e) {
