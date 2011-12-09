@@ -54,6 +54,8 @@ import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.Upload;
 import com.intridea.io.vfs.operations.Acl;
 import com.intridea.io.vfs.operations.IAclGetter;
 
@@ -74,20 +76,16 @@ public class S3FileObject extends AbstractFileObject {
 
     private static final String MIMETYPE_JETS3T_DIRECTORY = "application/x-directory";
 
-    /**
-     * Amazon S3 service
-     */
-    final AmazonS3 service;
+    /** Amazon S3 service */
+    private final AmazonS3 service;
 
-    /**
-     * Amazon S3 bucket
-     */
-    final Bucket bucket;
+    private final TransferManager transferManager;
 
-    /**
-     * Amazon S3 object
-     */
-    S3Object object;
+    /** Amazon S3 bucket */
+     private final Bucket bucket;
+
+    /** Amazon S3 object */
+    private S3Object object;
 
     /**
      * True when content attached to file
@@ -110,10 +108,11 @@ public class S3FileObject extends AbstractFileObject {
      */
     private Owner fileOwner;
 
-    public S3FileObject(AbstractFileName fileName, S3FileSystem fileSystem, AmazonS3 service, Bucket bucket) throws FileSystemException {
+    public S3FileObject(AbstractFileName fileName, S3FileSystem fileSystem, AmazonS3 service, TransferManager transferManager, Bucket bucket) throws FileSystemException {
         super(fileName, fileSystem);
         this.service = service;
         this.bucket = bucket;
+        this.transferManager = transferManager;
     }
 
     @Override
@@ -707,14 +706,12 @@ public class S3FileObject extends AbstractFileObject {
 
                 s3.object.getObjectMetadata().setContentLength(file.length());
                 s3.object.getObjectMetadata().setContentType(Mimetypes.getInstance().getMimetype(file));
-               // FIXME s3.object.setDataInputFile(file);
+                // FIXME s3.object.setDataInputFile(file);
 
-                if (file.length() < BIG_FILE_THRESHOLD) {
-                    S3UploadTool.uploadSmallObject(s3.service, s3.object, file);
-                } else {
-//                    S3UploadTool.uploadLargeObject(s3.service, s3.object); FIXME
-                    logger.error("Big files not supported!");
-                }
+                PutObjectRequest putReq = new PutObjectRequest(s3.object.getBucketName(), s3.object.getKey(), file);
+                putReq.setMetadata(s3.object.getObjectMetadata());
+                Upload upload = transferManager.upload(putReq);
+                upload.waitForCompletion();
 
                 s3.refresh();
                 refresh();

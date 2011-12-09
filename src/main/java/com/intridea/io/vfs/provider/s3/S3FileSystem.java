@@ -14,6 +14,7 @@ import org.apache.commons.vfs2.provider.AbstractFileSystem;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.transfer.TransferManager;
 
 /**
  * An S3 file system.
@@ -26,8 +27,9 @@ public class S3FileSystem extends AbstractFileSystem {
 
     private static final Log logger = LogFactory.getLog(S3FileSystem.class);
 
-    private AmazonS3 service;
-    private Bucket bucket;
+    private final AmazonS3 service;
+    private final Bucket bucket;
+    private final TransferManager transferManager;
 
     public S3FileSystem(S3FileName fileName, AmazonS3 service, FileSystemOptions fileSystemOptions) throws FileSystemException {
         super(fileName, null, fileSystemOptions);
@@ -40,6 +42,7 @@ public class S3FileSystem extends AbstractFileSystem {
                 bucket = service.createBucket(bucketId);
                 logger.debug("Created new bucket.");
             }
+            this.transferManager = new TransferManager(service);
             logger.info(String.format("Created new S3 FileSystem " + bucketId));
         } catch (AmazonServiceException e) {
             String s3message = e.getMessage();
@@ -59,7 +62,7 @@ public class S3FileSystem extends AbstractFileSystem {
 
     @Override
     protected FileObject createFile(AbstractFileName fileName) throws Exception {
-        return new S3FileObject(fileName, this, service, bucket);
+        return new S3FileObject(fileName, this, service, transferManager, bucket);
     }
 
 }
