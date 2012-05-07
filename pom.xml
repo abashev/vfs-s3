@@ -23,7 +23,7 @@
         <dependency>
             <groupId>net.java.dev.jets3t</groupId>
             <artifactId>jets3t</artifactId>
-            <version>0.8.2-SNAPSHOT</version>
+            <version>0.9.0</version>
         </dependency>
 
         <dependency>
