@@ -1,9 +1,12 @@
 Amazon S3 driver for VFS (Apache Commons Virtual File System)
 =============================================================
 
+[![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=master)](http://travis-ci.org/abashev/vfs-s3)
+[![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=develop)](http://travis-ci.org/abashev/vfs-s3)
+
 This code is based on <http://code.google.com/p/vfs-s3/> which [is no longer supported.](http://code.google.com/p/vfs-s3/issues/detail?id=4)
 
-It provides S3 support for [Commons VFS](http://commons.apache.org/vfs/). 
+It provides S3 support for [Commons VFS](http://commons.apache.org/vfs/).
 
 
 Bootstraping with Spring
@@ -33,13 +36,13 @@ Sample Java Code
 	FileSystemManager fsManager = VFS.getManager();
 	FileObject dir = fsManager.resolveFile("s3://simpe-bucket");
 	dir.createFolder();
-	
+
 	// Upload file to S3
 	FileObject dest = fsManager.resolveFile("s3://test-bucket/backup.zip");
 	FileObject src = fsManager.resolveFile(new File("/path/to/local/file.zip").getAbsolutePath());
 	dest.copyFrom(src, Selectors.SELECT_SELF);
-	
-	
+
+
 Running the tests
 -----------------
 
@@ -47,7 +50,7 @@ Tu run the tests with Maven you have to edit the
 
 	src/test/resources/config.properties
 
-file. Fill your AWS Key and Id. Then change the bucket name, because it must be globally 
+file. Fill your AWS Key and Id. Then change the bucket name, because it must be globally
 unique (you can just add a suffix). Finally you have to provide the path to backup.zip which
 is in the same directory.
 
