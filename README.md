@@ -1,8 +1,10 @@
 Amazon S3 driver for VFS (Apache Commons Virtual File System)
 =============================================================
 
-[![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=master)](http://travis-ci.org/abashev/vfs-s3)
-[![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=develop)](http://travis-ci.org/abashev/vfs-s3)
+Master branch: [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=master)](http://travis-ci.org/abashev/vfs-s3)
+
+Develop branch: [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=develop)](http://travis-ci.org/abashev/vfs-s3)
+
 
 This code is based on <http://code.google.com/p/vfs-s3/> which [is no longer supported.](http://code.google.com/p/vfs-s3/issues/detail?id=4)
 
@@ -46,11 +48,11 @@ Sample Java Code
 Running the tests
 -----------------
 
-Tu run the tests with Maven you have to edit the
+Before run 'mvn test' you have to edit the file
 
 	src/test/resources/config.properties
 
-file. Fill your AWS Key and Id. Then change the bucket name, because it must be globally
+Fill your AWS Key and Id. Then change the bucket name, because it must be globally
 unique (you can just add a suffix). Finally you have to provide the path to backup.zip which
 is in the same directory.
 
