@@ -11,7 +11,6 @@ import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileSystem;
 import org.jets3t.service.S3Service;
-import org.jets3t.service.ServiceException;
 import org.jets3t.service.model.S3Bucket;
 
 /**
@@ -21,31 +20,24 @@ import org.jets3t.service.model.S3Bucket;
  * @author Matthias L. Jugel
  */
 public class S3FileSystem extends AbstractFileSystem {
+    private final Log log = LogFactory.getLog(S3FileSystem.class);
 
     private S3Service service;
-    private S3Bucket bucket;
+    private String bucketId;
 
-    private Log logger = LogFactory.getLog(S3FileSystem.class);
-
-    public S3FileSystem(S3FileName fileName, S3Service service,
-            FileSystemOptions fileSystemOptions) throws FileSystemException {
+    public S3FileSystem(
+            S3FileName fileName, S3Service service, FileSystemOptions fileSystemOptions
+    ) throws FileSystemException {
         super(fileName, null, fileSystemOptions);
-        String bucketId = fileName.getBucketId();
-        try {
-            this.service = service;
-            bucket = new S3Bucket(bucketId);
-            if (!service.isBucketAccessible(bucketId)) {
-                bucket = service.createBucket(bucketId);
-            }
-            logger.info(String.format("Created new S3 FileSystem %s", bucketId));
-        } catch (ServiceException e) {
-            String s3message = e.getErrorMessage();
 
-            if (s3message != null) {
-                throw new FileSystemException(s3message);
-            } else {
-                throw new FileSystemException(e);
-            }
+        this.bucketId = fileName.getBucketId();
+        this.service = service;
+//      TODO Must be controller by FileSystemOptions
+//            if (!service.isBucketAccessible(bucketId)) {
+//                bucket = service.createBucket(bucketId);
+//            }
+        if (log.isInfoEnabled()) {
+            log.info("Created new S3 FileSystem " + bucketId);
         }
     }
 
@@ -56,7 +48,6 @@ public class S3FileSystem extends AbstractFileSystem {
 
     @Override
     protected FileObject createFile(AbstractFileName fileName) throws Exception {
-        return new S3FileObject(fileName, this, service, bucket);
+        return new S3FileObject(fileName, this, service, new S3Bucket(bucketId));
     }
-
 }
