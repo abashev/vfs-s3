@@ -38,6 +38,7 @@ import org.apache.commons.vfs2.provider.local.LocalFile;
 import org.apache.commons.vfs2.util.MonitorOutputStream;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.internal.Mimetypes;
 import com.amazonaws.services.s3.model.AccessControlList;
@@ -129,6 +130,9 @@ public class S3FileObject extends AbstractFileObject {
             } catch (AmazonServiceException e) {
                 // No, we don't
             }
+            catch (AmazonClientException e) {
+                // We are attempting to attach to the root bucket
+            }            
 
             try {
                 // Do we have folder with that name?
