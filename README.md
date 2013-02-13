@@ -10,6 +10,22 @@ This code is based on <http://code.google.com/p/vfs-s3/> which [is no longer sup
 
 It provides S3 support for [Commons VFS](http://commons.apache.org/vfs/).
 
+Using with Maven
+----------------
+
+Add this section to your repository configuration
+
+    <repositories>
+        <repository>
+            <id>vfs-s3.repository</id>
+            <name>vfs-s3 project repository</name>
+            <url>http://dl.bintray.com/content/abashev/vfs-s3</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
 
 Bootstraping with Spring
 ------------------------
