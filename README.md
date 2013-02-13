@@ -48,7 +48,16 @@ Sample Java Code
 Running the tests
 -----------------
 
-Before run 'mvn test' you have to edit the file
+Tests are currently disabled by default, because one has to provide AWS credentials and a large binary file.
+
+To run the tests you have to edit the file pom.xml and change this section:
+      
+	<configuration>
+		<skipTests>false</skipTests>
+	</configuration>
+
+
+Before running 'mvn test' you have to edit the file
 
 	src/test/resources/config.properties
 
