@@ -1,14 +1,15 @@
 package com.intridea.io.vfs.provider.s3;
 
-import static org.jets3t.service.utils.ServiceUtils.computeMD5Hash;
-import static org.jets3t.service.utils.ServiceUtils.toHex;
-
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.Random;
 
@@ -33,9 +34,6 @@ import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 @Test(groups={"storage"})
 public class S3ProviderTest {
 
-    /**
-     *
-     */
     private static final String BACKUP_ZIP = "src/test/resources/backup.zip";
 
     private FileSystemManager fsManager;
@@ -46,7 +44,7 @@ public class S3ProviderTest {
     private FileSystemOptions opts;
 
     @BeforeClass
-    public void setUp () throws FileNotFoundException, IOException {
+    public void setUp() throws FileNotFoundException, IOException {
         Properties config = TestEnvironment.getInstance().getConfig();
 
         fsManager = VFS.getManager();
@@ -58,14 +56,14 @@ public class S3ProviderTest {
     }
 
     @Test
-    public void createFileOk () throws FileSystemException {
+    public void createFileOk() throws FileSystemException {
         file = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + fileName, opts);
         file.createFile();
         Assert.assertTrue(file.exists());
     }
 
     @Test(expectedExceptions={FileSystemException.class})
-    public void createFileFailed () throws FileSystemException {
+    public void createFileFailed() throws FileSystemException {
         FileObject tmpFile = fsManager.resolveFile("s3://../new-mpoint/vfs-bad-file");
         tmpFile.createFile();
     }
@@ -75,20 +73,20 @@ public class S3ProviderTest {
      * @throws FileSystemException
      */
     @Test(expectedExceptions={FileSystemException.class}, dependsOnMethods={"createFileOk"})
-    public void createFileFailed2 () throws FileSystemException {
+    public void createFileFailed2() throws FileSystemException {
         FileObject tmpFile = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + fileName);
         tmpFile.createFolder();
     }
 
     @Test
-    public void createDirOk () throws FileSystemException {
+    public void createDirOk() throws FileSystemException {
         dir = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + dirName);
         dir.createFolder();
         Assert.assertTrue(dir.exists());
     }
 
     @Test(expectedExceptions={FileSystemException.class})
-    public void createDirFailed () throws FileSystemException {
+    public void createDirFailed() throws FileSystemException {
         FileObject tmpFile = fsManager.resolveFile("s3://../new-mpoint/vfs-bad-dir");
         tmpFile.createFolder();
     }
@@ -98,13 +96,13 @@ public class S3ProviderTest {
      * @throws FileSystemException
      */
     @Test(expectedExceptions={FileSystemException.class}, dependsOnMethods={"createDirOk"})
-    public void createDirFailed2 () throws FileSystemException {
+    public void createDirFailed2() throws FileSystemException {
         FileObject tmpFile = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + dirName);
         tmpFile.createFile();
     }
 
     @Test(dependsOnMethods={"upload"})
-    public void exists () throws FileNotFoundException, IOException {
+    public void exists() throws FileNotFoundException, IOException {
         // Existed dir
         FileObject existedDir = fsManager.resolveFile("s3://" + bucketName + "/test-place");
         Assert.assertTrue(existedDir.exists());
@@ -123,7 +121,7 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods={"createFileOk"})
-    public void upload () throws FileNotFoundException, IOException {
+    public void upload() throws FileNotFoundException, IOException {
         FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
 
         // Delete file if exists
@@ -166,7 +164,7 @@ public class S3ProviderTest {
         Assert.assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
     }
 
-    @Test(dependsOnMethods={"createFileOk"})
+    @Test(dependsOnMethods={"createFileOk"}, enabled=false) // FIXME
     public void uploadBigFile() throws FileNotFoundException, IOException {
         FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/big_file.iso");
 
@@ -188,7 +186,7 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods={"getSize"})
-    public void download () throws IOException {
+    public void download() throws IOException {
         FileObject typica = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
         File localCache =  File.createTempFile("vfs.", ".s3-test");
 
@@ -203,7 +201,7 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods={"createFileOk", "createDirOk"})
-    public void listChildren () throws FileSystemException {
+    public void listChildren() throws FileSystemException {
         FileObject baseDir = fsManager.resolveFile(dir, "list-children-test");
         baseDir.createFolder();
 
@@ -217,7 +215,7 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods={"createDirOk"})
-    public void findFiles () throws FileSystemException {
+    public void findFiles() throws FileSystemException {
         FileObject baseDir = fsManager.resolveFile(dir, "find-tests");
         baseDir.createFolder();
 
@@ -241,7 +239,7 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods={"createFileOk", "createDirOk"})
-    public void getType () throws FileSystemException {
+    public void getType() throws FileSystemException {
         FileObject imagine = fsManager.resolveFile(dir, "imagine-there-is-no-countries");
         Assert.assertEquals(imagine.getType(), FileType.IMAGINARY);
         Assert.assertEquals(dir.getType(), FileType.FOLDER);
@@ -249,13 +247,13 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods={"upload"})
-    public void getContentType () throws FileSystemException {
+    public void getContentType() throws FileSystemException {
         FileObject backup = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
         Assert.assertEquals(backup.getContent().getContentInfo().getContentType(), "application/zip");
     }
 
     @Test(dependsOnMethods={"upload"})
-    public void getSize () throws FileSystemException {
+    public void getSize() throws FileSystemException {
         FileObject backup = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
         Assert.assertEquals(backup.getContent().getSize(), 996166);
     }
@@ -295,7 +293,7 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods={"findFiles", "download"})
-    public void delete () throws FileSystemException {
+    public void delete() throws FileSystemException {
         FileObject testsDir = fsManager.resolveFile(dir, "find-tests");
         testsDir.delete(Selectors.EXCLUDE_SELF);
 
@@ -305,11 +303,54 @@ public class S3ProviderTest {
     }
 
     @AfterClass
-    public void tearDown () throws FileSystemException {
+    public void tearDown() throws FileSystemException {
         try {
             FileObject vfsTestDir = fsManager.resolveFile(dir, "..");
             vfsTestDir.delete(Selectors.SELECT_ALL);
         } catch (Exception e) {
+        }
+    }
+
+
+    /**
+     * Converts byte data to a Hex-encoded string.
+     *
+     * @param data data to hex encode.
+     * @return hex-encoded string.
+     */
+    private String toHex(byte[] data) {
+        StringBuilder sb = new StringBuilder(data.length * 2);
+        for (int i = 0; i < data.length; i++) {
+            String hex = Integer.toHexString(data[i]);
+            if (hex.length() == 1) {
+                // Append leading zero.
+                sb.append("0");
+            } else if (hex.length() == 8) {
+                // Remove ff prefix from negative numbers.
+                hex = hex.substring(6);
+            }
+            sb.append(hex);
+        }
+        return sb.toString().toLowerCase(Locale.getDefault());
+    }
+
+
+    private byte[] computeMD5Hash(InputStream is) throws NoSuchAlgorithmException, IOException {
+        BufferedInputStream bis = new BufferedInputStream(is);
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            byte[] buffer = new byte[16384];
+            int bytesRead = -1;
+            while ((bytesRead = bis.read(buffer, 0, buffer.length)) != -1) {
+                messageDigest.update(buffer, 0, bytesRead);
+            }
+            return messageDigest.digest();
+        } finally {
+            try {
+                bis.close();
+            } catch (Exception e) {
+                System.err.println("Unable to close input stream of hash candidate: " + e);
+            }
         }
     }
 }

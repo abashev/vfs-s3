@@ -3,6 +3,7 @@ package com.intridea.io.vfs.provider.s3;
 import static org.apache.commons.vfs2.FileName.SEPARATOR;
 import static org.apache.commons.vfs2.FileName.SEPARATOR_CHAR;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,11 +15,11 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
@@ -35,49 +36,56 @@ import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileObject;
 import org.apache.commons.vfs2.provider.local.LocalFile;
 import org.apache.commons.vfs2.util.MonitorOutputStream;
-import org.jets3t.service.S3Service;
-import org.jets3t.service.S3ServiceException;
-import org.jets3t.service.ServiceException;
-import org.jets3t.service.acl.AccessControlList;
-import org.jets3t.service.acl.CanonicalGrantee;
-import org.jets3t.service.acl.GrantAndPermission;
-import org.jets3t.service.acl.GranteeInterface;
-import org.jets3t.service.acl.GroupGrantee;
-import org.jets3t.service.acl.Permission;
-import org.jets3t.service.model.S3Bucket;
-import org.jets3t.service.model.S3Object;
-import org.jets3t.service.model.StorageObject;
-import org.jets3t.service.model.StorageOwner;
-import org.jets3t.service.utils.Mimetypes;
 
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.internal.Mimetypes;
+import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.CanonicalGrantee;
+import com.amazonaws.services.s3.model.Grant;
+import com.amazonaws.services.s3.model.Grantee;
+import com.amazonaws.services.s3.model.GroupGrantee;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.Owner;
+import com.amazonaws.services.s3.model.Permission;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.Upload;
 import com.intridea.io.vfs.operations.Acl;
 import com.intridea.io.vfs.operations.IAclGetter;
 
 /**
- * Implementation of the virtual S3 file system object using the Jets3t library.
- * Based on Matthias Jugel code
- * http://thinkberg.com/svn/moxo/trunk/src/main/java/com/thinkberg/moxo/
+ * Implementation of the virtual S3 file system object using the AWS-SDK.<p/>
+ * Based on Matthias Jugel code.
+ * {@link http://thinkberg.com/svn/moxo/trunk/modules/vfs.s3/}
  *
  * @author Marat Komarov
  * @author Matthias L. Jugel
+ * @author Moritz Siuts
  */
 public class S3FileObject extends AbstractFileObject {
+
+    private static final Log logger = LogFactory.getLog(S3FileObject.class);
+
     static final long BIG_FILE_THRESHOLD = 1024 * 1024 * 1024; // 1 Gb
 
-    /**
-     * Amazon S3 service
-     */
-    final S3Service service;
+    private static final String MIMETYPE_JETS3T_DIRECTORY = "application/x-directory";
 
-    /**
-     * Amazon S3 bucket
-     */
-    final S3Bucket bucket;
+    /** Amazon S3 service */
+    private final AmazonS3 service;
 
-    /**
-     * Amazon S3 object
-     */
-    StorageObject object;
+    private final TransferManager transferManager;
+
+    /** Amazon S3 bucket */
+     private final Bucket bucket;
+
+    /** Amazon S3 object */
+    private S3Object object;
 
     /**
      * True when content attached to file
@@ -98,55 +106,50 @@ public class S3FileObject extends AbstractFileObject {
     /**
      * Amazon file owner. Used in ACL
      */
-    private StorageOwner fileOwner;
+    private Owner fileOwner;
 
-    /**
-     * Class logger
-     */
-    private Log logger = LogFactory.getLog(S3FileObject.class);
-
-
-    public S3FileObject(AbstractFileName fileName, S3FileSystem fileSystem,
-            S3Service service, S3Bucket bucket) throws FileSystemException {
-
+    public S3FileObject(AbstractFileName fileName, S3FileSystem fileSystem, AmazonS3 service, TransferManager transferManager, Bucket bucket) throws FileSystemException {
         super(fileName, fileSystem);
         this.service = service;
         this.bucket = bucket;
+        this.transferManager = transferManager;
     }
 
     @Override
-    protected void doAttach() throws Exception {
+    protected void doAttach() {
         if (!attached) {
             try {
                 // Do we have file with name?
-                object = service.getObjectDetails(bucket.getName(), getS3Key());
+                object = service.getObject(bucket.getName(), getS3Key());
 
                 logger.info("Attach file to S3 Object: " + object);
 
                 attached = true;
                 return;
-            } catch (ServiceException e) {
+            } catch (AmazonServiceException e) {
                 // No, we don't
             }
 
             try {
                 // Do we have folder with that name?
-                object = service.getObjectDetails(bucket.getName(), getS3Key() + FileName.SEPARATOR);
+                object = service.getObject(bucket.getName(), getS3Key() + FileName.SEPARATOR);
 
                 logger.info("Attach folder to S3 Object: " + object);
 
                 attached = true;
                 return;
-            } catch (ServiceException e) {
+            } catch (AmazonServiceException e) {
                 // No, we don't
             }
 
             // Create a new
             if (object == null) {
-                object = new S3Object(bucket, getS3Key());
-                object.setLastModifiedDate(new Date());
+                object = new S3Object();
+                object.setBucketName(bucket.getName());
+                object.setKey(getS3Key());
+                object.getObjectMetadata().setLastModified(new Date());
 
-                logger.info(String.format("Attach file to S3 Object: %s", object));
+                logger.info("Attach file to S3 Object: " + object);
 
                 downloaded = true;
                 attached = true;
@@ -169,14 +172,12 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected void doDelete() throws Exception {
-        service.deleteObject(bucket, object.getKey());
+        service.deleteObject(bucket.getName(), object.getKey());
     }
 
     @Override
     protected void doRename(FileObject newfile) throws Exception {
-    	S3Object newObject = new S3Object(bucket, getS3Key(newfile.getName()));
-
-    	service.moveObject(bucket.getName(), object.getKey(), bucket.getName(), newObject, false);
+        service.copyObject(bucket.getName(), object.getKey(), bucket.getName(), getS3Key(newfile.getName()));
     }
 
     @Override
@@ -195,19 +196,25 @@ public class S3FileObject extends AbstractFileObject {
             return;
         }
 
-        service.putObject(bucket.getName(), new S3Object(object.getKey() + FileName.SEPARATOR));
+        InputStream input = new ByteArrayInputStream(new byte[0]);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(0);
+        service.putObject(new PutObjectRequest(bucket.getName(), object.getKey() + FileName.SEPARATOR, input, metadata));
     }
 
     @Override
     protected long doGetLastModifiedTime() throws Exception {
-        return object.getLastModifiedDate().getTime();
+        return object.getObjectMetadata().getLastModified().getTime();
     }
 
     @Override
     protected boolean doSetLastModifiedTime(final long modtime) throws Exception {
-        // TODO: last modified date will be changed only when content changed, otherwise return false
-        object.setLastModifiedDate(new Date(modtime));
-        return true;
+        long oldModified = object.getObjectMetadata().getLastModified().getTime();
+        boolean differentModifiedTime = oldModified != modtime;
+        if (differentModifiedTime) {
+            object.getObjectMetadata().setLastModified(new Date(modtime));
+        }
+        return differentModifiedTime;
     }
 
     @Override
@@ -223,11 +230,11 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected FileType doGetType() throws Exception {
-        if (null == object.getContentType()) {
+        if (object.getObjectMetadata().getContentType() == null) {
             return FileType.IMAGINARY;
         }
 
-        if ("".equals(object.getKey()) || object.isDirectoryPlaceholder()) {
+        if ("".equals(object.getKey()) || isDirectoryPlaceholder()) {
             return FileType.FOLDER;
         }
 
@@ -242,13 +249,22 @@ public class S3FileObject extends AbstractFileObject {
             path = path + "/";
         }
 
-        S3Object[] children = service.listObjects(bucket.getName(), path, null);
-        List<String> childrenNames = new ArrayList<String>(children.length);
+        ObjectListing listing = service.listObjects(bucket.getName(), path);
+        final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>(listing.getObjectSummaries());
+        while (listing.isTruncated()) {
+            final ListObjectsRequest loReq = new ListObjectsRequest();
+            loReq.setBucketName(bucket.getName());
+            loReq.setMarker(listing.getNextMarker());
+            listing = service.listObjects(loReq);
+            summaries.addAll(listing.getObjectSummaries());
+        }
 
-        for (int i = 0; i < children.length; i++) {
-            if (!children[i].getKey().equals(path)) {
+        List<String> childrenNames = new ArrayList<String>(summaries.size());
+
+        for (S3ObjectSummary summary : summaries) {
+            if (!summary.getKey().equals(path)) {
                 // strip path from name (leave only base name)
-                final String stripPath = children[i].getKey().substring(path.length());
+                final String stripPath = summary.getKey().substring(path.length());
 
                 // Only one slash in the end OR no slash at all
                 if ((stripPath.endsWith(SEPARATOR) && (stripPath.indexOf(SEPARATOR_CHAR) == stripPath.lastIndexOf(SEPARATOR_CHAR))) ||
@@ -263,7 +279,7 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected long doGetContentSize() throws Exception {
-        return object.getContentLength();
+        return object.getObjectMetadata().getContentLength();
     }
 
     // Utility methods
@@ -279,17 +295,17 @@ public class S3FileObject extends AbstractFileObject {
             try {
                 S3Object obj = service.getObject(bucket.getName(), getS3Key());
                 logger.info(String.format("Downloading S3 Object: %s", objectPath));
-                InputStream is = obj.getDataInputStream();
-                if (obj.getContentLength() > 0) {
+                InputStream is = obj.getObjectContent();
+                if (obj.getObjectMetadata().getContentLength() > 0) {
                     ReadableByteChannel rbc = Channels.newChannel(is);
                     FileChannel cacheFc = getCacheFileChannel();
-                    cacheFc.transferFrom(rbc, 0, obj.getContentLength());
+                    cacheFc.transferFrom(rbc, 0, obj.getObjectMetadata().getContentLength());
                     cacheFc.close();
                     rbc.close();
                 } else {
                     is.close();
                 }
-            } catch (ServiceException e) {
+            } catch (AmazonServiceException e) {
                 throw new FileSystemException(String.format(failedMessage, objectPath, e.getMessage()), e);
             } catch (IOException e) {
                 throw new FileSystemException(String.format(failedMessage, objectPath, e.getMessage()), e);
@@ -299,6 +315,37 @@ public class S3FileObject extends AbstractFileObject {
         }
 
     }
+
+    /**
+     * Same as in Jets3t library, to be compatible.
+     */
+    private boolean isDirectoryPlaceholder() {
+        // Recognize "standard" directory place-holder indications used by
+        // Amazon's AWS Console and Panic's Transmit.
+        if (object.getKey().endsWith("/") && object.getObjectMetadata().getContentLength() == 0) {
+            return true;
+        }
+
+        // Recognize s3sync.rb directory placeholders by MD5/ETag value.
+        if ("d66759af42f282e1ba19144df2d405d0".equals(object.getObjectMetadata().getETag())) {
+            return true;
+        }
+
+        // Recognize place-holder objects created by the Google Storage console
+        // or S3 Organizer Firefox extension.
+        if (object.getKey().endsWith("_$folder$") && (object.getObjectMetadata().getContentLength() == 0)) {
+            return true;
+        }
+
+        // Recognize legacy JetS3t directory place-holder objects, only gives
+        // accurate results if an object's metadata is populated.
+        if (object.getObjectMetadata().getContentLength() == 0
+                && MIMETYPE_JETS3T_DIRECTORY.equals(object.getObjectMetadata().getContentType())) {
+            return true;
+        }
+        return false;
+    }
+
 
     /**
      * Create an S3 key from a commons-vfs path. This simply strips the slash
@@ -338,7 +385,7 @@ public class S3FileObject extends AbstractFileObject {
      * Returns S3 file owner.
      * Loads it from S3 if needed.
      */
-    private StorageOwner getS3Owner() throws S3ServiceException {
+    private Owner getS3Owner() {
         if (fileOwner == null) {
             AccessControlList s3Acl = getS3Acl();
             fileOwner = s3Acl.getOwner();
@@ -349,11 +396,10 @@ public class S3FileObject extends AbstractFileObject {
     /**
      * Get S3 ACL list
      * @return
-     * @throws S3ServiceException
      */
-    private AccessControlList getS3Acl () throws S3ServiceException {
+    private AccessControlList getS3Acl() {
         String key = getS3Key();
-        return "".equals(key) ? service.getBucketAcl(bucket) :	service.getObjectAcl(bucket, key);
+        return "".equals(key) ? service.getBucketAcl(bucket.getName()) : service.getObjectAcl(bucket.getName(), key);
     }
 
     /**
@@ -361,18 +407,16 @@ public class S3FileObject extends AbstractFileObject {
      * @param s3Acl
      * @throws Exception
      */
-    private void putS3Acl (AccessControlList s3Acl) throws Exception {
+    private void putS3Acl (AccessControlList s3Acl) {
         String key = getS3Key();
         // Determine context. Object or Bucket
         if ("".equals(key)) {
-            bucket.setAcl(s3Acl);
-            service.putBucketAcl(bucket);
+            service.setBucketAcl(bucket.getName(), s3Acl);
         } else {
             // Before any operations with object it must be attached
             doAttach();
             // Put ACL to S3
-            object.setAcl(s3Acl);
-            service.putObjectAcl(bucket.getName(), object);
+            service.setObjectAcl(bucket.getName(), object.getKey(), s3Acl);
         }
     }
 
@@ -392,27 +436,27 @@ public class S3FileObject extends AbstractFileObject {
         AccessControlList s3Acl;
         try {
             s3Acl = getS3Acl();
-        } catch (S3ServiceException e) {
+        } catch (AmazonServiceException e) {
             throw new FileSystemException(e);
         }
 
         // Get S3 file owner
-        StorageOwner owner = s3Acl.getOwner();
+        Owner owner = s3Acl.getOwner();
         fileOwner = owner;
 
         // Read S3 ACL list and build VFS ACL.
-        GrantAndPermission[] grants = s3Acl.getGrantAndPermissions();
+        Set<Grant> grants = s3Acl.getGrants();
 
-        for (GrantAndPermission item : grants) {
+        for (Grant item : grants) {
             // Map enums to jets3t ones
             Permission perm = item.getPermission();
             Acl.Permission[] rights;
-            if (perm.equals(Permission.PERMISSION_FULL_CONTROL)) {
+            if (perm.equals(Permission.FullControl)) {
                 rights = Acl.Permission.values();
-            } else if (perm.equals(Permission.PERMISSION_READ)) {
+            } else if (perm.equals(Permission.Read)) {
                 rights = new Acl.Permission[1];
                 rights[0] = Acl.Permission.READ;
-            } else if (perm.equals(Permission.PERMISSION_WRITE)) {
+            } else if (perm.equals(Permission.Write)) {
                 rights = new Acl.Permission[1];
                 rights[0] = Acl.Permission.WRITE;
             } else {
@@ -424,10 +468,10 @@ public class S3FileObject extends AbstractFileObject {
             // Set permissions for groups
             if (item.getGrantee() instanceof GroupGrantee) {
                 GroupGrantee grantee = (GroupGrantee)item.getGrantee();
-                if (GroupGrantee.ALL_USERS.equals(grantee)) {
+                if (GroupGrantee.AllUsers.equals(grantee)) {
                     // Allow rights to GUEST
                     myAcl.allow(Acl.Group.EVERYONE, rights);
-                } else if (GroupGrantee.AUTHENTICATED_USERS.equals(grantee)) {
+                } else if (GroupGrantee.AuthenticatedUsers.equals(grantee)) {
                     // Allow rights to AUTHORIZED
                     myAcl.allow(Acl.Group.AUTHORIZED, rights);
                 }
@@ -461,10 +505,10 @@ public class S3FileObject extends AbstractFileObject {
         AccessControlList s3Acl = new AccessControlList();
 
         // Get file owner
-        StorageOwner owner;
+        Owner owner;
         try {
             owner = getS3Owner();
-        } catch (S3ServiceException e) {
+        } catch (AmazonServiceException e) {
             throw new FileSystemException(e);
         }
         s3Acl.setOwner(owner);
@@ -489,24 +533,24 @@ public class S3FileObject extends AbstractFileObject {
                 // JRE1.6 enum[].equals behavior is very strange:
                 // Two equal by elements arrays are not equal
                 // Yeah, AFAIK its like that for any array.
-                perm = Permission.PERMISSION_FULL_CONTROL;
+                perm = Permission.FullControl;
             } else if (acl.isAllowed(group, Acl.Permission.READ)) {
-                perm = Permission.PERMISSION_READ;
+                perm = Permission.Read;
             } else if (acl.isAllowed(group, Acl.Permission.WRITE)) {
-                perm = Permission.PERMISSION_WRITE;
+                perm = Permission.Write;
             } else {
                 logger.error(String.format("Skip unknown set of rights %s", rights.toString()));
                 continue;
             }
 
             // Set grantee
-            GranteeInterface grantee;
+            Grantee grantee;
             if (group.equals(Acl.Group.EVERYONE)) {
-                grantee = GroupGrantee.ALL_USERS;
+                grantee = GroupGrantee.AllUsers;
             } else if (group.equals(Acl.Group.AUTHORIZED)) {
-                grantee = GroupGrantee.AUTHENTICATED_USERS;
+                grantee = GroupGrantee.AuthenticatedUsers;
             } else if (group.equals(Acl.Group.OWNER)) {
-                grantee = new CanonicalGrantee(owner.getId());
+               grantee = new CanonicalGrantee(owner.getId());
             } else {
                 logger.error(String.format("Skip unknown group %s", group));
                 continue;
@@ -545,15 +589,15 @@ public class S3FileObject extends AbstractFileObject {
      *
      * @return
      */
-    public String getPrivateUrl() {
-        return String.format(
-                "s3://%s:%s@%s/%s",
-                service.getProviderCredentials().getAccessKey(),
-                service.getProviderCredentials().getSecretKey(),
-                bucket.getName(),
-                getS3Key()
-        );
-    }
+//    public String getPrivateUrl() {
+//        return String.format(
+//                "s3://%s:%s@%s/%s",
+//                service.getProviderCredentials().getAccessKey(),
+//                service.getProviderCredentials().getSecretKey(),
+//                bucket.getName(),
+//                getS3Key()
+//        );
+//    }
 
     /**
      * Tempary accessable url for object.
@@ -561,22 +605,22 @@ public class S3FileObject extends AbstractFileObject {
      * @return
      * @throws FileSystemException
      */
-    public String getSignedUrl(int expireInSeconds) throws FileSystemException {
-        final Calendar cal = Calendar.getInstance();
-
-        cal.add(Calendar.SECOND, expireInSeconds);
-
-        try {
-            return service.createSignedGetUrl(
-                    bucket.getName(),
-                    getS3Key(),
-                    cal.getTime(),
-                    false
-            );
-        } catch (S3ServiceException e) {
-            throw new FileSystemException(e);
-        }
-    }
+//    public String getSignedUrl(int expireInSeconds) throws FileSystemException {
+//        final Calendar cal = Calendar.getInstance();
+//
+//        cal.add(Calendar.SECOND, expireInSeconds);
+//
+//        try {
+//            return service.createSignedGetUrl(
+//                    bucket.getName(),
+//                    getS3Key(),
+//                    cal.getTime(),
+//                    false
+//            );
+//        } catch (AmazonServiceException e) {
+//            throw new FileSystemException(e);
+//        }
+//    }
 
     /**
      * Get MD5 hash for the file
@@ -588,21 +632,17 @@ public class S3FileObject extends AbstractFileObject {
         String hash = null;
 
         try {
-            StorageObject metadata = service.getObjectDetails(bucket.getName(), key);
-
+            ObjectMetadata metadata = service.getObjectMetadata(bucket.getName(), key);
             if (metadata != null) {
-                hash = metadata.getETag();
+                hash = metadata.getETag(); // TODO this is something different than mentioned in methodname / javadoc
             }
-        } catch (ServiceException e) {
+        } catch (AmazonServiceException e) {
             throw new FileSystemException(e);
         }
 
         return hash;
     }
 
-    /* (non-Javadoc)
-     * @see org.apache.commons.vfs.provider.AbstractFileObject#copyFrom(org.apache.commons.vfs.FileObject, org.apache.commons.vfs.FileSelector)
-     */
     @Override
     public void copyFrom(FileObject file, FileSelector selector) throws FileSystemException {
         if (!file.exists())
@@ -664,15 +704,14 @@ public class S3FileObject extends AbstractFileObject {
                 File file = getLocalFile(sourceObj);
                 S3FileObject s3 = (S3FileObject) targetObj;
 
-                s3.object.setContentLength(file.length());
-                s3.object.setContentType(Mimetypes.getInstance().getMimetype(file));
-                s3.object.setDataInputFile(file);
+                s3.object.getObjectMetadata().setContentLength(file.length());
+                s3.object.getObjectMetadata().setContentType(Mimetypes.getInstance().getMimetype(file));
+                // FIXME s3.object.setDataInputFile(file);
 
-                if (file.length() < BIG_FILE_THRESHOLD) {
-                    S3UploadTool.uploadSmallObject(s3.service, s3.object);
-                } else {
-                    S3UploadTool.uploadLargeObject(s3.service, s3.object);
-                }
+                PutObjectRequest putReq = new PutObjectRequest(s3.object.getBucketName(), s3.object.getKey(), file);
+                putReq.setMetadata(s3.object.getObjectMetadata());
+                Upload upload = transferManager.upload(putReq);
+                upload.waitForCompletion();
 
                 s3.refresh();
                 refresh();
@@ -726,20 +765,18 @@ public class S3FileObject extends AbstractFileObject {
      */
     private class S3OutputStream extends MonitorOutputStream {
 
-        private StorageObject object;
+        private final S3Object object;
 
-        public S3OutputStream(OutputStream out, StorageObject object) {
+        public S3OutputStream(OutputStream out, S3Object object) {
             super(out);
             this.object = object;
         }
 
         @Override
         protected void onClose() throws IOException {
-            object.setDataInputStream(Channels.newInputStream(getCacheFileChannel()));
-
             try {
-                service.putObject(object.getBucketName(), object);
-            } catch (ServiceException e) {
+                service.putObject(object.getBucketName(), object.getKey(), Channels.newInputStream(getCacheFileChannel()), object.getObjectMetadata());
+            } catch (AmazonServiceException e) {
                 throw new IOException(e);
             }
         }
