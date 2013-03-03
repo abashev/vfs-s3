@@ -86,7 +86,9 @@ public class S3FileObject extends AbstractFileObject {
      private final Bucket bucket;
 
     /** Amazon S3 object */
-    private S3Object object;
+    private ObjectMetadata objectMetadata;
+
+    private String objectKey;
 
     /**
      * True when content attached to file
@@ -121,9 +123,10 @@ public class S3FileObject extends AbstractFileObject {
         if (!attached) {
             try {
                 // Do we have file with name?
-                object = service.getObject(bucket.getName(), getS3Key());
-
-                logger.info("Attach file to S3 Object: " + object);
+                String candidateKey = getS3Key();
+                objectMetadata = service.getObjectMetadata(bucket.getName(), candidateKey);
+                objectKey = candidateKey;
+                logger.info("Attach file to S3 Object: " + objectKey);
 
                 attached = true;
                 return;
@@ -136,9 +139,10 @@ public class S3FileObject extends AbstractFileObject {
 
             try {
                 // Do we have folder with that name?
-                object = service.getObject(bucket.getName(), getS3Key() + FileName.SEPARATOR);
-
-                logger.info("Attach folder to S3 Object: " + object);
+                String candidateKey = getS3Key() + FileName.SEPARATOR;
+                objectMetadata = service.getObjectMetadata(bucket.getName(), candidateKey);
+                objectKey = candidateKey;
+                logger.info("Attach folder to S3 Object: " + objectKey);
 
                 attached = true;
                 return;
@@ -147,13 +151,12 @@ public class S3FileObject extends AbstractFileObject {
             }
 
             // Create a new
-            if (object == null) {
-                object = new S3Object();
-                object.setBucketName(bucket.getName());
-                object.setKey(getS3Key());
-                object.getObjectMetadata().setLastModified(new Date());
+            if (objectMetadata == null) {
+                objectMetadata = new ObjectMetadata();
+                objectKey = getS3Key();
+                objectMetadata.setLastModified(new Date());
 
-                logger.info("Attach file to S3 Object: " + object);
+                logger.info("Attach new S3 Object: " + objectKey);
 
                 downloaded = true;
                 attached = true;
@@ -164,7 +167,8 @@ public class S3FileObject extends AbstractFileObject {
     @Override
     protected void doDetach() throws Exception {
         if (attached) {
-            object = null;
+            logger.info("Detach from S3 Object: " + objectKey);
+            objectMetadata = null;
             if (cacheFile != null) {
                 cacheFile.delete();
                 cacheFile = null;
@@ -176,12 +180,12 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected void doDelete() throws Exception {
-        service.deleteObject(bucket.getName(), object.getKey());
+        service.deleteObject(bucket.getName(), objectKey);
     }
 
     @Override
     protected void doRename(FileObject newfile) throws Exception {
-        service.copyObject(bucket.getName(), object.getKey(), bucket.getName(), getS3Key(newfile.getName()));
+        service.copyObject(bucket.getName(), objectKey, bucket.getName(), getS3Key(newfile.getName()));
     }
 
     @Override
@@ -191,32 +195,32 @@ public class S3FileObject extends AbstractFileObject {
                     "Create new folder in bucket [" +
                     ((bucket != null) ? bucket.getName() : "null") +
                     "] with key [" +
-                    ((object != null) ? object.getKey() : "null") +
+                    ((objectMetadata != null) ? objectKey : "null") +
                     "]"
             );
         }
 
-        if (object == null) {
+        if (objectMetadata == null) {
             return;
         }
 
         InputStream input = new ByteArrayInputStream(new byte[0]);
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(0);
-        service.putObject(new PutObjectRequest(bucket.getName(), object.getKey() + FileName.SEPARATOR, input, metadata));
+        service.putObject(new PutObjectRequest(bucket.getName(), objectKey + FileName.SEPARATOR, input, metadata));
     }
 
     @Override
     protected long doGetLastModifiedTime() throws Exception {
-        return object.getObjectMetadata().getLastModified().getTime();
+        return objectMetadata.getLastModified().getTime();
     }
 
     @Override
     protected boolean doSetLastModifiedTime(final long modtime) throws Exception {
-        long oldModified = object.getObjectMetadata().getLastModified().getTime();
+        long oldModified = objectMetadata.getLastModified().getTime();
         boolean differentModifiedTime = oldModified != modtime;
         if (differentModifiedTime) {
-            object.getObjectMetadata().setLastModified(new Date(modtime));
+            objectMetadata.setLastModified(new Date(modtime));
         }
         return differentModifiedTime;
     }
@@ -229,16 +233,16 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected OutputStream doGetOutputStream(boolean bAppend) throws Exception {
-        return new S3OutputStream(Channels.newOutputStream(getCacheFileChannel()), object);
+        return new S3OutputStream(Channels.newOutputStream(getCacheFileChannel()), objectMetadata);
     }
 
     @Override
     protected FileType doGetType() throws Exception {
-        if (object.getObjectMetadata().getContentType() == null) {
+        if (objectMetadata.getContentType() == null) {
             return FileType.IMAGINARY;
         }
 
-        if ("".equals(object.getKey()) || isDirectoryPlaceholder()) {
+        if ("".equals(objectKey) || isDirectoryPlaceholder()) {
             return FileType.FOLDER;
         }
 
@@ -247,7 +251,7 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected String[] doListChildren() throws Exception {
-        String path = object.getKey();
+        String path = objectKey;
         // make sure we add a '/' slash at the end to find children
         if ((!"".equals(path)) && (!path.endsWith(SEPARATOR))) {
             path = path + "/";
@@ -283,7 +287,7 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected long doGetContentSize() throws Exception {
-        return object.getObjectMetadata().getContentLength();
+        return objectMetadata.getContentLength();
     }
 
     // Utility methods
@@ -297,7 +301,7 @@ public class S3FileObject extends AbstractFileObject {
             final String failedMessage = "Failed to download S3 Object %s. %s";
             final String objectPath = getName().getPath();
             try {
-                S3Object obj = service.getObject(bucket.getName(), getS3Key());
+                S3Object obj = service.getObject(bucket.getName(), objectKey);
                 logger.info(String.format("Downloading S3 Object: %s", objectPath));
                 InputStream is = obj.getObjectContent();
                 if (obj.getObjectMetadata().getContentLength() > 0) {
@@ -326,25 +330,25 @@ public class S3FileObject extends AbstractFileObject {
     private boolean isDirectoryPlaceholder() {
         // Recognize "standard" directory place-holder indications used by
         // Amazon's AWS Console and Panic's Transmit.
-        if (object.getKey().endsWith("/") && object.getObjectMetadata().getContentLength() == 0) {
+        if (objectKey.endsWith("/") && objectMetadata.getContentLength() == 0) {
             return true;
         }
 
         // Recognize s3sync.rb directory placeholders by MD5/ETag value.
-        if ("d66759af42f282e1ba19144df2d405d0".equals(object.getObjectMetadata().getETag())) {
+        if ("d66759af42f282e1ba19144df2d405d0".equals(objectMetadata.getETag())) {
             return true;
         }
 
         // Recognize place-holder objects created by the Google Storage console
         // or S3 Organizer Firefox extension.
-        if (object.getKey().endsWith("_$folder$") && (object.getObjectMetadata().getContentLength() == 0)) {
+        if (objectKey.endsWith("_$folder$") && (objectMetadata.getContentLength() == 0)) {
             return true;
         }
 
         // Recognize legacy JetS3t directory place-holder objects, only gives
         // accurate results if an object's metadata is populated.
-        if (object.getObjectMetadata().getContentLength() == 0
-                && MIMETYPE_JETS3T_DIRECTORY.equals(object.getObjectMetadata().getContentType())) {
+        if (objectMetadata.getContentLength() == 0
+                && MIMETYPE_JETS3T_DIRECTORY.equals(objectMetadata.getContentType())) {
             return true;
         }
         return false;
@@ -420,7 +424,7 @@ public class S3FileObject extends AbstractFileObject {
             // Before any operations with object it must be attached
             doAttach();
             // Put ACL to S3
-            service.setObjectAcl(bucket.getName(), object.getKey(), s3Acl);
+            service.setObjectAcl(bucket.getName(), objectKey, s3Acl);
         }
     }
 
@@ -708,12 +712,12 @@ public class S3FileObject extends AbstractFileObject {
                 File file = getLocalFile(sourceObj);
                 S3FileObject s3 = (S3FileObject) targetObj;
 
-                s3.object.getObjectMetadata().setContentLength(file.length());
-                s3.object.getObjectMetadata().setContentType(Mimetypes.getInstance().getMimetype(file));
+                s3.objectMetadata.setContentLength(file.length());
+                s3.objectMetadata.setContentType(Mimetypes.getInstance().getMimetype(file));
                 // FIXME s3.object.setDataInputFile(file);
 
-                PutObjectRequest putReq = new PutObjectRequest(s3.object.getBucketName(), s3.object.getKey(), file);
-                putReq.setMetadata(s3.object.getObjectMetadata());
+                PutObjectRequest putReq = new PutObjectRequest(s3.bucket.getName(), s3.objectKey, file);
+                putReq.setMetadata(s3.objectMetadata);
                 Upload upload = transferManager.upload(putReq);
                 upload.waitForCompletion();
 
@@ -769,9 +773,9 @@ public class S3FileObject extends AbstractFileObject {
      */
     private class S3OutputStream extends MonitorOutputStream {
 
-        private final S3Object object;
+        private final ObjectMetadata object;
 
-        public S3OutputStream(OutputStream out, S3Object object) {
+        public S3OutputStream(OutputStream out, ObjectMetadata object) {
             super(out);
             this.object = object;
         }
@@ -779,7 +783,7 @@ public class S3FileObject extends AbstractFileObject {
         @Override
         protected void onClose() throws IOException {
             try {
-                service.putObject(object.getBucketName(), object.getKey(), Channels.newInputStream(getCacheFileChannel()), object.getObjectMetadata());
+                service.putObject(bucket.getName(), objectKey, Channels.newInputStream(getCacheFileChannel()), object);
             } catch (AmazonServiceException e) {
                 throw new IOException(e);
             }
