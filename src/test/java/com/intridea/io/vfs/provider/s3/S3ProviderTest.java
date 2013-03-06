@@ -246,6 +246,29 @@ public class S3ProviderTest {
         Assert.assertEquals(file.getType(), FileType.FILE);
     }
 
+    @Test(dependsOnMethods={"createFileOk", "createDirOk"})
+    public void getTypeAfterCopyToSubFolder() throws FileSystemException {
+        FileObject dest = fsManager.resolveFile(dir, "type-tests/sub1/sub2/backup.zip");
+
+        // Copy data
+        final File backupFile = new File(BACKUP_ZIP);
+
+        Assert.assertTrue(backupFile.exists(), "Backup file should exists");
+
+        FileObject src = fsManager.resolveFile(backupFile.getAbsolutePath());
+        dest.copyFrom(src, Selectors.SELECT_SELF);
+
+        Assert.assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
+
+        FileObject sub1 = fsManager.resolveFile(dir, "type-tests/sub1");
+        Assert.assertTrue(sub1.exists());
+        Assert.assertTrue(sub1.getType().equals(FileType.FOLDER));
+
+        FileObject sub2 = fsManager.resolveFile(dir, "type-tests/sub1/sub2");
+        Assert.assertTrue(sub2.exists());
+        Assert.assertTrue(sub2.getType().equals(FileType.FOLDER));
+    }
+
     @Test(dependsOnMethods={"upload"})
     public void getContentType() throws FileSystemException {
         FileObject backup = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
@@ -258,7 +281,7 @@ public class S3ProviderTest {
         Assert.assertEquals(backup.getContent().getSize(), 996166);
     }
 
-    @Test(dependsOnMethods={"upload"})
+    @Test(dependsOnMethods={"upload"}, enabled=false)
     public void getUrls() throws FileSystemException {
         FileObject backup = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
 
