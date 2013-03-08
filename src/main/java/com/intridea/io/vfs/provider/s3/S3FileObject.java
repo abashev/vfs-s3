@@ -233,7 +233,7 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected OutputStream doGetOutputStream(boolean bAppend) throws Exception {
-        return new S3OutputStream(Channels.newOutputStream(getCacheFileChannel()), objectMetadata);
+        return new S3OutputStream(Channels.newOutputStream(getCacheFileChannel()));
     }
 
     @Override
@@ -651,120 +651,6 @@ public class S3FileObject extends AbstractFileObject {
         return hash;
     }
 
-    @Override
-    public void copyFrom(FileObject file, FileSelector selector) throws FileSystemException {
-        if (!file.exists())
-        {
-            throw new FileSystemException("vfs.provider/copy-missing-file.error", file);
-        }
-        if (!isWriteable())
-        {
-            throw new FileSystemException("vfs.provider/copy-read-only.error", new Object[]{file.getType(), file.getName(), this}, null);
-        }
-
-        // Locate the files to copy across
-        final List<FileObject> files = new ArrayList<FileObject>();
-        file.findFiles(selector, false, files);
-
-        // Copy everything across
-        for (FileObject srcFile : files) {
-            // Determine the destination file
-            final String relPath = file.getName().getRelativeName(srcFile.getName());
-            final FileObject destFile = resolveFile(relPath, NameScope.DESCENDENT_OR_SELF);
-
-            // Clean up the destination file, if necessary
-            if (destFile.exists() && destFile.getType() != srcFile.getType())
-            {
-                // The destination file exists, and is not of the same type,
-                // so delete it
-                // TODO - add a pluggable policy for deleting and overwriting existing files
-                destFile.delete(Selectors.SELECT_ALL);
-            }
-
-            // Copy across
-            try
-            {
-                if (srcFile.getType().hasContent())
-                {
-                    doCopy(srcFile, destFile);
-                }
-                else if (srcFile.getType().hasChildren())
-                {
-                    destFile.createFolder();
-                }
-            }
-            catch (final IOException e)
-            {
-                throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
-            }
-        }
-    }
-
-    protected void doCopy(FileObject sourceObj, FileObject targetObj) throws IOException {
-        boolean doStandardCopy = true;
-
-        if ((sourceObj instanceof LocalFile) && (targetObj instanceof S3FileObject)) {
-            if (logger.isInfoEnabled()) {
-                logger.info("Do fast copy from " + sourceObj + " to " + targetObj);
-            }
-
-            try {
-                File file = getLocalFile(sourceObj);
-                S3FileObject s3 = (S3FileObject) targetObj;
-
-                s3.objectMetadata.setContentLength(file.length());
-                s3.objectMetadata.setContentType(Mimetypes.getInstance().getMimetype(file));
-                // FIXME s3.object.setDataInputFile(file);
-
-                PutObjectRequest putReq = new PutObjectRequest(s3.bucket.getName(), s3.objectKey, file);
-                putReq.setMetadata(s3.objectMetadata);
-                Upload upload = transferManager.upload(putReq);
-                upload.waitForCompletion();
-
-                s3.refresh();
-                refresh();
-
-                doStandardCopy = false;
-            } catch (Exception e) {
-                logger.warn("Unable to do fast copy", e);
-            }
-        }
-
-        if (doStandardCopy) {
-            FileUtil.copyContent(sourceObj, targetObj);
-        }
-    }
-
-    private File getLocalFile(FileObject sourceObj) throws IOException {
-        try {
-            Method method = LocalFile.class.getDeclaredMethod("getLocalFile");
-
-            method.setAccessible(true);
-
-            return (File) method.invoke(sourceObj);
-        } catch (SecurityException e) {
-            logger.warn("Looks like API was changed and fallback to standard impl");
-
-            throw new IOException("API changed");
-        } catch (NoSuchMethodException e) {
-            logger.warn("Looks like API was changed and fallback to standard impl");
-
-            throw new IOException("API changed");
-        } catch (IllegalArgumentException e) {
-            logger.warn("Looks like API was changed and fallback to standard impl");
-
-            throw new IOException("API changed");
-        } catch (IllegalAccessException e) {
-            logger.warn("Looks like API was changed and fallback to standard impl");
-
-            throw new IOException("API changed");
-        } catch (InvocationTargetException e) {
-            logger.warn("Looks like API was changed and fallback to standard impl");
-
-            throw new IOException("API changed");
-        }
-    }
-
     /**
      * Special JetS3FileObject output stream.
      * It saves all contents in temporary file, onClose sends contents to S3.
@@ -773,19 +659,26 @@ public class S3FileObject extends AbstractFileObject {
      */
     private class S3OutputStream extends MonitorOutputStream {
 
-        private final ObjectMetadata object;
-
-        public S3OutputStream(OutputStream out, ObjectMetadata object) {
+        public S3OutputStream(OutputStream out) {
             super(out);
-            this.object = object;
         }
 
         @Override
         protected void onClose() throws IOException {
+            FileChannel cacheFileChannel = getCacheFileChannel();
+            objectMetadata.setContentLength(cacheFileChannel.size());
+            objectMetadata.setContentType(Mimetypes.getInstance().getMimetype(getName().getBaseName()));
             try {
-                service.putObject(bucket.getName(), objectKey, Channels.newInputStream(getCacheFileChannel()), object);
+                Upload upload = transferManager.upload(bucket.getName(), objectKey, Channels.newInputStream(cacheFileChannel), objectMetadata);
+                upload.waitForCompletion();
             } catch (AmazonServiceException e) {
                 throw new IOException(e);
+            } catch (InterruptedException e) {
+                throw new IOException(e);
+            } finally {
+                if (cacheFileChannel != null) {
+                    cacheFileChannel.close();
+                }
             }
         }
     }
