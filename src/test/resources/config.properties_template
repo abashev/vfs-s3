@@ -1,0 +1,10 @@
+# edit the following properties to run the tests:
+aws.key-id=
+aws.key=
+
+# bucket name must be globally unique
+s3.testBucket=vfs-s3-tests
+
+# Absolute path to some local big file for downloading on S3
+big.file=backup.zip
+
