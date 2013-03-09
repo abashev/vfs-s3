@@ -58,7 +58,6 @@ public class S3ProviderTest {
         bigFile = config.getProperty("big.file");
     }
 
-
     @Test
     public void createFileOk() throws FileSystemException {
         file = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + fileName, opts);
@@ -295,7 +294,13 @@ public class S3ProviderTest {
 
         assertEquals(urlsGetter.getHttpUrl(), "http://" + bucketName + ".s3.amazonaws.com/test-place/backup.zip");
         assertTrue(urlsGetter.getPrivateUrl().endsWith("@" + bucketName + "/test-place/backup.zip"));
-        assertTrue(urlsGetter.getSignedUrl(60).startsWith("https://" + bucketName + ".s3.amazonaws.com/test-place/backup.zip?AWSAccessKeyId="));
+
+        final String signedUrl = urlsGetter.getSignedUrl(60);
+
+        assertTrue(signedUrl.startsWith("https://" + bucketName + ".s3.amazonaws.com/test-place%2Fbackup.zip?"));
+        assertTrue(signedUrl.indexOf("Signature=") != (-1));
+        assertTrue(signedUrl.indexOf("Expires=") != (-1));
+        assertTrue(signedUrl.indexOf("AWSAccessKeyId=") != (-1));
     }
 
     @Test(dependsOnMethods={"upload"})
