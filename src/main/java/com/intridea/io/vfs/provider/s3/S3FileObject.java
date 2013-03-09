@@ -1,64 +1,33 @@
 package com.intridea.io.vfs.provider.s3;
 
-import static org.apache.commons.vfs2.FileName.SEPARATOR;
-import static org.apache.commons.vfs2.FileName.SEPARATOR_CHAR;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Set;
-
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.internal.Mimetypes;
+import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.Upload;
+import com.intridea.io.vfs.operations.Acl;
+import com.intridea.io.vfs.operations.IAclGetter;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSelector;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
-import org.apache.commons.vfs2.FileUtil;
-import org.apache.commons.vfs2.NameScope;
-import org.apache.commons.vfs2.Selectors;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileObject;
-import org.apache.commons.vfs2.provider.local.LocalFile;
 import org.apache.commons.vfs2.util.MonitorOutputStream;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.internal.Mimetypes;
-import com.amazonaws.services.s3.model.AccessControlList;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.CanonicalGrantee;
-import com.amazonaws.services.s3.model.Grant;
-import com.amazonaws.services.s3.model.Grantee;
-import com.amazonaws.services.s3.model.GroupGrantee;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.Owner;
-import com.amazonaws.services.s3.model.Permission;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.Upload;
-import com.intridea.io.vfs.operations.Acl;
-import com.intridea.io.vfs.operations.IAclGetter;
+import java.io.*;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.util.*;
+
+import static org.apache.commons.vfs2.FileName.SEPARATOR;
+import static org.apache.commons.vfs2.FileName.SEPARATOR_CHAR;
 
 /**
  * Implementation of the virtual S3 file system object using the AWS-SDK.<p/>
@@ -70,10 +39,7 @@ import com.intridea.io.vfs.operations.IAclGetter;
  * @author Moritz Siuts
  */
 public class S3FileObject extends AbstractFileObject {
-
     private static final Log logger = LogFactory.getLog(S3FileObject.class);
-
-    static final long BIG_FILE_THRESHOLD = 1024 * 1024 * 1024; // 1 Gb
 
     private static final String MIMETYPE_JETS3T_DIRECTORY = "application/x-directory";
 
