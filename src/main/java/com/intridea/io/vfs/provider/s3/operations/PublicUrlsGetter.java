@@ -10,7 +10,6 @@ import com.intridea.io.vfs.provider.s3.S3FileObject;
  * @version $Id$
  */
 class PublicUrlsGetter implements IPublicUrlsGetter {
-
     private final S3FileObject file;
 
     public PublicUrlsGetter(S3FileObject file) {
@@ -24,16 +23,13 @@ class PublicUrlsGetter implements IPublicUrlsGetter {
 
     @Override
     public String getPrivateUrl() {
-        // FIXME return file.getPrivateUrl();
-        return "";
+        return file.getPrivateUrl();
     }
 
     @Override
     public String getSignedUrl(int expireInSeconds) throws FileSystemException {
-        // FIXME return file.getSignedUrl(expireInSeconds);
-        return "";
+        return file.getSignedUrl(expireInSeconds);
     }
-
 
     @Override
     public void process() throws FileSystemException {

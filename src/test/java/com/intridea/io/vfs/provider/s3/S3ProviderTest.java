@@ -30,6 +30,9 @@ import com.intridea.io.vfs.TestEnvironment;
 import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+
 
 @Test(groups={"storage"})
 public class S3ProviderTest {
@@ -59,7 +62,7 @@ public class S3ProviderTest {
     public void createFileOk() throws FileSystemException {
         file = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + fileName, opts);
         file.createFile();
-        Assert.assertTrue(file.exists());
+        assertTrue(file.exists());
     }
 
     @Test(expectedExceptions={FileSystemException.class})
@@ -82,7 +85,7 @@ public class S3ProviderTest {
     public void createDirOk() throws FileSystemException {
         dir = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + dirName);
         dir.createFolder();
-        Assert.assertTrue(dir.exists());
+        assertTrue(dir.exists());
     }
 
     @Test(expectedExceptions={FileSystemException.class})
@@ -105,7 +108,7 @@ public class S3ProviderTest {
     public void exists() throws FileNotFoundException, IOException {
         // Existed dir
         FileObject existedDir = fsManager.resolveFile("s3://" + bucketName + "/test-place");
-        Assert.assertTrue(existedDir.exists());
+        assertTrue(existedDir.exists());
 
         // Non-existed dir
         FileObject nonExistedDir = fsManager.resolveFile(existedDir, "path/to/non/existed/dir");
@@ -113,7 +116,7 @@ public class S3ProviderTest {
 
         // Existed file
         FileObject existedFile = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
-        Assert.assertTrue(existedFile.exists());
+        assertTrue(existedFile.exists());
 
         // Non-existed file
         FileObject nonExistedFile = fsManager.resolveFile("s3://" + bucketName + "/ne/bыlo/i/net");
@@ -132,12 +135,12 @@ public class S3ProviderTest {
         // Copy data
         final File backupFile = new File(BACKUP_ZIP);
 
-        Assert.assertTrue(backupFile.exists(), "Backup file should exists");
+        assertTrue(backupFile.exists(), "Backup file should exists");
 
         FileObject src = fsManager.resolveFile(backupFile.getAbsolutePath());
         dest.copyFrom(src, Selectors.SELECT_SELF);
 
-        Assert.assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
+        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
     }
 
     @Test(dependsOnMethods={"createFileOk"})
@@ -152,7 +155,7 @@ public class S3ProviderTest {
         // Copy data
         final File backupFile = new File(BACKUP_ZIP);
 
-        Assert.assertTrue(backupFile.exists(), "Backup file should exists");
+        assertTrue(backupFile.exists(), "Backup file should exists");
 
         FileObject src = fsManager.resolveFile(backupFile.getAbsolutePath());
 
@@ -161,10 +164,10 @@ public class S3ProviderTest {
         Thread.sleep(2000L);
         dest.copyFrom(src, Selectors.SELECT_SELF);
 
-        Assert.assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
+        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
     }
 
-    @Test(dependsOnMethods={"createFileOk"}, enabled=false) // FIXME
+    @Test(dependsOnMethods={"createFileOk"})
     public void uploadBigFile() throws FileNotFoundException, IOException {
         FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/big_file.iso");
 
@@ -176,13 +179,13 @@ public class S3ProviderTest {
         // Copy data
         final File file = new File(bigFile);
 
-        Assert.assertTrue(file.exists(), "Backup file should exists");
+        assertTrue(file.exists(), "Big file should exists");
 
         FileObject src = fsManager.resolveFile(file.getAbsolutePath());
 
         dest.copyFrom(src, Selectors.SELECT_SELF);
 
-        Assert.assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
+        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
     }
 
     @Test(dependsOnMethods={"getSize"})
@@ -195,7 +198,7 @@ public class S3ProviderTest {
         IOUtils.copy(typica.getContent().getInputStream(), out);
 
         // Test that file sizes equals
-        Assert.assertEquals(localCache.length(), typica.getContent().getSize());
+        assertEquals(localCache.length(), typica.getContent().getSize());
 
         localCache.delete();
     }
@@ -211,7 +214,7 @@ public class S3ProviderTest {
         }
 
         FileObject[] children = baseDir.getChildren();
-        Assert.assertEquals(children.length, 5);
+        assertEquals(children.length, 5);
     }
 
     @Test(dependsOnMethods={"createDirOk"})
@@ -229,21 +232,21 @@ public class S3ProviderTest {
 
         FileObject[] files;
         files = baseDir.findFiles(Selectors.SELECT_CHILDREN);
-        Assert.assertEquals(files.length, 3);
+        assertEquals(files.length, 3);
         files = baseDir.findFiles(Selectors.SELECT_FOLDERS);
-        Assert.assertEquals(files.length, 3);
+        assertEquals(files.length, 3);
         files = baseDir.findFiles(Selectors.SELECT_FILES);
-        Assert.assertEquals(files.length, 4);
+        assertEquals(files.length, 4);
         files = baseDir.findFiles(Selectors.EXCLUDE_SELF);
-        Assert.assertEquals(files.length, 6);
+        assertEquals(files.length, 6);
     }
 
     @Test(dependsOnMethods={"createFileOk", "createDirOk"})
     public void getType() throws FileSystemException {
         FileObject imagine = fsManager.resolveFile(dir, "imagine-there-is-no-countries");
-        Assert.assertEquals(imagine.getType(), FileType.IMAGINARY);
-        Assert.assertEquals(dir.getType(), FileType.FOLDER);
-        Assert.assertEquals(file.getType(), FileType.FILE);
+        assertEquals(imagine.getType(), FileType.IMAGINARY);
+        assertEquals(dir.getType(), FileType.FOLDER);
+        assertEquals(file.getType(), FileType.FILE);
     }
 
     @Test(dependsOnMethods={"createFileOk", "createDirOk"})
@@ -253,52 +256,58 @@ public class S3ProviderTest {
         // Copy data
         final File backupFile = new File(BACKUP_ZIP);
 
-        Assert.assertTrue(backupFile.exists(), "Backup file should exists");
+        assertTrue(backupFile.exists(), "Backup file should exists");
 
         FileObject src = fsManager.resolveFile(backupFile.getAbsolutePath());
         dest.copyFrom(src, Selectors.SELECT_SELF);
 
-        Assert.assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
+        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
 
         FileObject sub1 = fsManager.resolveFile(dir, "type-tests/sub1");
-        Assert.assertTrue(sub1.exists());
-        Assert.assertTrue(sub1.getType().equals(FileType.FOLDER));
+        assertTrue(sub1.exists());
+        assertTrue(sub1.getType().equals(FileType.FOLDER));
 
         FileObject sub2 = fsManager.resolveFile(dir, "type-tests/sub1/sub2");
-        Assert.assertTrue(sub2.exists());
-        Assert.assertTrue(sub2.getType().equals(FileType.FOLDER));
+        assertTrue(sub2.exists());
+        assertTrue(sub2.getType().equals(FileType.FOLDER));
     }
 
     @Test(dependsOnMethods={"upload"})
     public void getContentType() throws FileSystemException {
         FileObject backup = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
-        Assert.assertEquals(backup.getContent().getContentInfo().getContentType(), "application/zip");
+        assertEquals(backup.getContent().getContentInfo().getContentType(), "application/zip");
     }
 
     @Test(dependsOnMethods={"upload"})
     public void getSize() throws FileSystemException {
         FileObject backup = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
-        Assert.assertEquals(backup.getContent().getSize(), new File(BACKUP_ZIP).length());
+        assertEquals(backup.getContent().getSize(), new File(BACKUP_ZIP).length());
     }
 
-    @Test(dependsOnMethods={"upload"}, enabled=false)
+    @Test(dependsOnMethods={"upload"})
     public void getUrls() throws FileSystemException {
         FileObject backup = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
 
-        Assert.assertTrue(backup.getFileOperations().hasOperation(IPublicUrlsGetter.class));
+        assertTrue(backup.getFileOperations().hasOperation(IPublicUrlsGetter.class));
 
         IPublicUrlsGetter urlsGetter = (IPublicUrlsGetter) backup.getFileOperations().getOperation(IPublicUrlsGetter.class);
 
-        Assert.assertEquals(urlsGetter.getHttpUrl(), "http://" + bucketName + ".s3.amazonaws.com/test-place/backup.zip");
-        Assert.assertTrue(urlsGetter.getPrivateUrl().endsWith("@" + bucketName + "/test-place/backup.zip"));
-        Assert.assertTrue(urlsGetter.getSignedUrl(60).startsWith("https://" + bucketName + ".s3.amazonaws.com/test-place/backup.zip?AWSAccessKeyId="));
+        assertEquals(urlsGetter.getHttpUrl(), "http://" + bucketName + ".s3.amazonaws.com/test-place/backup.zip");
+        assertTrue(urlsGetter.getPrivateUrl().endsWith("@" + bucketName + "/test-place/backup.zip"));
+
+        final String signedUrl = urlsGetter.getSignedUrl(60);
+
+        assertTrue(signedUrl.startsWith("https://" + bucketName + ".s3.amazonaws.com/test-place%2Fbackup.zip?"));
+        assertTrue(signedUrl.indexOf("Signature=") != (-1));
+        assertTrue(signedUrl.indexOf("Expires=") != (-1));
+        assertTrue(signedUrl.indexOf("AWSAccessKeyId=") != (-1));
     }
 
     @Test(dependsOnMethods={"upload"})
     public void getMD5Hash() throws NoSuchAlgorithmException, FileNotFoundException, IOException {
         FileObject backup = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
 
-        Assert.assertTrue(backup.getFileOperations().hasOperation(IMD5HashGetter.class));
+        assertTrue(backup.getFileOperations().hasOperation(IMD5HashGetter.class));
 
         IMD5HashGetter md5Getter = (IMD5HashGetter) backup.getFileOperations().getOperation(IMD5HashGetter.class);
 
@@ -308,11 +317,11 @@ public class S3ProviderTest {
 
         final File backupFile = new File(BACKUP_ZIP);
 
-        Assert.assertTrue(backupFile.exists(), "Backup file should exists");
+        assertTrue(backupFile.exists(), "Backup file should exists");
 
         String md5Local = toHex(computeMD5Hash(new FileInputStream(backupFile)));
 
-        Assert.assertEquals(md5Remote, md5Local, "Local and remote md5 should be equal");
+        assertEquals(md5Remote, md5Local, "Local and remote md5 should be equal");
     }
 
     @Test(dependsOnMethods={"findFiles", "download"})
@@ -322,7 +331,7 @@ public class S3ProviderTest {
 
         // Only tests dir must remains
         FileObject[] files = testsDir.findFiles(Selectors.SELECT_ALL);
-        Assert.assertEquals(files.length, 1);
+        assertEquals(files.length, 1);
     }
 
     @AfterClass

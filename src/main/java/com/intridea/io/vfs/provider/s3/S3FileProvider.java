@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.Capability;
@@ -19,6 +20,11 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+
+import static org.apache.commons.lang.StringUtils.isEmpty;
+import static org.apache.commons.vfs2.UserAuthenticationData.PASSWORD;
+import static org.apache.commons.vfs2.UserAuthenticationData.USERNAME;
+import static org.apache.commons.vfs2.util.UserAuthenticatorUtils.getData;
 
 /**
  * An S3 file provider. Create an S3 file system out of an S3 file name. Also
@@ -49,7 +55,7 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
      * Auth data types necessary for AWS authentification.
      */
     public final static UserAuthenticationData.Type[] AUTHENTICATOR_TYPES = new UserAuthenticationData.Type[] {
-        UserAuthenticationData.USERNAME, UserAuthenticationData.PASSWORD
+        USERNAME, PASSWORD
     };
 
     /**
@@ -72,6 +78,11 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     private AmazonS3 service;
 
     /**
+     * AWS credentials - useful for private urls.
+     */
+    private AWSCredentials awsCredentials;
+
+    /**
      * Logger instance
      */
     private final Log logger = LogFactory.getLog(S3FileProvider.class);
@@ -90,40 +101,40 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
      * @throws FileSystemException if the file system cannot be created
      */
     @Override
-    protected FileSystem doCreateFileSystem(FileName fileName,
-            FileSystemOptions fileSystemOptions) throws FileSystemException {
+    protected FileSystem doCreateFileSystem(
+            FileName fileName, FileSystemOptions fileSystemOptions
+    ) throws FileSystemException {
 
-        FileSystemOptions fsOptions = fileSystemOptions != null ?
-                fileSystemOptions : getDefaultFileSystemOptions();
+        FileSystemOptions fsOptions = (fileSystemOptions != null) ? fileSystemOptions : getDefaultFileSystemOptions();
 
         // Initialize once S3 service.
         if (service == null) {
             UserAuthenticationData authData = null;
+
             try {
                 // Read authData from file system options
                 authData = UserAuthenticatorUtils.authenticate(fsOptions, AUTHENTICATOR_TYPES);
 
-                logger.info("Initialize Amazon S3 service client ...");
+                logger.info("Start to initialize Amazon S3 service client");
 
                 // Fetch AWS key-id and secret key from authData
-                String keyId = UserAuthenticatorUtils.toString(UserAuthenticatorUtils.getData(authData, UserAuthenticationData.USERNAME, null));
-                String key = UserAuthenticatorUtils.toString(UserAuthenticatorUtils.getData(authData, UserAuthenticationData.PASSWORD, null));
-                if (keyId.length() + key.length() == 0) {
+                String accessKey = UserAuthenticatorUtils.toString(getData(authData, USERNAME, null));
+                String secretKey = UserAuthenticatorUtils.toString(getData(authData, PASSWORD, null));
+
+                if (isEmpty(accessKey) || isEmpty(secretKey)) {
                     throw new FileSystemException("Empty AWS credentials");
                 }
 
                 // Initialize S3 service client.
-                AWSCredentials awsCredentials = new BasicAWSCredentials(keyId, key);
+                awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
                 service = new AmazonS3Client(awsCredentials);
-                logger.info("... Ok");
-
             } finally {
                 UserAuthenticatorUtils.cleanup(authData);
             }
         }
 
         // Construct S3 file system
-        return new S3FileSystem((S3FileName) fileName, service, fsOptions);
+        return new S3FileSystem((S3FileName) fileName, awsCredentials, service, fsOptions);
     }
 
     /**

@@ -1,64 +1,39 @@
 package com.intridea.io.vfs.provider.s3;
 
-import static org.apache.commons.vfs2.FileName.SEPARATOR;
-import static org.apache.commons.vfs2.FileName.SEPARATOR_CHAR;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Set;
-
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.internal.Mimetypes;
+import com.amazonaws.services.s3.internal.ServiceUtils;
+import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.Upload;
+import com.intridea.io.vfs.operations.Acl;
+import com.intridea.io.vfs.operations.IAclGetter;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSelector;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
-import org.apache.commons.vfs2.FileUtil;
-import org.apache.commons.vfs2.NameScope;
-import org.apache.commons.vfs2.Selectors;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileObject;
-import org.apache.commons.vfs2.provider.local.LocalFile;
 import org.apache.commons.vfs2.util.MonitorOutputStream;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.internal.Mimetypes;
-import com.amazonaws.services.s3.model.AccessControlList;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.CanonicalGrantee;
-import com.amazonaws.services.s3.model.Grant;
-import com.amazonaws.services.s3.model.Grantee;
-import com.amazonaws.services.s3.model.GroupGrantee;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.Owner;
-import com.amazonaws.services.s3.model.Permission;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.Upload;
-import com.intridea.io.vfs.operations.Acl;
-import com.intridea.io.vfs.operations.IAclGetter;
+import java.io.*;
+import java.net.URISyntaxException;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.util.*;
+
+import static com.amazonaws.services.s3.model.ProgressEvent.COMPLETED_EVENT_CODE;
+import static java.nio.channels.Channels.newInputStream;
+import static java.util.Calendar.SECOND;
+import static org.apache.commons.vfs2.FileName.SEPARATOR;
+import static org.apache.commons.vfs2.FileName.SEPARATOR_CHAR;
 
 /**
  * Implementation of the virtual S3 file system object using the AWS-SDK.<p/>
@@ -70,14 +45,12 @@ import com.intridea.io.vfs.operations.IAclGetter;
  * @author Moritz Siuts
  */
 public class S3FileObject extends AbstractFileObject {
-
     private static final Log logger = LogFactory.getLog(S3FileObject.class);
-
-    static final long BIG_FILE_THRESHOLD = 1024 * 1024 * 1024; // 1 Gb
 
     private static final String MIMETYPE_JETS3T_DIRECTORY = "application/x-directory";
 
     /** Amazon S3 service */
+    private final AWSCredentials awsCredentials;
     private final AmazonS3 service;
 
     private final TransferManager transferManager;
@@ -111,8 +84,13 @@ public class S3FileObject extends AbstractFileObject {
      */
     private Owner fileOwner;
 
-    public S3FileObject(AbstractFileName fileName, S3FileSystem fileSystem, AmazonS3 service, TransferManager transferManager, Bucket bucket) throws FileSystemException {
+    public S3FileObject(
+            AbstractFileName fileName, S3FileSystem fileSystem, AWSCredentials awsCredentials, AmazonS3 service,
+            TransferManager transferManager, Bucket bucket
+    ) throws FileSystemException {
         super(fileName, fileSystem);
+
+        this.awsCredentials = awsCredentials;
         this.service = service;
         this.bucket = bucket;
         this.transferManager = transferManager;
@@ -228,7 +206,7 @@ public class S3FileObject extends AbstractFileObject {
     @Override
     protected InputStream doGetInputStream() throws Exception {
         downloadOnce();
-        return Channels.newInputStream(getCacheFileChannel());
+        return newInputStream(getCacheFileChannel());
     }
 
     @Override
@@ -597,15 +575,15 @@ public class S3FileObject extends AbstractFileObject {
      *
      * @return
      */
-//    public String getPrivateUrl() {
-//        return String.format(
-//                "s3://%s:%s@%s/%s",
-//                service.getProviderCredentials().getAccessKey(),
-//                service.getProviderCredentials().getSecretKey(),
-//                bucket.getName(),
-//                getS3Key()
-//        );
-//    }
+    public String getPrivateUrl() {
+        return String.format(
+                "s3://%s:%s@%s/%s",
+                awsCredentials.getAWSAccessKeyId(),
+                awsCredentials.getAWSSecretKey(),
+                bucket.getName(),
+                getS3Key()
+        );
+    }
 
     /**
      * Tempary accessable url for object.
@@ -613,22 +591,17 @@ public class S3FileObject extends AbstractFileObject {
      * @return
      * @throws FileSystemException
      */
-//    public String getSignedUrl(int expireInSeconds) throws FileSystemException {
-//        final Calendar cal = Calendar.getInstance();
-//
-//        cal.add(Calendar.SECOND, expireInSeconds);
-//
-//        try {
-//            return service.createSignedGetUrl(
-//                    bucket.getName(),
-//                    getS3Key(),
-//                    cal.getTime(),
-//                    false
-//            );
-//        } catch (AmazonServiceException e) {
-//            throw new FileSystemException(e);
-//        }
-//    }
+    public String getSignedUrl(int expireInSeconds) throws FileSystemException {
+        final Calendar cal = Calendar.getInstance();
+
+        cal.add(SECOND, expireInSeconds);
+
+        try {
+            return service.generatePresignedUrl(bucket.getName(), getS3Key(), cal.getTime()).toString();
+        } catch (AmazonServiceException e) {
+            throw new FileSystemException(e);
+        }
+    }
 
     /**
      * Get MD5 hash for the file
@@ -658,7 +631,6 @@ public class S3FileObject extends AbstractFileObject {
      * @author Marat Komarov
      */
     private class S3OutputStream extends MonitorOutputStream {
-
         public S3OutputStream(OutputStream out) {
             super(out);
         }
@@ -666,10 +638,40 @@ public class S3FileObject extends AbstractFileObject {
         @Override
         protected void onClose() throws IOException {
             FileChannel cacheFileChannel = getCacheFileChannel();
+
             objectMetadata.setContentLength(cacheFileChannel.size());
             objectMetadata.setContentType(Mimetypes.getInstance().getMimetype(getName().getBaseName()));
+
             try {
-                Upload upload = transferManager.upload(bucket.getName(), objectKey, Channels.newInputStream(cacheFileChannel), objectMetadata);
+                final Upload upload = transferManager.upload(
+                        bucket.getName(), objectKey, newInputStream(cacheFileChannel), objectMetadata
+                );
+
+                upload.addProgressListener(new ProgressListener() {
+                    private final int REPORT_THRESHOLD = 25; // Report every 25 percents
+
+                    private double lastValue = 0;
+
+                    // This method is called periodically as your transfer progresses
+                    public void progressChanged(ProgressEvent progressEvent) {
+                        double progress = upload.getProgress().getPercentTransfered();
+
+                        if ((progress - lastValue) > REPORT_THRESHOLD) {
+                            logger.info(
+                                    "File " + objectKey +
+                                    " was uploaded to " + bucket.getName() +
+                                    " for " + (int) progress + "%"
+                            );
+
+                            lastValue = progress;
+                        }
+
+                        if (progressEvent.getEventCode() == COMPLETED_EVENT_CODE) {
+                            logger.info("File " + objectKey + " was successfully uploaded to " + bucket.getName());
+                        }
+                    }
+                });
+
                 upload.waitForCompletion();
             } catch (AmazonServiceException e) {
                 throw new IOException(e);
