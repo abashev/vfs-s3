@@ -52,17 +52,51 @@
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <tagNameFormat>@{project.version}</tagNameFormat>
+                </configuration>
+            </plugin>
         </plugins>
+        <extensions>
+            <extension>
+                <groupId>org.springframework.build</groupId>
+                <artifactId>aws-maven</artifactId>
+                <version>4.4.0.RELEASE</version>
+            </extension>
+        </extensions>
     </build>
 
     <scm>
+        <url>${scm.url}</url>
         <connection>${scm.connection}</connection>
-        <developerConnection>${scm.connection}</developerConnection>
+        <developerConnection>${scm.developerConnection}</developerConnection>
+        <tag>HEAD</tag>
     </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>${dist.releaseRepo.id}</id>
+            <name>Release Repository</name>
+            <url>${dist.releaseRepo.url}</url>
+        </repository>
+        <snapshotRepository>
+            <id>${dist.snapshotRepo.id}</id>
+            <name>Snapshot Repository</name>
+            <url>${dist.snapshotRepo.url}</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
+        <scm.url>https://github.com/abashev/vfs-s3</scm.url>
         <scm.connection>scm:hg:git+ssh://git@github.com:abashev/vfs-s3.git</scm.connection>
+        <scm.developerConnection>scm:hg:git+ssh://git@github.com:abashev/vfs-s3.git</scm.developerConnection>
+        <dist.releaseRepo.url></dist.releaseRepo.url>
+        <dist.snapshotRepo.url></dist.snapshotRepo.url>
     </properties>
+
 </project>
