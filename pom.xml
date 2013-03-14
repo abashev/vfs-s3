@@ -5,7 +5,7 @@
     <groupId>com.intridea.io</groupId>
     <artifactId>vfs-s3</artifactId>
     <packaging>jar</packaging>
-    <version>2.1.0.nineworthies-SNAPSHOT</version>
+    <version>2.1.0.nineworthies</version>
 
     <name>vfs-s3</name>
 
@@ -74,7 +74,7 @@
         <url>${scm.url}</url>
         <connection>${scm.connection}</connection>
         <developerConnection>${scm.developerConnection}</developerConnection>
-        <tag>HEAD</tag>
+        <tag>2.1.0.nineworthies</tag>
     </scm>
 
     <distributionManagement>
@@ -95,8 +95,8 @@
         <scm.url>https://github.com/abashev/vfs-s3</scm.url>
         <scm.connection>scm:hg:git+ssh://git@github.com:abashev/vfs-s3.git</scm.connection>
         <scm.developerConnection>scm:hg:git+ssh://git@github.com:abashev/vfs-s3.git</scm.developerConnection>
-        <dist.releaseRepo.url></dist.releaseRepo.url>
-        <dist.snapshotRepo.url></dist.snapshotRepo.url>
+        <dist.releaseRepo.url />
+        <dist.snapshotRepo.url />
     </properties>
 
 </project>
