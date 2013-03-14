@@ -278,7 +278,7 @@ public class S3ProviderTest {
     @Test(dependsOnMethods={"upload"})
     public void getSize() throws FileSystemException {
         FileObject backup = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
-        Assert.assertEquals(backup.getContent().getSize(), 996166);
+        Assert.assertEquals(backup.getContent().getSize(), new File(BACKUP_ZIP).length());
     }
 
     @Test(dependsOnMethods={"upload"}, enabled=false)
