@@ -18,8 +18,8 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 
 public class TestEnvironment {
-    public static final String ACCESS_KEY = "aws.key-id";
-    public static final String SECRET_KEY = "aws.key";
+    public static final String ACCESS_KEY = "aws.accessKey";
+    public static final String SECRET_KEY = "aws.secretKey";
 
     private static final String NO_CREDENTIALS_MESSAGE =
             "Did you forget to initialize 'config.properties' with correct AWS credentials?";

@@ -6,4 +6,3 @@ target/
 *.ipr
 *.iws
 /test-output
-config.properties
