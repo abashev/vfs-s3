@@ -5,13 +5,11 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.internal.Mimetypes;
-import com.amazonaws.services.s3.internal.ServiceUtils;
 import com.amazonaws.services.s3.model.*;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.intridea.io.vfs.operations.Acl;
 import com.intridea.io.vfs.operations.IAclGetter;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.FileName;
@@ -23,13 +21,14 @@ import org.apache.commons.vfs2.provider.AbstractFileObject;
 import org.apache.commons.vfs2.util.MonitorOutputStream;
 
 import java.io.*;
-import java.net.URISyntaxException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.*;
 
 import static com.amazonaws.services.s3.model.ProgressEvent.COMPLETED_EVENT_CODE;
+import static com.intridea.io.vfs.operations.Acl.Permission.READ;
+import static com.intridea.io.vfs.operations.Acl.Permission.WRITE;
 import static java.nio.channels.Channels.newInputStream;
 import static java.util.Calendar.SECOND;
 import static org.apache.commons.vfs2.FileName.SEPARATOR;
@@ -441,10 +440,10 @@ public class S3FileObject extends AbstractFileObject {
                 rights = Acl.Permission.values();
             } else if (perm.equals(Permission.Read)) {
                 rights = new Acl.Permission[1];
-                rights[0] = Acl.Permission.READ;
+                rights[0] = READ;
             } else if (perm.equals(Permission.Write)) {
                 rights = new Acl.Permission[1];
-                rights[0] = Acl.Permission.WRITE;
+                rights[0] = WRITE;
             } else {
                 // Skip unknown permission
                 logger.error(String.format("Skip unknown permission %s", perm));
@@ -500,11 +499,11 @@ public class S3FileObject extends AbstractFileObject {
         s3Acl.setOwner(owner);
 
         // Iterate over VFS ACL rules and fill S3 ACL list
-        Hashtable<Acl.Group, Acl.Permission[]> rules = acl.getRules();
-        Enumeration<Acl.Group> keys = rules.keys();
-        Acl.Permission[] allRights = Acl.Permission.values();
-        while (keys.hasMoreElements()) {
-            Acl.Group group = keys.nextElement();
+        Map<Acl.Group, Acl.Permission[]> rules = acl.getRules();
+
+        final Acl.Permission[] allRights = Acl.Permission.values();
+
+        for (Acl.Group group : rules.keySet()) {
             Acl.Permission[] rights = rules.get(group);
 
             if (rights.length == 0) {
@@ -514,15 +513,11 @@ public class S3FileObject extends AbstractFileObject {
 
             // Set permission
             Permission perm;
-            if (ArrayUtils.isEquals(rights, allRights)) {
-                // Use ArrayUtils instead of native equals method.
-                // JRE1.6 enum[].equals behavior is very strange:
-                // Two equal by elements arrays are not equal
-                // Yeah, AFAIK its like that for any array.
+            if (Arrays.equals(rights, allRights)) {
                 perm = Permission.FullControl;
-            } else if (acl.isAllowed(group, Acl.Permission.READ)) {
+            } else if (acl.isAllowed(group, READ)) {
                 perm = Permission.Read;
-            } else if (acl.isAllowed(group, Acl.Permission.WRITE)) {
+            } else if (acl.isAllowed(group, WRITE)) {
                 perm = Permission.Write;
             } else {
                 logger.error(String.format("Skip unknown set of rights %s", rights.toString()));

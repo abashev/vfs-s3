@@ -1,27 +1,19 @@
 package com.intridea.io.vfs.provider.s3;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs2.Capability;
-import org.apache.commons.vfs2.FileName;
-import org.apache.commons.vfs2.FileSystem;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemOptions;
-import org.apache.commons.vfs2.UserAuthenticationData;
-import org.apache.commons.vfs2.provider.AbstractOriginatingFileProvider;
-import org.apache.commons.vfs2.util.UserAuthenticatorUtils;
-
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.vfs2.*;
+import org.apache.commons.vfs2.provider.AbstractOriginatingFileProvider;
+import org.apache.commons.vfs2.util.UserAuthenticatorUtils;
 
-import static org.apache.commons.lang.StringUtils.isEmpty;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+
 import static org.apache.commons.vfs2.UserAuthenticationData.PASSWORD;
 import static org.apache.commons.vfs2.UserAuthenticationData.USERNAME;
 import static org.apache.commons.vfs2.util.UserAuthenticatorUtils.getData;
@@ -145,5 +137,15 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     @Override
     public Collection<Capability> getCapabilities() {
         return capabilities;
+    }
+
+    /**
+     * Check for empty string FIXME find the same at Amazon SDK
+     *
+     * @param s
+     * @return
+     */
+    private final boolean isEmpty(String s) {
+        return ((s == null) || (s.length() == 0));
     }
 }

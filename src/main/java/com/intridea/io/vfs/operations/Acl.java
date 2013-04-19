@@ -1,8 +1,9 @@
 package com.intridea.io.vfs.operations;
 
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * ACL for S3.
@@ -52,7 +53,7 @@ public class Acl {
     /**
      * @see {@link #getRules()}
      */
-    private Hashtable<Group, Permission[]> rules;
+    private Map<Group, Permission[]> rules;
 
     /**
      * Will be True if rules were changed since last {@link #getRules()} call.
@@ -70,7 +71,7 @@ public class Acl {
      * Create ACL and load rules.
      * @param rules A set of predefined rules.
      */
-    public Acl (Hashtable<Group, Permission[]> rules) {
+    public Acl (Map<Group, Permission[]> rules) {
         rulesTable = new byte[groupsCount][rulesCount];
         if (rules != null) {
             setRules(rules);
@@ -107,7 +108,6 @@ public class Acl {
 
     /**
      * Allow specific permission for all
-     * @param right
      */
     public void allow (Permission permission) {
         setRule(permission, (byte) 1);
@@ -115,7 +115,6 @@ public class Acl {
 
     /**
      * Allow access for all
-     * @param access_list
      */
     public void allow (Permission[] permission_list) {
         setRule(permission_list, (byte) 1);
@@ -128,11 +127,8 @@ public class Acl {
         setRule((byte) 1);
     }
 
-
     /**
      * Deny right to group
-     * @param group
-     * @param access
      */
     public void deny (Group group, Permission permission) {
         setRule(group, permission, (byte) 0);
@@ -140,8 +136,6 @@ public class Acl {
 
     /**
      * Deny access for a group
-     * @param group
-     * @param right
      */
     public void deny (Group group, Permission[] permission_list) {
         setRule(group, permission_list, (byte) 0);
@@ -157,7 +151,6 @@ public class Acl {
 
     /**
      * Deny access for all
-     * @param access
      */
     public void deny (Permission permission) {
         setRule(permission, (byte) 0);
@@ -165,7 +158,6 @@ public class Acl {
 
     /**
      * Deny access for all
-     * @param access
      */
     public void deny (Permission[] permission) {
         setRule(permission, (byte) 0);
@@ -180,10 +172,6 @@ public class Acl {
 
     /**
      * Returns true when a group has specific access.
-     *
-     * @param group
-     * @param access
-     * @return
      */
     public boolean isAllowed (Group group, Permission permission) {
         return rulesTable[group.ordinal()][permission.ordinal()] == 1;
@@ -191,10 +179,6 @@ public class Acl {
 
     /**
      * Returns true when specific access is denied for a group
-     *
-     * @param group
-     * @param access
-     * @return
      */
     public boolean isDenied (Group group, Permission permission) {
         return rulesTable[group.ordinal()][permission.ordinal()] == 0;
@@ -205,15 +189,14 @@ public class Acl {
      *
      * @param rules Access rule to apply.
      */
-    public void setRules (Hashtable<Group, Permission[]> rules) {
+    public void setRules(Map<Group, Permission[]> rules) {
         // Deny all by default
         denyAll();
 
         // Set allow rules
-        Enumeration<Group> en = rules.keys();
-        while (en.hasMoreElements()) {
-            Group group = en.nextElement();
+        for (Group group : rules.keySet()) {
             Permission[] permissions = rules.get(group);
+
             allow(group, permissions);
         }
     }
@@ -223,21 +206,27 @@ public class Acl {
      *
      * @return
      */
-    public Hashtable<Group, Permission[]> getRules () {
+    public Map<Group, Permission[]> getRules() {
         if (changed) {
-            rules = new Hashtable<Group, Permission[]>(groupsCount);
+            Map<Group, Permission[]> result = new HashMap<Group, Permission[]>(groupsCount);
             Permission[] rightValues = Permission.values();
+
             for (Group group : Group.values()) {
                 int groupIndex = group.ordinal();
-                Vector<Permission> permissions = new Vector<Permission>();
-                for (int i=0; i<rulesCount; i++) {
+                List<Permission> permissions = new ArrayList<Permission>(rulesCount);
+
+                for (int i = 0; i < rulesCount; i++) {
                     if (rulesTable[groupIndex][i] == 1) {
                         permissions.add(rightValues[i]);
                     }
                 }
-                rules.put(group, permissions.toArray(new Permission[0]));
+
+                result.put(group, permissions.toArray(new Permission[permissions.size()]));
             }
+
+            rules = result;
         }
+
         return rules;
     }
 
