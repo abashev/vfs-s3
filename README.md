@@ -1,14 +1,20 @@
 Amazon S3 driver for VFS (Apache Commons Virtual File System)
 =============================================================
 
-Master branch: [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=master)](http://travis-ci.org/abashev/vfs-s3)
 
-Develop branch: [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=develop)](http://travis-ci.org/abashev/vfs-s3)
+Branch | Description | Build Status
+------------ | ------------- | ------------
+branch-2.2.x | See below | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.2.x)](http://travis-ci.org/abashev/vfs-s3)
+branch-2.1.x | **Current** Switch to Amazon SDK for better integration and stability | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.1.x)](http://travis-ci.org/abashev/vfs-s3)
+branch-2.0.x | **Out-dated** It uses Jets3t as back-end for interracting with Amazon S3 | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.0.x)](http://travis-ci.org/abashev/vfs-s3)
 
+Scope of branch-2.2.x development
+---
+1. Total refactoring for package names - move everything into com.github
+1. Integration with Java 7 as file system provider
+1. Make code more concurrency aware
+1. 
 
-This code is based on <http://code.google.com/p/vfs-s3/> which [is no longer supported.](http://code.google.com/p/vfs-s3/issues/detail?id=4)
-
-It provides S3 support for [Commons VFS](http://commons.apache.org/vfs/).
 
 Using with Maven
 ----------------
@@ -52,7 +58,7 @@ Sample Java Code
 
 	// Create bucket
 	FileSystemManager fsManager = VFS.getManager();
-	FileObject dir = fsManager.resolveFile("s3://simpe-bucket");
+	FileObject dir = fsManager.resolveFile("s3://simple-bucket/test-folder/");
 	dir.createFolder();
 
 	// Upload file to S3
@@ -63,22 +69,24 @@ Sample Java Code
 
 Running the tests
 -----------------
+For running tests you need active credentials for AWS. You can specify them as
 
-Tests are currently disabled by default, because one has to provide AWS credentials and a large binary file.
+1.  Shell environment properties
 
-To run the tests you have to edit the file pom.xml and change this section:
-      
-	<configuration>
-		<skipTests>false</skipTests>
-	</configuration>
+        export AWS_ACCESS_KEY=AAAAAAA
+        export AWS_SECRET_KEY=SSSSSSS
+    And run maven build with profile travis-ci `mvn test -Ptravis-ci`
 
+1. Or you can update your settings.xml file with default or profile's properties
 
-Before running 'mvn test' you have to edit the file
+        <properties>
+            <aws.accessKey>AAAAAAAAAAA</aws.accessKey>
+            <aws.secretKey>SSSSSSSSSSS</aws.secretKey>
+        </properties>
 
-	src/test/resources/config.properties
+**Make sure that you never commit your credentials!**
 
-Fill your AWS Key and Id. Then change the bucket name, because it must be globally
-unique (you can just add a suffix). Finally you have to provide the path to backup.zip which
-is in the same directory.
+***
 
-Make sure that you never commit your credentials!
+This code is based on <http://code.google.com/p/vfs-s3/> which [is no longer supported.](http://code.google.com/p/vfs-s3/issues/detail?id=4)
+
