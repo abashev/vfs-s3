@@ -1,34 +1,22 @@
 package com.intridea.io.vfs.provider.s3;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Locale;
-import java.util.Properties;
-import java.util.Random;
-
+import com.intridea.io.vfs.TestEnvironment;
+import com.intridea.io.vfs.operations.IMD5HashGetter;
+import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemManager;
-import org.apache.commons.vfs2.FileSystemOptions;
-import org.apache.commons.vfs2.FileType;
-import org.apache.commons.vfs2.Selectors;
-import org.apache.commons.vfs2.VFS;
+import org.apache.commons.vfs2.*;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import com.intridea.io.vfs.TestEnvironment;
-import com.intridea.io.vfs.operations.IMD5HashGetter;
-import com.intridea.io.vfs.operations.IPublicUrlsGetter;
+import java.io.*;
+import java.io.FileNotFoundException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Locale;
+import java.util.Properties;
+import java.util.Random;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -323,6 +311,18 @@ public class S3ProviderTest {
 
         assertEquals(md5Remote, md5Local, "Local and remote md5 should be equal");
     }
+
+    @Test(dependsOnMethods={"findFiles"})
+	public void copyInsideBucket() throws FileSystemException {
+		FileObject testsDir = fsManager.resolveFile(dir, "find-tests");
+		FileObject testsDirCopy = testsDir.getParent().resolveFile("find-tests-copy");
+		testsDirCopy.copyFrom(testsDir, Selectors.SELECT_SELF_AND_CHILDREN);
+
+		// Should have same number of files
+		FileObject[] files = testsDir.findFiles(Selectors.SELECT_ALL);
+		FileObject[] filesCopy = testsDir.findFiles(Selectors.SELECT_ALL);
+		assertEquals(files.length, filesCopy.length);
+	}
 
     @Test(dependsOnMethods={"findFiles", "download"})
     public void delete() throws FileSystemException {
