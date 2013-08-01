@@ -42,6 +42,7 @@ import static org.apache.commons.vfs2.FileName.SEPARATOR_CHAR;
  * @author Marat Komarov
  * @author Matthias L. Jugel
  * @author Moritz Siuts
+ * @author Shon Vella
  */
 public class S3FileObject extends AbstractFileObject {
     private static final Log logger = LogFactory.getLog(S3FileObject.class);
@@ -261,6 +262,66 @@ public class S3FileObject extends AbstractFileObject {
 
         return childrenNames.toArray(new String[childrenNames.size()]);
     }
+
+    /**
+	 * Lists the children of this file.  Is only called if {@link #doGetType}
+	 * returns {@link FileType#FOLDER}.  The return value of this method
+	 * is cached, so the implementation can be expensive.<br>
+	 * Other than <code>doListChildren</code> you could return FileObject's to e.g. reinitialize the
+	 * type of the file.<br>
+	 * (Introduced for Webdav: "permission denied on resource" during getType())
+	 * @return The children of this FileObject.
+	 * @throws Exception if an error occurs.
+	 */
+	@Override
+	protected FileObject[] doListChildrenResolved() throws Exception
+	{
+		String path = objectKey;
+		// make sure we add a '/' slash at the end to find children
+		if ((!"".equals(path)) && (!path.endsWith(SEPARATOR))) {
+			path = path + "/";
+		}
+
+		ObjectListing listing = service.listObjects(bucket.getName(), path);
+		final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>(listing.getObjectSummaries());
+		while (listing.isTruncated()) {
+			final ListObjectsRequest loReq = new ListObjectsRequest();
+			loReq.setBucketName(bucket.getName());
+			loReq.setMarker(listing.getNextMarker());
+			listing = service.listObjects(loReq);
+			summaries.addAll(listing.getObjectSummaries());
+		}
+
+		List<FileObject> resolvedChildren = new ArrayList<FileObject>(summaries.size());
+
+		for (S3ObjectSummary summary : summaries) {
+			if (!summary.getKey().equals(path)) {
+				// strip path from name (leave only base name)
+				final String stripPath = summary.getKey().substring(path.length());
+
+				// Only one slash in the end OR no slash at all
+				if ((stripPath.endsWith(SEPARATOR) && (stripPath.indexOf(SEPARATOR_CHAR) == stripPath.lastIndexOf(SEPARATOR_CHAR))) ||
+					(stripPath.indexOf(SEPARATOR_CHAR) == (-1))) {
+					FileObject childObject = resolveFile(stripPath, NameScope.CHILD);
+					if (childObject instanceof S3FileObject) {
+						S3FileObject s3FileObject = (S3FileObject)childObject;
+						ObjectMetadata childMetadata = new ObjectMetadata();
+						childMetadata.setContentLength(summary.getSize());
+						childMetadata.setContentType(
+							Mimetypes.getInstance().getMimetype(s3FileObject.getName().getBaseName()));
+						childMetadata.setLastModified(summary.getLastModified());
+						childMetadata.setHeader(Headers.ETAG, summary.getETag());
+						s3FileObject.objectMetadata = childMetadata;
+						s3FileObject.objectKey = summary.getKey();
+						s3FileObject.attached = true;
+						resolvedChildren.add(s3FileObject);
+					}
+				}
+			}
+		}
+
+		return resolvedChildren.toArray(new FileObject[resolvedChildren.size()]);
+	}
 
     @Override
     protected long doGetContentSize() throws Exception {
