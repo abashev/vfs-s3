@@ -19,6 +19,7 @@ import java.util.Properties;
 import java.util.Random;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 
@@ -227,6 +228,38 @@ public class S3ProviderTest {
         assertEquals(files.length, 4);
         files = baseDir.findFiles(Selectors.EXCLUDE_SELF);
         assertEquals(files.length, 6);
+    }
+
+    @Test(dependsOnMethods={"createFileOk"})
+    public void renameAndMove() throws FileSystemException {
+        FileObject sourceFile = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + fileName, opts);
+        FileObject targetFile = fsManager.resolveFile("s3://" + bucketName + "/test-place/rename-target", opts);
+
+        assertTrue(sourceFile.exists());
+
+        if (targetFile.exists()) {
+            targetFile.delete();
+        }
+
+        assertFalse(targetFile.exists());
+        assertFalse(sourceFile.canRenameTo(targetFile));
+
+        sourceFile.moveTo(targetFile);
+
+        assertTrue(targetFile.exists());
+        assertFalse(sourceFile.exists());
+
+        targetFile.moveTo(sourceFile);
+
+        assertTrue(sourceFile.exists());
+        assertFalse(targetFile.exists());
+
+        try {
+            sourceFile.moveTo(sourceFile);
+
+            assertTrue(false); // Should block copy into itself
+        } catch (FileSystemException e) {
+        }
     }
 
     @Test(dependsOnMethods={"createFileOk", "createDirOk"})
