@@ -78,6 +78,11 @@ public class S3FileObject extends AbstractFileObject {
     private File cacheFile;
 
     /**
+     * Local cache of file content
+    */
+    private File outputFile;
+
+    /**
      * Amazon file owner. Used in ACL
      */
     private Owner fileOwner;
@@ -204,7 +209,7 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected OutputStream doGetOutputStream(boolean bAppend) throws Exception {
-        return new S3OutputStream(Channels.newOutputStream(getCacheFileChannel()));
+        return new S3OutputStream(Channels.newOutputStream(getOutputFileChannel()));
     }
 
     @Override
@@ -416,6 +421,18 @@ public class S3FileObject extends AbstractFileObject {
             cacheFile = File.createTempFile("scalr.", ".s3");
         }
         return new RandomAccessFile(cacheFile, "rw").getChannel();
+    }
+
+    /**
+     * Get or create temporary file channel for file cache
+     * @return
+     * @throws IOException
+     */
+    private FileChannel getOutputFileChannel() throws IOException {
+        if (outputFile == null) {
+            outputFile = File.createTempFile("scalr.", ".s3");
+        }
+        return new RandomAccessFile(outputFile, "rw").getChannel();
     }
 
     // ACL extension methods
@@ -685,10 +702,9 @@ public class S3FileObject extends AbstractFileObject {
         }
 
         @Override
-        protected void onClose() throws IOException {
-            FileChannel cacheFileChannel = getCacheFileChannel();
-
-            objectMetadata.setContentLength(cacheFileChannel.size());
+        			doAttach();
+            FileChannel cacheFileChannel = getOutputFileChannel();
+           objectMetadata.setContentLength(cacheFileChannel.size());
             objectMetadata.setContentType(Mimetypes.getInstance().getMimetype(getName().getBaseName()));
 
             try {
@@ -722,14 +738,33 @@ public class S3FileObject extends AbstractFileObject {
                 });
 
                 upload.waitForCompletion();
+				doDetach();
+				doAttach();
             } catch (AmazonServiceException e) {
                 throw new IOException(e);
             } catch (InterruptedException e) {
                 throw new IOException(e);
-            } finally {
-                if (cacheFileChannel != null) {
-                    cacheFileChannel.close();
-                }
+            } catch (Exception e) {
+				throw new IOException(e);
+			} finally {
+				try {
+					cacheFileChannel.close();
+				} catch (IOException e) {
+					logger.error("Unable to delete temporary file: " + outputFile.getName(), e);
+					try {
+						doDetach();
+					} catch (Exception e1) {
+						logger.error("Couldn't detach from S3 Object: " + objectKey, e);
+					}
+				} finally {
+					if (!attached) {
+						outputFile.delete();
+					} else {
+						cacheFile = outputFile;
+						downloaded = true;
+					}
+					outputFile = null;
+				}
             }
         }
     }
