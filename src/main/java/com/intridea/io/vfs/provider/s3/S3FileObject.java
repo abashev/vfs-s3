@@ -78,6 +78,11 @@ public class S3FileObject extends AbstractFileObject {
     private File cacheFile;
 
     /**
+     * Local cache of file content
+    */
+    private File outputFile;
+
+    /**
      * Amazon file owner. Used in ACL
      */
     private Owner fileOwner;
@@ -204,7 +209,7 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected OutputStream doGetOutputStream(boolean bAppend) throws Exception {
-        return new S3OutputStream(Channels.newOutputStream(getCacheFileChannel()));
+        return new S3OutputStream(Channels.newOutputStream(getOutputFileChannel()));
     }
 
     @Override
@@ -222,34 +227,40 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected String[] doListChildren() throws Exception {
-        String path = objectKey;
+       String path = objectKey;
         // make sure we add a '/' slash at the end to find children
         if ((!"".equals(path)) && (!path.endsWith(SEPARATOR))) {
             path = path + "/";
         }
 
-        ObjectListing listing = service.listObjects(bucket.getName(), path);
-        final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>(listing.getObjectSummaries());
-        while (listing.isTruncated()) {
-            final ListObjectsRequest loReq = new ListObjectsRequest();
-            loReq.setBucketName(bucket.getName());
-            loReq.setMarker(listing.getNextMarker());
-            listing = service.listObjects(loReq);
-            summaries.addAll(listing.getObjectSummaries());
-        }
+		final ListObjectsRequest loReq = new ListObjectsRequest();
+		loReq.setBucketName(bucket.getName());
+		loReq.setDelimiter("/");
+		loReq.setPrefix(path);
 
-        List<String> childrenNames = new ArrayList<String>(summaries.size());
+		ObjectListing listing = service.listObjects(loReq);
+		final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>(listing.getObjectSummaries());
+		final Set<String> commonPrefixes = new TreeSet<>(listing.getCommonPrefixes());
+		while (listing.isTruncated()) {
+			listing = service.listNextBatchOfObjects(listing);
+			summaries.addAll(listing.getObjectSummaries());
+			commonPrefixes.addAll(listing.getCommonPrefixes());
+		}
+
+        List<String> childrenNames = new ArrayList<String>(summaries.size() + commonPrefixes.size());
+
+		// add the prefixes (non-empty subdirs) first
+		for (String commonPrefix : commonPrefixes) {
+			// strip path from name (leave only base name)
+			final String stripPath = commonPrefix.substring(path.length());
+			childrenNames.add(stripPath);
+		}
 
         for (S3ObjectSummary summary : summaries) {
             if (!summary.getKey().equals(path)) {
                 // strip path from name (leave only base name)
                 final String stripPath = summary.getKey().substring(path.length());
-
-                // Only one slash in the end OR no slash at all
-                if ((stripPath.endsWith(SEPARATOR) && (stripPath.indexOf(SEPARATOR_CHAR) == stripPath.lastIndexOf(SEPARATOR_CHAR))) ||
-                        (stripPath.indexOf(SEPARATOR_CHAR) == (-1))) {
-                    childrenNames.add(stripPath);
-                }
+                childrenNames.add(stripPath);
             }
         }
 
@@ -275,40 +286,50 @@ public class S3FileObject extends AbstractFileObject {
 			path = path + "/";
 		}
 
-		ObjectListing listing = service.listObjects(bucket.getName(), path);
+		final ListObjectsRequest loReq = new ListObjectsRequest();
+		loReq.setBucketName(bucket.getName());
+		loReq.setDelimiter("/");
+		loReq.setPrefix(path);
+
+		ObjectListing listing = service.listObjects(loReq);
 		final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>(listing.getObjectSummaries());
+		final Set<String> commonPrefixes = new TreeSet<>(listing.getCommonPrefixes());
 		while (listing.isTruncated()) {
-			final ListObjectsRequest loReq = new ListObjectsRequest();
-			loReq.setBucketName(bucket.getName());
-			loReq.setMarker(listing.getNextMarker());
-			listing = service.listObjects(loReq);
+			listing = service.listNextBatchOfObjects(listing);
 			summaries.addAll(listing.getObjectSummaries());
+			commonPrefixes.addAll(listing.getCommonPrefixes());
 		}
 
-		List<FileObject> resolvedChildren = new ArrayList<FileObject>(summaries.size());
+		List<FileObject> resolvedChildren = new ArrayList<FileObject>(summaries.size() + commonPrefixes.size());
+
+		// add the prefixes (non-empty subdirs) first
+		for (String commonPrefix : commonPrefixes) {
+			// strip path from name (leave only base name)
+			final String stripPath = commonPrefix.substring(path.length());
+			FileObject childObject = resolveFile(stripPath, NameScope.CHILD);
+			if (childObject instanceof S3FileObject) {
+				S3FileObject s3FileObject = (S3FileObject)childObject;
+				resolvedChildren.add(s3FileObject);
+			}
+		}
 
 		for (S3ObjectSummary summary : summaries) {
 			if (!summary.getKey().equals(path)) {
 				// strip path from name (leave only base name)
 				final String stripPath = summary.getKey().substring(path.length());
-
-				// Only one slash in the end OR no slash at all
-				if ((stripPath.endsWith(SEPARATOR) && (stripPath.indexOf(SEPARATOR_CHAR) == stripPath.lastIndexOf(SEPARATOR_CHAR))) ||
-					(stripPath.indexOf(SEPARATOR_CHAR) == (-1))) {
-					FileObject childObject = resolveFile(stripPath, NameScope.CHILD);
-					if (childObject instanceof S3FileObject) {
-						S3FileObject s3FileObject = (S3FileObject)childObject;
-						ObjectMetadata childMetadata = new ObjectMetadata();
-						childMetadata.setContentLength(summary.getSize());
-						childMetadata.setContentType(
-							Mimetypes.getInstance().getMimetype(s3FileObject.getName().getBaseName()));
-						childMetadata.setLastModified(summary.getLastModified());
-						childMetadata.setHeader(Headers.ETAG, summary.getETag());
-						s3FileObject.objectMetadata = childMetadata;
-						s3FileObject.objectKey = summary.getKey();
-						s3FileObject.attached = true;
-						resolvedChildren.add(s3FileObject);
-					}
+				FileObject childObject = resolveFile(stripPath, NameScope.CHILD);
+				if (childObject instanceof S3FileObject) {
+					S3FileObject s3FileObject = (S3FileObject)childObject;
+					ObjectMetadata childMetadata = new ObjectMetadata();
+					childMetadata.setContentLength(summary.getSize());
+					childMetadata.setContentType(
+						Mimetypes.getInstance().getMimetype(s3FileObject.getName().getBaseName()));
+					childMetadata.setLastModified(summary.getLastModified());
+					childMetadata.setHeader(Headers.ETAG, summary.getETag());
+					s3FileObject.objectMetadata = childMetadata;
+					s3FileObject.objectKey = summary.getKey();
+					s3FileObject.attached = true;
+					resolvedChildren.add(s3FileObject);
 				}
 			}
 		}
@@ -416,6 +437,18 @@ public class S3FileObject extends AbstractFileObject {
             cacheFile = File.createTempFile("scalr.", ".s3");
         }
         return new RandomAccessFile(cacheFile, "rw").getChannel();
+    }
+
+    /**
+     * Get or create temporary file channel for file cache
+     * @return
+     * @throws IOException
+     */
+    private FileChannel getOutputFileChannel() throws IOException {
+        if (outputFile == null) {
+            outputFile = File.createTempFile("scalr.", ".s3");
+        }
+        return new RandomAccessFile(outputFile, "rw").getChannel();
     }
 
     // ACL extension methods
@@ -685,10 +718,9 @@ public class S3FileObject extends AbstractFileObject {
         }
 
         @Override
-        protected void onClose() throws IOException {
-            FileChannel cacheFileChannel = getCacheFileChannel();
-
-            objectMetadata.setContentLength(cacheFileChannel.size());
+        			doAttach();
+            FileChannel cacheFileChannel = getOutputFileChannel();
+           objectMetadata.setContentLength(cacheFileChannel.size());
             objectMetadata.setContentType(Mimetypes.getInstance().getMimetype(getName().getBaseName()));
 
             try {
@@ -722,14 +754,33 @@ public class S3FileObject extends AbstractFileObject {
                 });
 
                 upload.waitForCompletion();
+				doDetach();
+				doAttach();
             } catch (AmazonServiceException e) {
                 throw new IOException(e);
             } catch (InterruptedException e) {
                 throw new IOException(e);
-            } finally {
-                if (cacheFileChannel != null) {
-                    cacheFileChannel.close();
-                }
+            } catch (Exception e) {
+				throw new IOException(e);
+			} finally {
+				try {
+					cacheFileChannel.close();
+				} catch (IOException e) {
+					logger.error("Unable to delete temporary file: " + outputFile.getName(), e);
+					try {
+						doDetach();
+					} catch (Exception e1) {
+						logger.error("Couldn't detach from S3 Object: " + objectKey, e);
+					}
+				} finally {
+					if (!attached) {
+						outputFile.delete();
+					} else {
+						cacheFile = outputFile;
+						downloaded = true;
+					}
+					outputFile = null;
+				}
             }
         }
     }
