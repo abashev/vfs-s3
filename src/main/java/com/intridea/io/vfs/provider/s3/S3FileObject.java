@@ -856,6 +856,8 @@ public class S3FileObject extends AbstractFileObject {
 							((S3FileObject)destFile).getS3Key()
 						);
 					}
+
+                    destFile.close();
 				} catch (AmazonServiceException e) {
 					throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
 				}
