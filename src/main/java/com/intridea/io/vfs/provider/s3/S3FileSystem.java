@@ -33,15 +33,19 @@ public class S3FileSystem extends AbstractFileSystem {
     private final Bucket bucket;
     private final TransferManager transferManager;
 
+    private Boolean serverSideEncryption;
+
     public S3FileSystem(
-            S3FileName fileName, AWSCredentials awsCredentials, AmazonS3 service, FileSystemOptions fileSystemOptions
-    ) throws FileSystemException {
+            S3FileName fileName, AWSCredentials awsCredentials, AmazonS3 service,
+            FileSystemOptions fileSystemOptions) throws FileSystemException {
         super(fileName, null, fileSystemOptions);
 
         String bucketId = fileName.getBucketId();
 
         this.awsCredentials = awsCredentials;
         this.service = service;
+        this.serverSideEncryption = S3FileSystemConfigBuilder.getInstance()
+            .getServerSideEncryption(fileSystemOptions);
 
         try {
             if (service.doesBucketExist(bucketId)) {
@@ -71,8 +75,32 @@ public class S3FileSystem extends AbstractFileSystem {
         caps.addAll(S3FileProvider.capabilities);
     }
 
+    public Boolean getServerSideEncryption() {
+        return serverSideEncryption;
+    }
+
+    public void setServerSideEncryption(Boolean serverSideEncryption) {
+        this.serverSideEncryption = serverSideEncryption;
+    }
+
+    protected Bucket getBucket() {
+        return bucket;
+    }
+
+    protected AWSCredentials getAwsCredentials() {
+        return awsCredentials;
+    }
+
+    protected AmazonS3 getService() {
+        return service;
+    }
+
+    protected TransferManager getTransferManager() {
+        return transferManager;
+    }
+
     @Override
     protected FileObject createFile(AbstractFileName fileName) throws Exception {
-        return new S3FileObject(fileName, this, awsCredentials, service, transferManager, bucket);
+        return new S3FileObject(fileName, this);
     }
 }
