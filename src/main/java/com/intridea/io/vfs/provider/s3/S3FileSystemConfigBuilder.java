@@ -1,5 +1,6 @@
 package com.intridea.io.vfs.provider.s3;
 
+import com.amazonaws.services.s3.model.Region;
 import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemConfigBuilder;
 import org.apache.commons.vfs2.FileSystemOptions;
@@ -8,6 +9,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final S3FileSystemConfigBuilder BUILDER = new S3FileSystemConfigBuilder();
     
     private static final String SERVER_SIDE_ENCRYPTION = S3FileSystemConfigBuilder.class.getName() + ".SERVER_SIDE_ENCRYPTION";
+    private static final String REGION = S3FileSystemConfigBuilder.class.getName() + ".REGION";
 
     private S3FileSystemConfigBuilder()
     {
@@ -32,7 +34,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      */
     public void setServerSideEncryption(FileSystemOptions opts, boolean serverSideEncryption)
     {
-        setParam(opts, SERVER_SIDE_ENCRYPTION, serverSideEncryption ? Boolean.TRUE : Boolean.FALSE);
+        setParam(opts, SERVER_SIDE_ENCRYPTION, serverSideEncryption);
     }
 
     /**
@@ -43,5 +45,14 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     public Boolean getServerSideEncryption(FileSystemOptions opts)
     {
         return getBoolean(opts, SERVER_SIDE_ENCRYPTION, false);
+    }
+
+    public void setRegion(FileSystemOptions opts, Region region) {
+        setParam(opts, REGION, region.toString());
+    }
+
+    public Region getRegion(FileSystemOptions opts) {
+        String r = getString(opts, REGION);
+        return (r == null) ? null : Region.fromValue(r);
     }
 }

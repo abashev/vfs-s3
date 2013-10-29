@@ -1,9 +1,11 @@
 package com.intridea.io.vfs.provider.s3;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.Region;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.*;
@@ -63,16 +65,6 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     }
 
     /**
-     * S3 service instance
-     */
-    private AmazonS3 service;
-
-    /**
-     * AWS credentials - useful for private urls.
-     */
-    private AWSCredentials awsCredentials;
-
-    /**
      * Logger instance
      */
     private final Log logger = LogFactory.getLog(S3FileProvider.class);
@@ -98,29 +90,31 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
         FileSystemOptions fsOptions = (fileSystemOptions != null) ? fileSystemOptions : getDefaultFileSystemOptions();
 
         // Initialize once S3 service.
-        if (service == null) {
-            UserAuthenticationData authData = null;
+        UserAuthenticationData authData = null;
 
-            try {
-                // Read authData from file system options
-                authData = UserAuthenticatorUtils.authenticate(fsOptions, AUTHENTICATOR_TYPES);
+        AWSCredentials awsCredentials = null;
+        AmazonS3Client service = null;
 
-                logger.info("Start to initialize Amazon S3 service client");
+        try {
+            // Read authData from file system options
+            authData = UserAuthenticatorUtils.authenticate(fsOptions, AUTHENTICATOR_TYPES);
 
-                // Fetch AWS key-id and secret key from authData
-                String accessKey = UserAuthenticatorUtils.toString(getData(authData, USERNAME, null));
-                String secretKey = UserAuthenticatorUtils.toString(getData(authData, PASSWORD, null));
+            logger.info("Start to initialize Amazon S3 service client");
 
-                if (isEmpty(accessKey) || isEmpty(secretKey)) {
-                    throw new FileSystemException("Empty AWS credentials");
-                }
+            // Fetch AWS key-id and secret key from authData
+            String accessKey = UserAuthenticatorUtils.toString(getData(authData, USERNAME, null));
+            String secretKey = UserAuthenticatorUtils.toString(getData(authData, PASSWORD, null));
 
-                // Initialize S3 service client.
-                awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
-                service = new AmazonS3Client(awsCredentials);
-            } finally {
-                UserAuthenticatorUtils.cleanup(authData);
+            if (isEmpty(accessKey) || isEmpty(secretKey)) {
+                throw new FileSystemException("Empty AWS credentials");
             }
+
+            // Initialize S3 service client.
+            awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
+
+            service = new AmazonS3Client(awsCredentials);
+        } finally {
+            UserAuthenticatorUtils.cleanup(authData);
         }
 
         // Construct S3 file system

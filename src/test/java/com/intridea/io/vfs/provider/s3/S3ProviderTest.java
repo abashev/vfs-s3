@@ -1,11 +1,13 @@
 package com.intridea.io.vfs.provider.s3;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.Region;
 import com.intridea.io.vfs.TestEnvironment;
 import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.vfs2.*;
+import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -34,8 +36,6 @@ public class S3ProviderTest {
     private String fileName, encryptedFileName, dirName, bucketName, bigFile;
     private FileObject file, dir;
 
-    private FileSystemOptions opts;
-
     @BeforeClass
     public void setUp() throws FileNotFoundException, IOException {
         Properties config = TestEnvironment.getInstance().getConfig();
@@ -51,14 +51,37 @@ public class S3ProviderTest {
 
     @Test
     public void createFileOk() throws FileSystemException {
-        file = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + fileName, opts);
+        file = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + fileName);
         file.createFile();
         assertTrue(file.exists());
     }
 
-    @Test
+    @Test(dependsOnMethods = {"createFileOk"})
+    public void setRegion() throws FileSystemException {
+        FileSystemOptions regionOpts =
+            (FileSystemOptions)S3FileProvider.getDefaultFileSystemOptions().clone();
+
+        S3FileSystemConfigBuilder.getInstance().setRegion(
+            regionOpts, Region.US_West_2);
+
+        FileObject regFile = fsManager.resolveFile(
+            "s3://" + bucketName + "/test-place/" + fileName, regionOpts);
+
+        assertEquals(
+            ((S3FileSystem) regFile.getFileSystem()).getRegion(),
+            Region.US_West_2);
+    }
+
+    @Test(dependsOnMethods = {"createFileOk"})
+    public void defaultRegion() {
+        assertEquals(
+            ((S3FileSystem)file.getFileSystem()).getRegion(),
+            Region.US_Standard);
+    }
+
+    @Test(dependsOnMethods = {"createFileOk"})
     public void createEncryptedFileOk() throws FileSystemException {
-        file = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + encryptedFileName, opts);
+        file = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + encryptedFileName);
         ((S3FileSystem)file.getFileSystem()).setServerSideEncryption(true);
         file.createFile();
         assertTrue(file.exists());
@@ -270,8 +293,8 @@ public class S3ProviderTest {
 
     @Test(dependsOnMethods={"createFileOk"})
     public void renameAndMove() throws FileSystemException {
-        FileObject sourceFile = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + fileName, opts);
-        FileObject targetFile = fsManager.resolveFile("s3://" + bucketName + "/test-place/rename-target", opts);
+        FileObject sourceFile = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + fileName);
+        FileObject targetFile = fsManager.resolveFile("s3://" + bucketName + "/test-place/rename-target");
 
         assertTrue(sourceFile.exists());
 
@@ -357,7 +380,7 @@ public class S3ProviderTest {
         final String signedUrl = urlsGetter.getSignedUrl(60);
 
         assertTrue(
-            signedUrl.startsWith("https://s3.amazonaws.com/" + bucketName + "/test-place%2Fbackup.zip?"),
+            signedUrl.startsWith("https://" + bucketName + ".s3.amazonaws.com/test-place/backup.zip?"),
             signedUrl);
         assertTrue(signedUrl.indexOf("Signature=") != (-1));
         assertTrue(signedUrl.indexOf("Expires=") != (-1));
@@ -436,6 +459,7 @@ public class S3ProviderTest {
         try {
             FileObject vfsTestDir = fsManager.resolveFile(dir, "..");
             vfsTestDir.delete(Selectors.SELECT_ALL);
+            ((S3FileSystem)vfsTestDir.getFileSystem()).shutdown();
         } catch (Exception e) {
         }
     }

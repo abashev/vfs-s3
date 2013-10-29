@@ -3,7 +3,7 @@ package com.intridea.io.vfs.provider.s3;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.internal.Mimetypes;
 import com.amazonaws.services.s3.model.*;
@@ -161,9 +161,8 @@ public class S3FileObject extends AbstractFileObject {
         InputStream input = new ByteArrayInputStream(new byte[0]);
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(0);
-        if (((S3FileSystem)getFileSystem()).getServerSideEncryption())
-            metadata.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-        getService().putObject(new PutObjectRequest(getBucket().getName(), objectKey + FileName.SEPARATOR, input, metadata));
+        String dirName = objectKey.endsWith(SEPARATOR) ? objectKey : objectKey + SEPARATOR;
+        getService().putObject(new PutObjectRequest(getBucket().getName(), dirName, input, metadata));
     }
 
     @Override
@@ -668,7 +667,7 @@ public class S3FileObject extends AbstractFileObject {
         return ((S3FileSystem)getFileSystem()).getAwsCredentials();
     }
 
-    protected AmazonS3 getService() {
+    protected AmazonS3Client getService() {
         return ((S3FileSystem)getFileSystem()).getService();
     }
 

@@ -3,6 +3,8 @@ package com.intridea.io.vfs.provider.s3;
 import java.util.Collection;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.Region;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.Capability;
@@ -13,7 +15,6 @@ import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileSystem;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.transfer.TransferManager;
 
@@ -28,15 +29,15 @@ public class S3FileSystem extends AbstractFileSystem {
 
     private static final Log logger = LogFactory.getLog(S3FileSystem.class);
 
-    private final AWSCredentials awsCredentials;
-    private final AmazonS3 service;
-    private final Bucket bucket;
+    private final AmazonS3Client service;
     private final TransferManager transferManager;
+    private final Bucket bucket;
+    private final AWSCredentials awsCredentials;
 
     private Boolean serverSideEncryption;
 
     public S3FileSystem(
-            S3FileName fileName, AWSCredentials awsCredentials, AmazonS3 service,
+            S3FileName fileName, AWSCredentials awsCredentials, AmazonS3Client service,
             FileSystemOptions fileSystemOptions) throws FileSystemException {
         super(fileName, null, fileSystemOptions);
 
@@ -44,8 +45,14 @@ public class S3FileSystem extends AbstractFileSystem {
 
         this.awsCredentials = awsCredentials;
         this.service = service;
-        this.serverSideEncryption = S3FileSystemConfigBuilder.getInstance()
-            .getServerSideEncryption(fileSystemOptions);
+        this.transferManager = new TransferManager(service);
+        this.serverSideEncryption = S3FileSystemConfigBuilder
+            .getInstance().getServerSideEncryption(fileSystemOptions);
+
+        Region region = S3FileSystemConfigBuilder.getInstance().getRegion(
+            fileSystemOptions);
+        if (region != null)
+            service.setRegion(region.toAWSRegion());
 
         try {
             if (service.doesBucketExist(bucketId)) {
@@ -55,8 +62,6 @@ public class S3FileSystem extends AbstractFileSystem {
 
                 logger.debug("Created new bucket.");
             }
-
-            this.transferManager = new TransferManager(service);
 
             logger.info("Created new S3 FileSystem " + bucketId);
         } catch (AmazonServiceException e) {
@@ -75,11 +80,16 @@ public class S3FileSystem extends AbstractFileSystem {
         caps.addAll(S3FileProvider.capabilities);
     }
 
-    public Boolean getServerSideEncryption() {
+    public void shutdown() {
+        getTransferManager().shutdownNow();
+        getService().shutdown();
+    }
+
+    protected Boolean getServerSideEncryption() {
         return serverSideEncryption;
     }
 
-    public void setServerSideEncryption(Boolean serverSideEncryption) {
+    protected void setServerSideEncryption(Boolean serverSideEncryption) {
         this.serverSideEncryption = serverSideEncryption;
     }
 
@@ -87,11 +97,15 @@ public class S3FileSystem extends AbstractFileSystem {
         return bucket;
     }
 
+    protected Region getRegion() {
+        return getService().getRegion();
+    }
+
     protected AWSCredentials getAwsCredentials() {
         return awsCredentials;
     }
 
-    protected AmazonS3 getService() {
+    protected AmazonS3Client getService() {
         return service;
     }
 
