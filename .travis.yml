@@ -2,6 +2,5 @@ language: java
 script: mvn test -Ptravis-ci
 env:
   global:
-    - secure: "U6N4ck8c89ZHfOL9z2Ojt5N1FpUIKsiODTvdYCnO7LwoPmlIFpPkTK1EpqUq\nhwv3Sw48smJhDnMTHTeKaQC6EFjFYEz6cNjY2I1+HbfOtnUbXA2XV0B2Xt6H\nLXtLU+OS/DG/fwSlfpUStL9BKa96HB8HgekF7g08K+AIZsGxcnM="
-    - secure: "Y1rfyIVBa/urTXzBVPPHCfPxKzy4ENI4+SY3tlq4dw+enlO/PYU9oJgFW6yv\n+/wiqTcsHidyD09YnyEHl6DNSlOJ167xxYCLC6jOL3lRrbutCEgUGqf1WRoT\nAWcm+JqTpI4qZK+NIBml3STecXiGOOG9QqouGy9sp1HCc5OPp4c="
-
+  - secure: xRKGqDPjDOvSonin1ixcvv/Jzl1YlrNVWWj8c761Kue7My4F867W8L1p22URbZXnKrMJ2yeaUSeDcm8flkMvZvxSrbuRKvgzV/eJtoDFKY5mXhdviDdupm6d5fRCyuhTxtGg+pk6z1ynrOe1NhJGTOhAKyZtC7cusWzEwhEdIZ4=
+  - secure: ZKvWRGx8H6dqDB8Iu0VJDJUeOQ6tf3zm9z9DDbHZX+HZAdq58uk8Woa27JGUyGkASyLKSXXRqrIl2kKoH0wEBO2f4jVsG8beMSHAgtBufvq3QYKS7SO6qsqlaWSDfxADcxw5jev8zIXYgKmB93LxDiRcT40F09nT5rSjXGg3aX4=
