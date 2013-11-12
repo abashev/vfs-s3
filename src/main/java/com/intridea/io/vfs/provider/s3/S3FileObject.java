@@ -166,6 +166,9 @@ public class S3FileObject extends AbstractFileObject {
         InputStream input = new ByteArrayInputStream(new byte[0]);
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(0);
+        if (((S3FileSystem)getFileSystem()).getServerSideEncryption())
+            metadata.setServerSideEncryption(
+                ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
         String dirName = objectKey.endsWith(SEPARATOR) ? objectKey : objectKey + SEPARATOR;
         getService().putObject(new PutObjectRequest(getBucket().getName(), dirName, input, metadata));
     }
