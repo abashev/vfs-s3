@@ -94,6 +94,8 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
 
         AWSCredentials awsCredentials = null;
         AmazonS3Client service = null;
+        ClientConfiguration clientConfiguration = S3FileSystemConfigBuilder
+            .getInstance().getClientConfiguration(fsOptions);
 
         try {
             // Read authData from file system options
@@ -112,7 +114,7 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
             // Initialize S3 service client.
             awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
 
-            service = new AmazonS3Client(awsCredentials);
+            service = new AmazonS3Client(awsCredentials, clientConfiguration);
         } finally {
             UserAuthenticatorUtils.cleanup(authData);
         }

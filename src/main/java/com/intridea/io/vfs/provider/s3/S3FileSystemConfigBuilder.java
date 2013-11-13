@@ -1,5 +1,6 @@
 package com.intridea.io.vfs.provider.s3;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.s3.model.Region;
 import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemConfigBuilder;
@@ -10,6 +11,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     
     private static final String SERVER_SIDE_ENCRYPTION = S3FileSystemConfigBuilder.class.getName() + ".SERVER_SIDE_ENCRYPTION";
     private static final String REGION = S3FileSystemConfigBuilder.class.getName() + ".REGION";
+    private static final String CLIENT_CONFIGURATION = S3FileSystemConfigBuilder.class.getName() + ".CLIENT_CONFIGURATION";
 
     private S3FileSystemConfigBuilder()
     {
@@ -47,12 +49,48 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         return getBoolean(opts, SERVER_SIDE_ENCRYPTION, false);
     }
 
+    /**
+     * @param opts The FileSystemOptions.
+     * @param region The S3 region to connect to (if null, then US Standard)
+     */
     public void setRegion(FileSystemOptions opts, Region region) {
         setParam(opts, REGION, region.toString());
     }
 
+    /**
+     * @param opts The FileSystemOptions.
+     * @return The S3 region to connect to (if null, then US Standard)
+     */
     public Region getRegion(FileSystemOptions opts) {
         String r = getString(opts, REGION);
         return (r == null) ? null : Region.fromValue(r);
+    }
+
+    /**
+     * @param opts The FileSystemOptions.
+     * @param clientConfiguration The AWS ClientConfiguration object to
+     *                            use when creating the connection.
+     */
+    public void setClientConfiguration(FileSystemOptions opts, ClientConfiguration clientConfiguration) {
+        setParam(opts, CLIENT_CONFIGURATION, clientConfiguration);
+    }
+
+    /**
+     * @param opts The FileSystemOptions.
+     * @return The AWS ClientConfiguration object to use when creating the
+     * connection.  If none has been set, a default ClientConfiguration is returend,
+     * with the following differences:
+     *   1. The maxErrorRetry is 8 instead of the AWS default (3).  This
+     *      is generally a better setting to use when operating in a production
+     *      environment and means approximately up to 2 minutes of retries for
+     *      failed operations.
+     */
+    public ClientConfiguration getClientConfiguration(FileSystemOptions opts) {
+        ClientConfiguration clientConfiguration = (ClientConfiguration) getParam(opts, CLIENT_CONFIGURATION);
+        if (clientConfiguration == null) {
+            clientConfiguration = new ClientConfiguration();
+            clientConfiguration.setMaxErrorRetry(8);
+        }
+        return clientConfiguration;
     }
 }
