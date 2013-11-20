@@ -797,67 +797,153 @@ public class S3FileObject extends AbstractFileObject {
         }
     }
 
-	/**
-	 * Queries the object if a simple rename to the filename of <code>newfile</code> is possible.
-	 *
-	 * @param newfile
-	 * 	the new filename
-	 * @return true if rename is possible
-	 */
-	@Override
-	public boolean canRenameTo(FileObject newfile) {
-		return false;
-	}
+    /**
+     * Queries the object if a simple rename to the filename of <code>newfile</code> is possible.
+     *
+     * @param newfile
+     *  the new filename
+     * @return true if rename is possible
+     */
+    @Override
+    public boolean canRenameTo(FileObject newfile) {
+        return false;
+    }
 
-	@Override
-	/**
-	 * Copies another file to this file.
-	 * @param file The FileObject to copy.
-	 * @param selector The FileSelector.
-	 * @throws FileSystemException if an error occurs.
-	 */
-	public void copyFrom(final FileObject file, final FileSelector selector)
-		throws FileSystemException
-	{
-		if (!(file instanceof S3FileObject)) {
-			super.copyFrom(file, selector);
-		} else {
-			if (!file.exists())
-			{
-				throw new FileSystemException("vfs.provider/copy-missing-file.error", file);
-			}
+    @Override
+    /**
+     * Copies another file to this file.
+     * @param file The FileObject to copy.
+     * @param selector The FileSelector.
+     * @throws FileSystemException if an error occurs.
+     */
+    public void copyFrom(final FileObject file, final FileSelector selector)
+        throws FileSystemException
+    {
+		if (!file.exists()) {
+			throw new FileSystemException("vfs.provider/copy-missing-file.error", file);
+		}
+		// Locate the files to copy across
+		final ArrayList<FileObject> files = new ArrayList<FileObject>();
+		file.findFiles(selector, false, files);
 
-			// Locate the files to copy across
-			final ArrayList<FileObject> files = new ArrayList<FileObject>();
-			file.findFiles(selector, false, files);
+		// Copy everything across
+		for (final FileObject srcFile : files) {
+			// Determine the destination file
+			final String relPath = file.getName().getRelativeName(srcFile.getName());
+			final S3FileObject destFile = (S3FileObject) resolveFile(relPath, NameScope.DESCENDENT_OR_SELF);
 
-			// Copy everything across
-			final int count = files.size();
-			for (int i = 0; i < count; i++)
-			{
-				final FileObject srcFile = files.get(i);
-
-				// Determine the destination file
-				final String relPath = file.getName().getRelativeName(srcFile.getName());
-				final FileObject destFile = resolveFile(relPath, NameScope.DESCENDENT_OR_SELF);
-
-				// Clean up the destination file, if necessary
-				if (destFile.exists() && destFile.getType() != srcFile.getType())
-				{
+			// Clean up the destination file, if necessary
+			if (destFile.exists()) {
+				if (destFile.getType() != srcFile.getType()) {
 					// The destination file exists, and is not of the same type,
 					// so delete it
 					// TODO - add a pluggable policy for deleting and overwriting existing files
 					destFile.delete(Selectors.SELECT_ALL);
 				}
+			} else {
+				FileObject parent = getParent();
+				if (parent != null) {
+					parent.createFolder();
+				}
+			}
 
-				// Copy across
-				try
-				{
+			// Copy across
+			try {
+				if (srcFile.getType().hasChildren()) {
+					destFile.createFolder();
+					// do server side copy if both source and dest are in S3 and using same credentials
+				} else if (srcFile instanceof S3FileObject &&
+				    ((S3FileObject)srcFile).getAwsCredentials().getAWSAccessKeyId().equals(getAwsCredentials().getAWSAccessKeyId()) &&
+				    ((S3FileObject)srcFile).getAwsCredentials().getAWSSecretKey().equals(getAwsCredentials().getAWSSecretKey())) {
+				     S3FileObject s3SrcFile = (S3FileObject)srcFile;
+                    String srcBucketName = s3SrcFile.getBucket().getName();
+                    String srcFileName = s3SrcFile.getS3Key();
+                    String destBucketName = destFile.getBucket().getName();
+                    String destFileName = destFile.getS3Key();
+                    CopyObjectRequest copy = new CopyObjectRequest(
+                        srcBucketName, srcFileName, destBucketName, destFileName);
+                    if (srcFile.getType() == FileType.FILE
+                        && ((S3FileSystem)destFile.getFileSystem()).getServerSideEncryption()) {
+                        ObjectMetadata meta = s3SrcFile.getObjectMetadata();
+                        meta.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+                        copy.setNewObjectMetadata(meta);
+                    }
+                    getService().copyObject(copy);
+				} else if (srcFile.getType().hasContent()) {
+					// do direct upload from stream to avoid extra file buffering that would occur
+					// if we we used our own outputstream
+					FileContent content = srcFile.getContent();
+					ObjectMetadata md = new ObjectMetadata();
+					md.setContentLength(content.getSize());
+					md.setContentType(Mimetypes.getInstance().getMimetype(srcFile.getName().getBaseName()));
+					if (((S3FileSystem)destFile.getFileSystem()).getServerSideEncryption()) {
+                       md.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+                   }
+					final InputStream instr = content.getInputStream();
+					try {
+						final Upload upload = getTransferManager().upload(
+							destFile.getBucket().getName(), destFile.objectKey, instr, md);
+						upload.waitForCompletion();
+					} finally {
+						instr.close();
+					}
+				} else {
+				    // nothing useful to do if no content and can't have children
+				    throw new FileSystemException("vfs.provider/copy-file.error",
+				        new Object[]{srcFile, destFile}, new UnsupportedOperationException());
+				}
+			} catch (IOException e) {
+				throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+			} catch (InterruptedException e) {
+				throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+			} catch (AmazonServiceException e) {
+				throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+			} catch (AmazonClientException e) {
+				throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+			} finally {
+				destFile.close();
+			}
+		}
+
+/*         if (!(file instanceof S3FileObject)) {
+            super.copyFrom(file, selector);
+        } else {
+            if (!file.exists())
+            {
+                throw new FileSystemException("vfs.provider/copy-missing-file.error", file);
+            }
+
+            // Locate the files to copy across
+            final ArrayList<FileObject> files = new ArrayList<FileObject>();
+            file.findFiles(selector, false, files);
+
+            // Copy everything across
+            final int count = files.size();
+            for (int i = 0; i < count; i++)
+            {
+                final FileObject srcFile = files.get(i);
+
+                // Determine the destination file
+                final String relPath = file.getName().getRelativeName(srcFile.getName());
+                final FileObject destFile = resolveFile(relPath, NameScope.DESCENDENT_OR_SELF);
+
+                // Clean up the destination file, if necessary
+                if (destFile.exists() && destFile.getType() != srcFile.getType())
+                {
+                    // The destination file exists, and is not of the same type,
+                    // so delete it
+                    // TODO - add a pluggable policy for deleting and overwriting existing files
+                    destFile.delete(Selectors.SELECT_ALL);
+                }
+
+                // Copy across
+                try
+                {
                     String srcBucketName = ((S3FileObject)srcFile).getBucket().getName();
                     String srcFileName = ((S3FileObject)srcFile).getS3Key();
                     String destBucketName = ((S3FileObject)destFile).getBucket().getName();
                     String destFileName = ((S3FileObject)destFile).getS3Key();
-					if (srcFile.getType() == FileType.FOLDER) {
+                    if (srcFile.getType() == FileType.FOLDER) {
                         srcFileName = srcFileName + FileName.SEPARATOR;
                         destFileName = destFileName + FileName.SEPARATOR;
                     }
@@ -872,14 +958,14 @@ public class S3FileObject extends AbstractFileObject {
                     getService().copyObject(copy);
 
                     destFile.close();
-				} catch (AmazonServiceException e) {
-					throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
-				}
-				catch (AmazonClientException e) {
-					throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
-				}
-			}
-		}
-	}
+                } catch (AmazonServiceException e) {
+                    throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+                }
+                catch (AmazonClientException e) {
+                    throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+                }
+            }
+        } */
+    }
 
 }
