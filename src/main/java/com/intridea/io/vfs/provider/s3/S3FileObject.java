@@ -217,95 +217,111 @@ public class S3FileObject extends AbstractFileObject {
             path = path + "/";
         }
 
-        ObjectListing listing = getService().listObjects(getBucket().getName(), path);
+        final ListObjectsRequest loReq = new ListObjectsRequest();
+        loReq.setBucketName(getBucket().getName());
+        loReq.setDelimiter("/");
+        loReq.setPrefix(path);
+
+        ObjectListing listing = getService().listObjects(loReq);
         final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>(listing.getObjectSummaries());
+        final Set<String> commonPrefixes = new TreeSet<String>(listing.getCommonPrefixes());
         while (listing.isTruncated()) {
-            final ListObjectsRequest loReq = new ListObjectsRequest();
-            loReq.setBucketName(getBucket().getName());
-            loReq.setMarker(listing.getNextMarker());
-            listing = getService().listObjects(loReq);
+            listing = getService().listNextBatchOfObjects(listing);
             summaries.addAll(listing.getObjectSummaries());
+            commonPrefixes.addAll(listing.getCommonPrefixes());
         }
 
-        List<String> childrenNames = new ArrayList<String>(summaries.size());
+        List<String> childrenNames = new ArrayList<String>(summaries.size() + commonPrefixes.size());
+
+        // add the prefixes (non-empty subdirs) first
+        for (String commonPrefix : commonPrefixes) {
+            // strip path from name (leave only base name)
+            final String stripPath = commonPrefix.substring(path.length());
+            childrenNames.add(stripPath);
+        }
 
         for (S3ObjectSummary summary : summaries) {
             if (!summary.getKey().equals(path)) {
                 // strip path from name (leave only base name)
                 final String stripPath = summary.getKey().substring(path.length());
-
-                // Only one slash in the end OR no slash at all
-                if ((stripPath.endsWith(SEPARATOR) && (stripPath.indexOf(SEPARATOR_CHAR) == stripPath.lastIndexOf(SEPARATOR_CHAR))) ||
-                        (stripPath.indexOf(SEPARATOR_CHAR) == (-1))) {
-                    childrenNames.add(stripPath);
-                }
+                childrenNames.add(stripPath);
             }
         }
 
         return childrenNames.toArray(new String[childrenNames.size()]);
     }
 
-	/**
-	 * Lists the children of this file.  Is only called if {@link #doGetType}
-	 * returns {@link FileType#FOLDER}.  The return value of this method
-	 * is cached, so the implementation can be expensive.<br>
-	 * Other than <code>doListChildren</code> you could return FileObject's to e.g. reinitialize the
-	 * type of the file.<br>
-	 * (Introduced for Webdav: "permission denied on resource" during getType())
-	 * @return The children of this FileObject.
-	 * @throws Exception if an error occurs.
-	 */
-	@Override
-	protected FileObject[] doListChildrenResolved() throws Exception
-	{
-		String path = objectKey;
-		// make sure we add a '/' slash at the end to find children
-		if ((!"".equals(path)) && (!path.endsWith(SEPARATOR))) {
-			path = path + "/";
-		}
+    /**
+     * Lists the children of this file.  Is only called if {@link #doGetType}
+     * returns {@link FileType#FOLDER}.  The return value of this method
+     * is cached, so the implementation can be expensive.<br>
+     * Other than <code>doListChildren</code> you could return FileObject's to e.g. reinitialize the
+     * type of the file.<br>
+     * (Introduced for Webdav: "permission denied on resource" during getType())
+     * @return The children of this FileObject.
+     * @throws Exception if an error occurs.
+     */
+    @Override
+    protected FileObject[] doListChildrenResolved() throws Exception
+    {
+        String path = objectKey;
+        // make sure we add a '/' slash at the end to find children
+        if ((!"".equals(path)) && (!path.endsWith(SEPARATOR))) {
+            path = path + "/";
+        }
 
-		ObjectListing listing = getService().listObjects(getBucket().getName(), path);
-		final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>(listing.getObjectSummaries());
-		while (listing.isTruncated()) {
-			final ListObjectsRequest loReq = new ListObjectsRequest();
-			loReq.setBucketName(getBucket().getName());
-			loReq.setMarker(listing.getNextMarker());
-			listing = getService().listObjects(loReq);
-			summaries.addAll(listing.getObjectSummaries());
-		}
+        final ListObjectsRequest loReq = new ListObjectsRequest();
+        loReq.setBucketName(getBucket().getName());
+        loReq.setDelimiter("/");
+        loReq.setPrefix(path);
 
-		List<FileObject> resolvedChildren = new ArrayList<FileObject>(summaries.size());
+        ObjectListing listing = getService().listObjects(loReq);
+        final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>(listing.getObjectSummaries());
+        final Set<String> commonPrefixes = new TreeSet<String>(listing.getCommonPrefixes());
+        while (listing.isTruncated()) {
+            listing = getService().listNextBatchOfObjects(listing);
+            summaries.addAll(listing.getObjectSummaries());
+            commonPrefixes.addAll(listing.getCommonPrefixes());
+        }
 
-		for (S3ObjectSummary summary : summaries) {
-			if (!summary.getKey().equals(path)) {
-				// strip path from name (leave only base name)
-				final String stripPath = summary.getKey().substring(path.length());
+        List<FileObject> resolvedChildren = new ArrayList<FileObject>(summaries.size() + commonPrefixes.size());
 
-				// Only one slash in the end OR no slash at all
-				if ((stripPath.endsWith(SEPARATOR) && (stripPath.indexOf(SEPARATOR_CHAR) == stripPath.lastIndexOf(SEPARATOR_CHAR))) ||
-					(stripPath.indexOf(SEPARATOR_CHAR) == (-1))) {
-					FileObject childObject = resolveFile(stripPath, NameScope.CHILD);
-					if (childObject instanceof S3FileObject) {
-						S3FileObject s3FileObject = (S3FileObject)childObject;
-						ObjectMetadata childMetadata = new ObjectMetadata();
-						childMetadata.setContentLength(summary.getSize());
-						childMetadata.setContentType(
-							Mimetypes.getInstance().getMimetype(s3FileObject.getName().getBaseName()));
-						childMetadata.setLastModified(summary.getLastModified());
-						childMetadata.setHeader(Headers.ETAG, summary.getETag());
-						s3FileObject.objectMetadata = childMetadata;
-						s3FileObject.objectKey = summary.getKey();
-						s3FileObject.attached = true;
-						resolvedChildren.add(s3FileObject);
-					}
-				}
-			}
-		}
+        // add the prefixes (non-empty subdirs) first
+        for (String commonPrefix : commonPrefixes) {
+            // strip path from name (leave only base name)
+            final String stripPath = commonPrefix.substring(path.length());
+            FileObject childObject = resolveFile(stripPath, NameScope.CHILD);
+            if (childObject instanceof S3FileObject) {
+                S3FileObject s3FileObject = (S3FileObject) childObject;
+                resolvedChildren.add(s3FileObject);
+            }
+        }
 
-		return resolvedChildren.toArray(new FileObject[resolvedChildren.size()]);
-	}
+        for (S3ObjectSummary summary : summaries) {
+            if (!summary.getKey().equals(path)) {
+                // strip path from name (leave only base name)
+                final String stripPath = summary.getKey().substring(path.length());
+                FileObject childObject = resolveFile(stripPath, NameScope.CHILD);
+                if (childObject instanceof S3FileObject) {
+                    S3FileObject s3FileObject = (S3FileObject) childObject;
+                    ObjectMetadata childMetadata = new ObjectMetadata();
+                    childMetadata.setContentLength(summary.getSize());
+                    childMetadata.setContentType(
+                        Mimetypes.getInstance().getMimetype(s3FileObject.getName().getBaseName()));
+                    childMetadata.setLastModified(summary.getLastModified());
+                    childMetadata.setHeader(Headers.ETAG, summary.getETag());
+                    s3FileObject.objectMetadata = childMetadata;
+                    s3FileObject.objectKey = summary.getKey();
+                    s3FileObject.attached = true;
+                    resolvedChildren.add(s3FileObject);
+                }
+            }
+        }
 
-	@Override
+        return resolvedChildren.toArray(new FileObject[resolvedChildren.size()]);
+    }
+
+    @Override
     protected long doGetContentSize() throws Exception {
         return objectMetadata.getContentLength();
     }
