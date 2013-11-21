@@ -117,4 +117,12 @@ public class S3FileSystem extends AbstractFileSystem {
     protected FileObject createFile(AbstractFileName fileName) throws Exception {
         return new S3FileObject(fileName, this);
     }
+    
+    @Override
+    protected void doCloseCommunicationLink()
+    {
+        if (transferManager != null) {
+            transferManager.shutdownNow();
+        }
+    }
 }

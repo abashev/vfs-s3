@@ -68,6 +68,11 @@ public class S3FileObject extends AbstractFileObject {
     private File cacheFile;
 
     /**
+     * Local for output stream
+     */
+    private File outputFile;
+
+    /**
      * Amazon file owner. Used in ACL
      */
     private Owner fileOwner;
@@ -188,7 +193,7 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected OutputStream doGetOutputStream(boolean bAppend) throws Exception {
-        return new S3OutputStream(Channels.newOutputStream(getCacheFileChannel()));
+        return new S3OutputStream(Channels.newOutputStream(getOutputFileChannel()));
     }
 
     @Override
@@ -212,95 +217,111 @@ public class S3FileObject extends AbstractFileObject {
             path = path + "/";
         }
 
-        ObjectListing listing = getService().listObjects(getBucket().getName(), path);
+        final ListObjectsRequest loReq = new ListObjectsRequest();
+        loReq.setBucketName(getBucket().getName());
+        loReq.setDelimiter("/");
+        loReq.setPrefix(path);
+
+        ObjectListing listing = getService().listObjects(loReq);
         final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>(listing.getObjectSummaries());
+        final Set<String> commonPrefixes = new TreeSet<String>(listing.getCommonPrefixes());
         while (listing.isTruncated()) {
-            final ListObjectsRequest loReq = new ListObjectsRequest();
-            loReq.setBucketName(getBucket().getName());
-            loReq.setMarker(listing.getNextMarker());
-            listing = getService().listObjects(loReq);
+            listing = getService().listNextBatchOfObjects(listing);
             summaries.addAll(listing.getObjectSummaries());
+            commonPrefixes.addAll(listing.getCommonPrefixes());
         }
 
-        List<String> childrenNames = new ArrayList<String>(summaries.size());
+        List<String> childrenNames = new ArrayList<String>(summaries.size() + commonPrefixes.size());
+
+        // add the prefixes (non-empty subdirs) first
+        for (String commonPrefix : commonPrefixes) {
+            // strip path from name (leave only base name)
+            final String stripPath = commonPrefix.substring(path.length());
+            childrenNames.add(stripPath);
+        }
 
         for (S3ObjectSummary summary : summaries) {
             if (!summary.getKey().equals(path)) {
                 // strip path from name (leave only base name)
                 final String stripPath = summary.getKey().substring(path.length());
-
-                // Only one slash in the end OR no slash at all
-                if ((stripPath.endsWith(SEPARATOR) && (stripPath.indexOf(SEPARATOR_CHAR) == stripPath.lastIndexOf(SEPARATOR_CHAR))) ||
-                        (stripPath.indexOf(SEPARATOR_CHAR) == (-1))) {
-                    childrenNames.add(stripPath);
-                }
+                childrenNames.add(stripPath);
             }
         }
 
         return childrenNames.toArray(new String[childrenNames.size()]);
     }
 
-	/**
-	 * Lists the children of this file.  Is only called if {@link #doGetType}
-	 * returns {@link FileType#FOLDER}.  The return value of this method
-	 * is cached, so the implementation can be expensive.<br>
-	 * Other than <code>doListChildren</code> you could return FileObject's to e.g. reinitialize the
-	 * type of the file.<br>
-	 * (Introduced for Webdav: "permission denied on resource" during getType())
-	 * @return The children of this FileObject.
-	 * @throws Exception if an error occurs.
-	 */
-	@Override
-	protected FileObject[] doListChildrenResolved() throws Exception
-	{
-		String path = objectKey;
-		// make sure we add a '/' slash at the end to find children
-		if ((!"".equals(path)) && (!path.endsWith(SEPARATOR))) {
-			path = path + "/";
-		}
+    /**
+     * Lists the children of this file.  Is only called if {@link #doGetType}
+     * returns {@link FileType#FOLDER}.  The return value of this method
+     * is cached, so the implementation can be expensive.<br>
+     * Other than <code>doListChildren</code> you could return FileObject's to e.g. reinitialize the
+     * type of the file.<br>
+     * (Introduced for Webdav: "permission denied on resource" during getType())
+     * @return The children of this FileObject.
+     * @throws Exception if an error occurs.
+     */
+    @Override
+    protected FileObject[] doListChildrenResolved() throws Exception
+    {
+        String path = objectKey;
+        // make sure we add a '/' slash at the end to find children
+        if ((!"".equals(path)) && (!path.endsWith(SEPARATOR))) {
+            path = path + "/";
+        }
 
-		ObjectListing listing = getService().listObjects(getBucket().getName(), path);
-		final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>(listing.getObjectSummaries());
-		while (listing.isTruncated()) {
-			final ListObjectsRequest loReq = new ListObjectsRequest();
-			loReq.setBucketName(getBucket().getName());
-			loReq.setMarker(listing.getNextMarker());
-			listing = getService().listObjects(loReq);
-			summaries.addAll(listing.getObjectSummaries());
-		}
+        final ListObjectsRequest loReq = new ListObjectsRequest();
+        loReq.setBucketName(getBucket().getName());
+        loReq.setDelimiter("/");
+        loReq.setPrefix(path);
 
-		List<FileObject> resolvedChildren = new ArrayList<FileObject>(summaries.size());
+        ObjectListing listing = getService().listObjects(loReq);
+        final List<S3ObjectSummary> summaries = new ArrayList<S3ObjectSummary>(listing.getObjectSummaries());
+        final Set<String> commonPrefixes = new TreeSet<String>(listing.getCommonPrefixes());
+        while (listing.isTruncated()) {
+            listing = getService().listNextBatchOfObjects(listing);
+            summaries.addAll(listing.getObjectSummaries());
+            commonPrefixes.addAll(listing.getCommonPrefixes());
+        }
 
-		for (S3ObjectSummary summary : summaries) {
-			if (!summary.getKey().equals(path)) {
-				// strip path from name (leave only base name)
-				final String stripPath = summary.getKey().substring(path.length());
+        List<FileObject> resolvedChildren = new ArrayList<FileObject>(summaries.size() + commonPrefixes.size());
 
-				// Only one slash in the end OR no slash at all
-				if ((stripPath.endsWith(SEPARATOR) && (stripPath.indexOf(SEPARATOR_CHAR) == stripPath.lastIndexOf(SEPARATOR_CHAR))) ||
-					(stripPath.indexOf(SEPARATOR_CHAR) == (-1))) {
-					FileObject childObject = resolveFile(stripPath, NameScope.CHILD);
-					if (childObject instanceof S3FileObject) {
-						S3FileObject s3FileObject = (S3FileObject)childObject;
-						ObjectMetadata childMetadata = new ObjectMetadata();
-						childMetadata.setContentLength(summary.getSize());
-						childMetadata.setContentType(
-							Mimetypes.getInstance().getMimetype(s3FileObject.getName().getBaseName()));
-						childMetadata.setLastModified(summary.getLastModified());
-						childMetadata.setHeader(Headers.ETAG, summary.getETag());
-						s3FileObject.objectMetadata = childMetadata;
-						s3FileObject.objectKey = summary.getKey();
-						s3FileObject.attached = true;
-						resolvedChildren.add(s3FileObject);
-					}
-				}
-			}
-		}
+        // add the prefixes (non-empty subdirs) first
+        for (String commonPrefix : commonPrefixes) {
+            // strip path from name (leave only base name)
+            final String stripPath = commonPrefix.substring(path.length());
+            FileObject childObject = resolveFile(stripPath, NameScope.CHILD);
+            if (childObject instanceof S3FileObject) {
+                S3FileObject s3FileObject = (S3FileObject) childObject;
+                resolvedChildren.add(s3FileObject);
+            }
+        }
 
-		return resolvedChildren.toArray(new FileObject[resolvedChildren.size()]);
-	}
+        for (S3ObjectSummary summary : summaries) {
+            if (!summary.getKey().equals(path)) {
+                // strip path from name (leave only base name)
+                final String stripPath = summary.getKey().substring(path.length());
+                FileObject childObject = resolveFile(stripPath, NameScope.CHILD);
+                if (childObject instanceof S3FileObject) {
+                    S3FileObject s3FileObject = (S3FileObject) childObject;
+                    ObjectMetadata childMetadata = new ObjectMetadata();
+                    childMetadata.setContentLength(summary.getSize());
+                    childMetadata.setContentType(
+                        Mimetypes.getInstance().getMimetype(s3FileObject.getName().getBaseName()));
+                    childMetadata.setLastModified(summary.getLastModified());
+                    childMetadata.setHeader(Headers.ETAG, summary.getETag());
+                    s3FileObject.objectMetadata = childMetadata;
+                    s3FileObject.objectKey = summary.getKey();
+                    s3FileObject.attached = true;
+                    resolvedChildren.add(s3FileObject);
+                }
+            }
+        }
 
-	@Override
+        return resolvedChildren.toArray(new FileObject[resolvedChildren.size()]);
+    }
+
+    @Override
     protected long doGetContentSize() throws Exception {
         return objectMetadata.getContentLength();
     }
@@ -400,6 +421,18 @@ public class S3FileObject extends AbstractFileObject {
             cacheFile = File.createTempFile("scalr.", ".s3");
         }
         return new RandomAccessFile(cacheFile, "rw").getChannel();
+    }
+
+    /**
+     * Get or create temporary file channel for file output cache
+     * @return
+     * @throws IOException
+     */
+    private FileChannel getOutputFileChannel() throws IOException {
+        if (outputFile == null) {
+            outputFile = File.createTempFile("scalr.", ".s3");
+        }
+        return new RandomAccessFile(outputFile, "rw").getChannel();
     }
 
     // ACL extension methods
@@ -693,9 +726,10 @@ public class S3FileObject extends AbstractFileObject {
 
         @Override
         protected void onClose() throws IOException {
-            FileChannel cacheFileChannel = getCacheFileChannel();
+ 			doAttach();
+           FileChannel outputFileChannel = getOutputFileChannel();
 
-            objectMetadata.setContentLength(cacheFileChannel.size());
+            objectMetadata.setContentLength(outputFileChannel.size());
             objectMetadata.setContentType(
                 Mimetypes.getInstance().getMimetype(getName().getBaseName()));
             if (((S3FileSystem)getFileSystem()).getServerSideEncryption())
@@ -704,7 +738,7 @@ public class S3FileObject extends AbstractFileObject {
             try {
                 final Upload upload = getTransferManager().upload(
                     getBucket().getName(), objectKey,
-                    newInputStream(cacheFileChannel), objectMetadata
+                    newInputStream(outputFileChannel), objectMetadata
                 );
 
                 upload.addProgressListener(new ProgressListener() {
@@ -731,81 +765,185 @@ public class S3FileObject extends AbstractFileObject {
                         }
                     }
                 });
-
                 upload.waitForCompletion();
+                doDetach();
+                doAttach();
             } catch (AmazonServiceException e) {
                 throw new IOException(e);
             } catch (InterruptedException e) {
                 throw new IOException(e);
+            } catch (Exception e) {
+                throw new IOException(e);
             } finally {
-                if (cacheFileChannel != null) {
-                    cacheFileChannel.close();
-                }
+				try {
+					outputFileChannel.close();
+				} catch (IOException e) {
+					logger.error("Unable to delete temporary file: " + outputFile.getName(), e);
+					try {
+						doDetach();
+					} catch (Exception e1) {
+						logger.error("Couldn't detach from S3 Object: " + objectKey, e);
+					}
+				} finally {
+					if (!attached) {
+						outputFile.delete();
+					} else {
+						cacheFile = outputFile;
+						downloaded = true;
+					}
+					outputFile = null;
+				}
             }
         }
     }
 
-	/**
-	 * Queries the object if a simple rename to the filename of <code>newfile</code> is possible.
-	 *
-	 * @param newfile
-	 * 	the new filename
-	 * @return true if rename is possible
-	 */
-	@Override
-	public boolean canRenameTo(FileObject newfile) {
-		return false;
-	}
+    /**
+     * Queries the object if a simple rename to the filename of <code>newfile</code> is possible.
+     *
+     * @param newfile
+     *  the new filename
+     * @return true if rename is possible
+     */
+    @Override
+    public boolean canRenameTo(FileObject newfile) {
+        return false;
+    }
 
-	@Override
-	/**
-	 * Copies another file to this file.
-	 * @param file The FileObject to copy.
-	 * @param selector The FileSelector.
-	 * @throws FileSystemException if an error occurs.
-	 */
-	public void copyFrom(final FileObject file, final FileSelector selector)
-		throws FileSystemException
-	{
-		if (!(file instanceof S3FileObject)) {
-			super.copyFrom(file, selector);
-		} else {
-			if (!file.exists())
-			{
-				throw new FileSystemException("vfs.provider/copy-missing-file.error", file);
-			}
+    @Override
+    /**
+     * Copies another file to this file.
+     * @param file The FileObject to copy.
+     * @param selector The FileSelector.
+     * @throws FileSystemException if an error occurs.
+     */
+    public void copyFrom(final FileObject file, final FileSelector selector)
+        throws FileSystemException
+    {
+		if (!file.exists()) {
+			throw new FileSystemException("vfs.provider/copy-missing-file.error", file);
+		}
+		// Locate the files to copy across
+		final ArrayList<FileObject> files = new ArrayList<FileObject>();
+		file.findFiles(selector, false, files);
 
-			// Locate the files to copy across
-			final ArrayList<FileObject> files = new ArrayList<FileObject>();
-			file.findFiles(selector, false, files);
+		// Copy everything across
+		for (final FileObject srcFile : files) {
+			// Determine the destination file
+			final String relPath = file.getName().getRelativeName(srcFile.getName());
+			final S3FileObject destFile = (S3FileObject) resolveFile(relPath, NameScope.DESCENDENT_OR_SELF);
 
-			// Copy everything across
-			final int count = files.size();
-			for (int i = 0; i < count; i++)
-			{
-				final FileObject srcFile = files.get(i);
-
-				// Determine the destination file
-				final String relPath = file.getName().getRelativeName(srcFile.getName());
-				final FileObject destFile = resolveFile(relPath, NameScope.DESCENDENT_OR_SELF);
-
-				// Clean up the destination file, if necessary
-				if (destFile.exists() && destFile.getType() != srcFile.getType())
-				{
+			// Clean up the destination file, if necessary
+			if (destFile.exists()) {
+				if (destFile.getType() != srcFile.getType()) {
 					// The destination file exists, and is not of the same type,
 					// so delete it
 					// TODO - add a pluggable policy for deleting and overwriting existing files
 					destFile.delete(Selectors.SELECT_ALL);
 				}
+			} else {
+				FileObject parent = getParent();
+				if (parent != null) {
+					parent.createFolder();
+				}
+			}
 
-				// Copy across
-				try
-				{
+			// Copy across
+			try {
+				if (srcFile.getType().hasChildren()) {
+					destFile.createFolder();
+					// do server side copy if both source and dest are in S3 and using same credentials
+				} else if (srcFile instanceof S3FileObject &&
+				    ((S3FileObject)srcFile).getAwsCredentials().getAWSAccessKeyId().equals(getAwsCredentials().getAWSAccessKeyId()) &&
+				    ((S3FileObject)srcFile).getAwsCredentials().getAWSSecretKey().equals(getAwsCredentials().getAWSSecretKey())) {
+				     S3FileObject s3SrcFile = (S3FileObject)srcFile;
+                    String srcBucketName = s3SrcFile.getBucket().getName();
+                    String srcFileName = s3SrcFile.getS3Key();
+                    String destBucketName = destFile.getBucket().getName();
+                    String destFileName = destFile.getS3Key();
+                    CopyObjectRequest copy = new CopyObjectRequest(
+                        srcBucketName, srcFileName, destBucketName, destFileName);
+                    if (srcFile.getType() == FileType.FILE
+                        && ((S3FileSystem)destFile.getFileSystem()).getServerSideEncryption()) {
+                        ObjectMetadata meta = s3SrcFile.getObjectMetadata();
+                        meta.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+                        copy.setNewObjectMetadata(meta);
+                    }
+                    getService().copyObject(copy);
+				} else if (srcFile.getType().hasContent()) {
+					// do direct upload from stream to avoid extra file buffering that would occur
+					// if we we used our own outputstream
+					FileContent content = srcFile.getContent();
+					ObjectMetadata md = new ObjectMetadata();
+					md.setContentLength(content.getSize());
+					md.setContentType(Mimetypes.getInstance().getMimetype(srcFile.getName().getBaseName()));
+					if (((S3FileSystem)destFile.getFileSystem()).getServerSideEncryption()) {
+                       md.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+                   }
+					final InputStream instr = content.getInputStream();
+					try {
+						final Upload upload = getTransferManager().upload(
+							destFile.getBucket().getName(), destFile.objectKey, instr, md);
+						upload.waitForCompletion();
+					} finally {
+						instr.close();
+					}
+				} else {
+				    // nothing useful to do if no content and can't have children
+				    throw new FileSystemException("vfs.provider/copy-file.error",
+				        new Object[]{srcFile, destFile}, new UnsupportedOperationException());
+				}
+			} catch (IOException e) {
+				throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+			} catch (InterruptedException e) {
+				throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+			} catch (AmazonServiceException e) {
+				throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+			} catch (AmazonClientException e) {
+				throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+			} finally {
+				destFile.close();
+			}
+		}
+
+/*         if (!(file instanceof S3FileObject)) {
+            super.copyFrom(file, selector);
+        } else {
+            if (!file.exists())
+            {
+                throw new FileSystemException("vfs.provider/copy-missing-file.error", file);
+            }
+
+            // Locate the files to copy across
+            final ArrayList<FileObject> files = new ArrayList<FileObject>();
+            file.findFiles(selector, false, files);
+
+            // Copy everything across
+            final int count = files.size();
+            for (int i = 0; i < count; i++)
+            {
+                final FileObject srcFile = files.get(i);
+
+                // Determine the destination file
+                final String relPath = file.getName().getRelativeName(srcFile.getName());
+                final FileObject destFile = resolveFile(relPath, NameScope.DESCENDENT_OR_SELF);
+
+                // Clean up the destination file, if necessary
+                if (destFile.exists() && destFile.getType() != srcFile.getType())
+                {
+                    // The destination file exists, and is not of the same type,
+                    // so delete it
+                    // TODO - add a pluggable policy for deleting and overwriting existing files
+                    destFile.delete(Selectors.SELECT_ALL);
+                }
+
+                // Copy across
+                try
+                {
                     String srcBucketName = ((S3FileObject)srcFile).getBucket().getName();
                     String srcFileName = ((S3FileObject)srcFile).getS3Key();
                     String destBucketName = ((S3FileObject)destFile).getBucket().getName();
                     String destFileName = ((S3FileObject)destFile).getS3Key();
-					if (srcFile.getType() == FileType.FOLDER) {
+                    if (srcFile.getType() == FileType.FOLDER) {
                         srcFileName = srcFileName + FileName.SEPARATOR;
                         destFileName = destFileName + FileName.SEPARATOR;
                     }
@@ -820,14 +958,14 @@ public class S3FileObject extends AbstractFileObject {
                     getService().copyObject(copy);
 
                     destFile.close();
-				} catch (AmazonServiceException e) {
-					throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
-				}
-				catch (AmazonClientException e) {
-					throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
-				}
-			}
-		}
-	}
+                } catch (AmazonServiceException e) {
+                    throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+                }
+                catch (AmazonClientException e) {
+                    throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+                }
+            }
+        } */
+    }
 
 }

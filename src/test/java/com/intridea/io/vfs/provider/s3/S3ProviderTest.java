@@ -238,6 +238,65 @@ public class S3ProviderTest {
         assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
     }
 
+    @Test(dependsOnMethods={"createFileOk"})
+    public void outputStream() throws FileNotFoundException, IOException {
+        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/output.txt");
+
+        // Delete file if exists
+        if (dest.exists()) {
+            dest.delete();
+        }
+
+        // Copy data
+        OutputStream os = dest.getContent().getOutputStream();
+        try {
+            os.write(BACKUP_ZIP.getBytes("US-ASCII"));
+        } finally {
+            os.close();
+        }
+        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
+        assertEquals(dest.getContent().getSize(), BACKUP_ZIP.length());
+        assertEquals(((S3FileObject)dest).getObjectMetadata().getServerSideEncryption(),
+                null);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(dest.getContent().getInputStream(), "US-ASCII"));
+        try {
+            assertEquals(reader.readLine(), BACKUP_ZIP);
+        } finally {
+            reader.close();
+        }
+        dest.delete();
+    }
+
+    @Test(dependsOnMethods = {"createEncryptedFileOk"})
+    public void outputStreamEncrypted() throws FileNotFoundException, IOException {
+        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/output.txt");
+        ((S3FileSystem)dest.getFileSystem()).setServerSideEncryption(true);
+
+        // Delete file if exists
+        if (dest.exists()) {
+            dest.delete();
+        }
+
+        // Copy data
+        OutputStream os = dest.getContent().getOutputStream();
+        try {
+            os.write(BACKUP_ZIP.getBytes("US-ASCII"));
+        } finally {
+            os.close();
+        }
+        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
+        assertEquals(dest.getContent().getSize(), BACKUP_ZIP.length());
+        assertEquals(((S3FileObject)dest).getObjectMetadata().getServerSideEncryption(),
+                ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(dest.getContent().getInputStream(), "US-ASCII"));
+        try {
+            assertEquals(reader.readLine(), BACKUP_ZIP);
+        } finally {
+            reader.close();
+        }
+        dest.delete();
+    }
+
     @Test(dependsOnMethods={"getSize"})
     public void download() throws IOException {
         FileObject typica = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
