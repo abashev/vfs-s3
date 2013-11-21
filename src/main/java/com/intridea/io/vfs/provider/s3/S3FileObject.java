@@ -727,7 +727,7 @@ public class S3FileObject extends AbstractFileObject {
         @Override
         protected void onClose() throws IOException {
  			doAttach();
-           FileChannel outputFileChannel = getCacheFileChannel();
+           FileChannel outputFileChannel = getOutputFileChannel();
 
             objectMetadata.setContentLength(outputFileChannel.size());
             objectMetadata.setContentType(
