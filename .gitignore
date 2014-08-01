@@ -7,3 +7,4 @@ target/
 *.iws
 /test-output
 .idea
+.envrc
