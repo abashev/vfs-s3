@@ -104,7 +104,7 @@
             <properties>
                 <aws.accessKey>${env.AWS_ACCESS_KEY}</aws.accessKey>
                 <aws.secretKey>${env.AWS_SECRET_KEY}</aws.secretKey>
-                <aws.testPrefix></aws.testPrefix>
+                <aws.testPrefix>${env.AWS_TEST_PREFIX}</aws.testPrefix>
             </properties>
         </profile>
     </profiles>
