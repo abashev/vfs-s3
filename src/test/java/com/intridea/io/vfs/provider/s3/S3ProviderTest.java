@@ -7,7 +7,6 @@ import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.vfs2.*;
-import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -22,15 +21,16 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Random;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static com.intridea.io.vfs.FileAssert.assertHasChildren;
+import static org.apache.commons.vfs2.Selectors.SELECT_ALL;
+import static org.testng.Assert.*;
 
 
 @Test(groups={"storage"})
 public class S3ProviderTest {
 
     private static final String BACKUP_ZIP = "src/test/resources/backup.zip";
+    private static final String BIG_FILE = "big_file.iso";
 
     private FileSystemManager fsManager;
     private String fileName, encryptedFileName, dirName, bucketName, bigFile;
@@ -219,7 +219,7 @@ public class S3ProviderTest {
 
     @Test(dependsOnMethods={"createFileOk"})
     public void uploadBigFile() throws FileNotFoundException, IOException {
-        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/big_file.iso");
+        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/" + BIG_FILE);
 
         // Delete file if exists
         if (dest.exists()) {
@@ -324,6 +324,21 @@ public class S3ProviderTest {
 
         FileObject[] children = baseDir.getChildren();
         assertEquals(children.length, 5);
+    }
+
+    @Test(dependsOnMethods = {"createFileOk", "createDirOk", "uploadBigFile"})
+    public void listChildrenRoot() throws FileSystemException {
+        final String bucketUrl = "s3://" + bucketName + "/";
+
+        assertHasChildren(fsManager.resolveFile(bucketUrl), "test-place", BIG_FILE);
+        assertHasChildren(fsManager.resolveFile(bucketUrl + "test-place/"), "backup.zip", dirName, encryptedFileName);
+        assertHasChildren(fsManager.resolveFile(bucketUrl + "test-place"), "backup.zip", dirName, encryptedFileName);
+
+        final FileObject destFile = fsManager.resolveFile(bucketUrl + "test-place-2");
+
+        destFile.copyFrom(fsManager.resolveFile(bucketUrl + "test-place"), SELECT_ALL);
+
+        assertHasChildren(destFile, "backup.zip", dirName, encryptedFileName);
     }
 
     @Test(dependsOnMethods={"createDirOk"})
@@ -486,11 +501,11 @@ public class S3ProviderTest {
         FileObject testsDirCopy = testsDir.getParent().resolveFile("find-tests-encrypted-copy");
         ((S3FileSystem)testsDirCopy.getFileSystem()).setServerSideEncryption(true);
 
-        testsDirCopy.copyFrom(testsDir, Selectors.SELECT_ALL);
+        testsDirCopy.copyFrom(testsDir, SELECT_ALL);
 
         // Should have same number of files
-        FileObject[] files = testsDir.findFiles(Selectors.SELECT_ALL);
-        FileObject[] filesCopy = testsDirCopy.findFiles(Selectors.SELECT_ALL);
+        FileObject[] files = testsDir.findFiles(SELECT_ALL);
+        FileObject[] filesCopy = testsDirCopy.findFiles(SELECT_ALL);
         assertEquals(files.length, filesCopy.length);
 
         for (int i = 0; i < files.length; i++) {
@@ -509,16 +524,18 @@ public class S3ProviderTest {
         testsDir.delete(Selectors.EXCLUDE_SELF);
 
         // Only tests dir must remains
-        FileObject[] files = testsDir.findFiles(Selectors.SELECT_ALL);
+        FileObject[] files = testsDir.findFiles(SELECT_ALL);
         assertEquals(files.length, 1);
     }
 
     @AfterClass
     public void tearDown() throws FileSystemException {
         try {
-            FileObject vfsTestDir = fsManager.resolveFile(dir, "..");
-            vfsTestDir.delete(Selectors.SELECT_ALL);
-            ((S3FileSystem)vfsTestDir.getFileSystem()).shutdown();
+            fsManager.resolveFile("s3://" + bucketName + "/" + BIG_FILE).delete();
+            fsManager.resolveFile("s3://" + bucketName + "/test-place").delete(SELECT_ALL);
+            fsManager.resolveFile("s3://" + bucketName + "/test-place-2").delete(SELECT_ALL);
+
+            ((S3FileSystem) fsManager.resolveFile("s3://" + bucketName + "/").getFileSystem()).shutdown();
         } catch (Exception e) {
         }
     }

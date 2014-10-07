@@ -30,7 +30,8 @@ import static com.intridea.io.vfs.operations.Acl.Permission.WRITE;
 import static java.nio.channels.Channels.newInputStream;
 import static java.util.Calendar.SECOND;
 import static org.apache.commons.vfs2.FileName.SEPARATOR;
-import static org.apache.commons.vfs2.FileName.SEPARATOR_CHAR;
+import static org.apache.commons.vfs2.NameScope.CHILD;
+import static org.apache.commons.vfs2.NameScope.FILE_SYSTEM;
 
 /**
  * Implementation of the virtual S3 file system object using the AWS-SDK.<p/>
@@ -292,11 +293,11 @@ public class S3FileObject extends AbstractFileObject {
         // add the prefixes (non-empty subdirs) first
         for (String commonPrefix : commonPrefixes) {
             // strip path from name (leave only base name)
-            final String stripPath = commonPrefix.substring(path.length());
-            FileObject childObject = resolveFile(stripPath, NameScope.CHILD);
-            if (childObject instanceof S3FileObject) {
-                S3FileObject s3FileObject = (S3FileObject) childObject;
-                resolvedChildren.add(s3FileObject);
+            String stripPath = commonPrefix.substring(path.length());
+            FileObject childObject = resolveFile(stripPath, (stripPath.equals("/")) ? FILE_SYSTEM : CHILD);
+
+            if ((childObject instanceof S3FileObject) && !stripPath.equals("/")) {
+                resolvedChildren.add(childObject);
             }
         }
 
@@ -304,7 +305,7 @@ public class S3FileObject extends AbstractFileObject {
             if (!summary.getKey().equals(path)) {
                 // strip path from name (leave only base name)
                 final String stripPath = summary.getKey().substring(path.length());
-                FileObject childObject = resolveFile(stripPath, NameScope.CHILD);
+                FileObject childObject = resolveFile(stripPath, CHILD);
                 if (childObject instanceof S3FileObject) {
                     S3FileObject s3FileObject = (S3FileObject) childObject;
                     ObjectMetadata childMetadata = new ObjectMetadata();
