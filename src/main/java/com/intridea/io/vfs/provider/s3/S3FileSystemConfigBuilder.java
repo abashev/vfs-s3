@@ -8,10 +8,13 @@ import org.apache.commons.vfs2.FileSystemOptions;
 
 public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final S3FileSystemConfigBuilder BUILDER = new S3FileSystemConfigBuilder();
-    
+
     private static final String SERVER_SIDE_ENCRYPTION = S3FileSystemConfigBuilder.class.getName() + ".SERVER_SIDE_ENCRYPTION";
     private static final String REGION = S3FileSystemConfigBuilder.class.getName() + ".REGION";
     private static final String CLIENT_CONFIGURATION = S3FileSystemConfigBuilder.class.getName() + ".CLIENT_CONFIGURATION";
+    private static final String MAX_UPLOAD_THREADS = S3FileSystemConfigBuilder.class.getName() + ".MAX_UPLOAD_THREADS";
+
+    public static final int DEFAULT_MAX_UPLOAD_THREADS = 2;
 
     private S3FileSystemConfigBuilder()
     {
@@ -93,4 +96,23 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         }
         return clientConfiguration;
     }
+
+    /**
+     * Set maximum number of threads to use for a single large (16MB or more) upload
+     * @param opts The FileSystemOptions
+     * @param maxRetries maximum number of threads to use for a single large (16MB or more) upload
+     */
+    public void setMaxUploadThreads(FileSystemOptions opts, int maxRetries) {
+        setParam(opts, MAX_UPLOAD_THREADS, maxRetries);
+    }
+
+    /**
+     * Get maximum number of threads to use for a single large (16MB or more) upload
+     * @param opts The FileSystemOptions
+     * @return maximum number of threads to use for a single large (16MB or more) upload
+     */
+    public int getMaxUploadThreads(FileSystemOptions opts) {
+        return getInteger(opts, MAX_UPLOAD_THREADS, DEFAULT_MAX_UPLOAD_THREADS);
+    }
+
 }

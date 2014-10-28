@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.internal.Mimetypes;
 import com.amazonaws.services.s3.model.*;
 import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.intridea.io.vfs.operations.Acl;
 import com.intridea.io.vfs.operations.IAclGetter;
@@ -19,12 +20,15 @@ import org.apache.commons.vfs2.provider.AbstractFileObject;
 import org.apache.commons.vfs2.util.MonitorOutputStream;
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
-import static com.amazonaws.services.s3.model.ProgressEvent.COMPLETED_EVENT_CODE;
 import static com.intridea.io.vfs.operations.Acl.Permission.READ;
 import static com.intridea.io.vfs.operations.Acl.Permission.WRITE;
 import static java.nio.channels.Channels.newInputStream;
@@ -135,7 +139,9 @@ public class S3FileObject extends AbstractFileObject {
             logger.info("Detach from S3 Object: " + objectKey);
             objectMetadata = null;
             if (cacheFile != null) {
-                cacheFile.delete();
+                if (!cacheFile.delete()) {
+                    logger.error("Unable to delete temporary file: " + cacheFile.getPath());
+                }
                 cacheFile = null;
             }
             downloaded = false;
@@ -417,7 +423,7 @@ public class S3FileObject extends AbstractFileObject {
 
     /**
      * Get or create temporary file channel for file cache
-     * @return
+     * @return temporary file channel for file cache
      * @throws IOException
      */
     private FileChannel getCacheFileChannel() throws IOException {
@@ -429,7 +435,7 @@ public class S3FileObject extends AbstractFileObject {
 
     /**
      * Get or create temporary file channel for file output cache
-     * @return
+     * @return temporary file channel for file output cache
      * @throws IOException
      */
     private FileChannel getOutputFileChannel() throws IOException {
@@ -455,7 +461,7 @@ public class S3FileObject extends AbstractFileObject {
 
     /**
      * Get S3 ACL list
-     * @return
+     * @return acl list
      */
     private AccessControlList getS3Acl() {
         String key = getS3Key();
@@ -464,8 +470,7 @@ public class S3FileObject extends AbstractFileObject {
 
     /**
      * Put S3 ACL list
-     * @param s3Acl
-     * @throws Exception
+     * @param s3Acl acl list
      */
     private void putS3Acl (AccessControlList s3Acl) {
         String key = getS3Key();
@@ -556,7 +561,7 @@ public class S3FileObject extends AbstractFileObject {
      * @see {@link FileObject#getFileOperations()}
      * @see {@link IAclGetter}
      *
-     * @param acl
+     * @param acl the access control list
      * @throws FileSystemException
      */
     public void setAcl (Acl acl) throws FileSystemException {
@@ -595,7 +600,7 @@ public class S3FileObject extends AbstractFileObject {
             } else if (acl.isAllowed(group, WRITE)) {
                 perm = Permission.Write;
             } else {
-                logger.error(String.format("Skip unknown set of rights %s", rights.toString()));
+                logger.error(String.format("Skip unknown set of rights %s", Arrays.toString(rights)));
                 continue;
             }
 
@@ -626,7 +631,7 @@ public class S3FileObject extends AbstractFileObject {
 
     /**
      * Get direct http url to S3 object.
-     * @return
+     * @return the direct http url to S3 object
      */
     public String getHttpUrl() {
         StringBuilder sb = new StringBuilder("http://" + getBucket().getName() + ".s3.amazonaws.com/");
@@ -643,7 +648,7 @@ public class S3FileObject extends AbstractFileObject {
     /**
      * Get private url with access key and secret key.
      *
-     * @return
+     * @return the private url
      */
     public String getPrivateUrl() {
         return String.format(
@@ -656,9 +661,9 @@ public class S3FileObject extends AbstractFileObject {
     }
 
     /**
-     * Tempary accessable url for object.
-     * @param expireInSeconds
-     * @return
+     * Temporary accessible url for object.
+     * @param expireInSeconds seconds until expiration
+     * @return temporary accessible url for object
      * @throws FileSystemException
      */
     public String getSignedUrl(int expireInSeconds) throws FileSystemException {
@@ -677,7 +682,7 @@ public class S3FileObject extends AbstractFileObject {
 
     /**
      * Get MD5 hash for the file
-     * @return
+     * @return md5 hash for file
      * @throws FileSystemException
      */
     public String getMD5Hash() throws FileSystemException {
@@ -708,10 +713,6 @@ public class S3FileObject extends AbstractFileObject {
         return ((S3FileSystem)getFileSystem()).getService();
     }
 
-    protected TransferManager getTransferManager() {
-        return ((S3FileSystem)getFileSystem()).getTransferManager();
-    }
-
     /** Amazon S3 bucket */
     protected Bucket getBucket() {
         return ((S3FileSystem)getFileSystem()).getBucket();
@@ -731,72 +732,22 @@ public class S3FileObject extends AbstractFileObject {
         @Override
         protected void onClose() throws IOException {
  			doAttach();
-           FileChannel outputFileChannel = getOutputFileChannel();
-
-            objectMetadata.setContentLength(outputFileChannel.size());
-            objectMetadata.setContentType(
-                Mimetypes.getInstance().getMimetype(getName().getBaseName()));
-            if (((S3FileSystem)getFileSystem()).getServerSideEncryption())
-                objectMetadata.setServerSideEncryption(
-                    ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
             try {
-                final Upload upload = getTransferManager().upload(
-                    getBucket().getName(), objectKey,
-                    newInputStream(outputFileChannel), objectMetadata
-                );
-
-                upload.addProgressListener(new ProgressListener() {
-                    private final int REPORT_THRESHOLD = 25; // Report every 25 percents
-
-                    private double lastValue = 0;
-
-                    // This method is called periodically as your transfer progresses
-                    public void progressChanged(ProgressEvent progressEvent) {
-                        double progress = upload.getProgress().getPercentTransfered();
-
-                        if ((progress - lastValue) > REPORT_THRESHOLD) {
-                            logger.info(
-                                    "File " + objectKey +
-                                    " was uploaded to " + getBucket().getName() +
-                                    " for " + (int) progress + "%"
-                            );
-
-                            lastValue = progress;
-                        }
-
-                        if (progressEvent.getEventCode() == COMPLETED_EVENT_CODE) {
-                            logger.info("File " + objectKey + " was successfully uploaded to " + getBucket().getName());
-                        }
-                    }
-                });
-                upload.waitForCompletion();
-                doDetach();
-                doAttach();
+                upload(outputFile);
             } catch (AmazonServiceException e) {
-                throw new IOException(e);
-            } catch (InterruptedException e) {
                 throw new IOException(e);
             } catch (Exception e) {
                 throw new IOException(e);
             } finally {
-				try {
-					outputFileChannel.close();
-				} catch (IOException e) {
-					logger.error("Unable to delete temporary file: " + outputFile.getName(), e);
-					try {
-						doDetach();
-					} catch (Exception e1) {
-						logger.error("Couldn't detach from S3 Object: " + objectKey, e);
-					}
-				} finally {
-					if (!attached) {
-						outputFile.delete();
-					} else {
-						cacheFile = outputFile;
-						downloaded = true;
-					}
-					outputFile = null;
-				}
+                if (!attached) {
+                    if (!outputFile.delete()) {
+                        logger.error("Unable to delete temporary file: " + outputFile.getName());
+                    }
+                } else {
+                    cacheFile = outputFile;
+                    downloaded = true;
+                }
+                outputFile = null;
             }
         }
     }
@@ -873,34 +824,19 @@ public class S3FileObject extends AbstractFileObject {
                         copy.setNewObjectMetadata(meta);
                     }
                     getService().copyObject(copy);
-				} else if (srcFile.getType().hasContent()) {
-					// do direct upload from stream to avoid extra file buffering that would occur
-					// if we we used our own outputstream
-					FileContent content = srcFile.getContent();
-					ObjectMetadata md = new ObjectMetadata();
-					md.setContentLength(content.getSize());
-					md.setContentType(Mimetypes.getInstance().getMimetype(srcFile.getName().getBaseName()));
-					if (((S3FileSystem)destFile.getFileSystem()).getServerSideEncryption()) {
-                       md.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-                   }
-					final InputStream instr = content.getInputStream();
-					try {
-						final Upload upload = getTransferManager().upload(
-							destFile.getBucket().getName(), destFile.objectKey, instr, md);
-						upload.waitForCompletion();
-					} finally {
-						instr.close();
-					}
-				} else {
-				    // nothing useful to do if no content and can't have children
-				    throw new FileSystemException("vfs.provider/copy-file.error",
-				        new Object[]{srcFile, destFile}, new UnsupportedOperationException());
-				}
+                } else if (srcFile.getType().hasContent() && srcFile.getURL().getProtocol().equals("file")) {
+                    // do direct upload from file to avoid overhead of making a copy of the file
+                    try {
+                        File localFile = new File(srcFile.getURL().toURI());
+                        destFile.upload(localFile);
+                    } catch (URISyntaxException e) {
+                        // couldn't convert URL to URI, but should still be able to do the slower way
+                        super.copyFrom(file, selector);
+                    }
+                } else {
+                    super.copyFrom(file, selector);
+                }
 			} catch (IOException e) {
-				throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
-			} catch (InterruptedException e) {
-				throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
-			} catch (AmazonServiceException e) {
 				throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
 			} catch (AmazonClientException e) {
 				throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
@@ -908,68 +844,67 @@ public class S3FileObject extends AbstractFileObject {
 				destFile.close();
 			}
 		}
+    }
 
-/*         if (!(file instanceof S3FileObject)) {
-            super.copyFrom(file, selector);
-        } else {
-            if (!file.exists())
-            {
-                throw new FileSystemException("vfs.provider/copy-missing-file.error", file);
-            }
+    /**
+     * Uploads File to S3
+     *
+     * @param file the File
+     * @param size        the size of the stream
+     */
+    private void upload(File file)
+            throws IOException {
+        PutObjectRequest request = new PutObjectRequest(getBucket().getName(), getS3Key(), file);
 
-            // Locate the files to copy across
-            final ArrayList<FileObject> files = new ArrayList<FileObject>();
-            file.findFiles(selector, false, files);
-
-            // Copy everything across
-            final int count = files.size();
-            for (int i = 0; i < count; i++)
-            {
-                final FileObject srcFile = files.get(i);
-
-                // Determine the destination file
-                final String relPath = file.getName().getRelativeName(srcFile.getName());
-                final FileObject destFile = resolveFile(relPath, NameScope.DESCENDENT_OR_SELF);
-
-                // Clean up the destination file, if necessary
-                if (destFile.exists() && destFile.getType() != srcFile.getType())
-                {
-                    // The destination file exists, and is not of the same type,
-                    // so delete it
-                    // TODO - add a pluggable policy for deleting and overwriting existing files
-                    destFile.delete(Selectors.SELECT_ALL);
-                }
-
-                // Copy across
-                try
-                {
-                    String srcBucketName = ((S3FileObject)srcFile).getBucket().getName();
-                    String srcFileName = ((S3FileObject)srcFile).getS3Key();
-                    String destBucketName = ((S3FileObject)destFile).getBucket().getName();
-                    String destFileName = ((S3FileObject)destFile).getS3Key();
-                    if (srcFile.getType() == FileType.FOLDER) {
-                        srcFileName = srcFileName + FileName.SEPARATOR;
-                        destFileName = destFileName + FileName.SEPARATOR;
-                    }
-                    CopyObjectRequest copy = new CopyObjectRequest(
-                        srcBucketName, srcFileName, destBucketName, destFileName);
-                    if (srcFile.getType() == FileType.FILE
-                        && ((S3FileSystem)destFile.getFileSystem()).getServerSideEncryption()) {
-                        ObjectMetadata meta = ((S3FileObject)srcFile).getObjectMetadata();
-                        meta.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-                        copy.setNewObjectMetadata(meta);
-                    }
-                    getService().copyObject(copy);
-
-                    destFile.close();
-                } catch (AmazonServiceException e) {
-                    throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
-                }
-                catch (AmazonClientException e) {
-                    throw new FileSystemException("vfs.provider/copy-file.error", new Object[]{srcFile, destFile}, e);
+        ObjectMetadata md = new ObjectMetadata();
+        md.setContentLength(file.length());
+        md.setContentType(Mimetypes.getInstance().getMimetype(getName().getBaseName()));
+        // set encryption if needed
+        if (((S3FileSystem) getFileSystem()).getServerSideEncryption()) {
+            md.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        }
+        request.setMetadata(md);
+        try {
+            TransferManagerConfiguration tmConfig = new TransferManagerConfiguration();
+            // if length is below multi-part threshold, just use put, otherwise create and use a TransferManager
+            if (md.getContentLength() < tmConfig.getMultipartUploadThreshold()) {
+                getService().putObject(request);
+            } else {
+                TransferManager transferManager = new TransferManager(getService(), createTransferManagerExecutorService());
+                try {
+                    Upload upload = transferManager.upload(request);
+                    upload.waitForCompletion();
+                } finally {
+                    transferManager.shutdownNow(false);
                 }
             }
-        } */
+            doDetach();
+            doAttach();
+        } catch (InterruptedException e) {
+            throw new InterruptedIOException();
+        } catch (Exception e) {
+            throw e instanceof IOException ? (IOException) e : new IOException(e);
+        }
+    }
+
+    /**
+     * Creates an executor service for use with a TransferManager. This allows us to control the maximum number
+     * of threads used because for the TransferManager default of 10 is way too many.
+     *
+     * @return an executor service
+     */
+    private ExecutorService createTransferManagerExecutorService() {
+        int maxThreads = S3FileSystemConfigBuilder.getInstance().getMaxUploadThreads(getFileSystem().getFileSystemOptions());
+        ThreadFactory threadFactory = new ThreadFactory() {
+            private int threadCount = 1;
+
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r);
+                thread.setName("s3-upload-" + getName().getBaseName() + "-" + threadCount++);
+                return thread;
+            }
+        };
+        return Executors.newFixedThreadPool(maxThreads, threadFactory);
     }
 
 }
