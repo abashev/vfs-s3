@@ -3,9 +3,8 @@ package com.intridea.io.vfs.provider.s3;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Regions;
+import com.amazonaws.retry.PredefinedRetryPolicies;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.Region;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.*;
@@ -58,7 +57,7 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     /**
      * Returns default S3 file system options.
      * Use it to set AWS auth credentials.
-     * @return
+     * @return default S3 file system options
      */
     public static FileSystemOptions getDefaultFileSystemOptions () {
         return defaultOptions;
@@ -136,10 +135,10 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     /**
      * Check for empty string FIXME find the same at Amazon SDK
      *
-     * @param s
-     * @return
+     * @param s string
+     * @return true iff string is null or zero length
      */
-    private final boolean isEmpty(String s) {
+    private boolean isEmpty(String s) {
         return ((s == null) || (s.length() == 0));
     }
 }

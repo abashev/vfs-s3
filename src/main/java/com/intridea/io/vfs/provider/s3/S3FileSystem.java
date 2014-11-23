@@ -16,7 +16,6 @@ import org.apache.commons.vfs2.provider.AbstractFileSystem;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.transfer.TransferManager;
 
 /**
  * An S3 file system.
@@ -30,7 +29,6 @@ public class S3FileSystem extends AbstractFileSystem {
     private static final Log logger = LogFactory.getLog(S3FileSystem.class);
 
     private final AmazonS3Client service;
-    private final TransferManager transferManager;
     private final Bucket bucket;
     private final AWSCredentials awsCredentials;
 
@@ -45,7 +43,6 @@ public class S3FileSystem extends AbstractFileSystem {
 
         this.awsCredentials = awsCredentials;
         this.service = service;
-        this.transferManager = new TransferManager(service);
         this.serverSideEncryption = S3FileSystemConfigBuilder
             .getInstance().getServerSideEncryption(fileSystemOptions);
 
@@ -81,7 +78,6 @@ public class S3FileSystem extends AbstractFileSystem {
     }
 
     public void shutdown() {
-        getTransferManager().shutdownNow();
         getService().shutdown();
     }
 
@@ -109,20 +105,13 @@ public class S3FileSystem extends AbstractFileSystem {
         return service;
     }
 
-    protected TransferManager getTransferManager() {
-        return transferManager;
-    }
-
     @Override
     protected FileObject createFile(AbstractFileName fileName) throws Exception {
         return new S3FileObject(fileName, this);
     }
-    
+
     @Override
     protected void doCloseCommunicationLink()
     {
-        if (transferManager != null) {
-            transferManager.shutdownNow();
-        }
     }
 }

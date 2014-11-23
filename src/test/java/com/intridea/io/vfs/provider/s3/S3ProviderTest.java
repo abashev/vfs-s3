@@ -2,11 +2,13 @@ package com.intridea.io.vfs.provider.s3;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.Region;
+import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.intridea.io.vfs.TestEnvironment;
 import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.vfs2.*;
+import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -35,9 +37,10 @@ public class S3ProviderTest {
     private FileSystemManager fsManager;
     private String fileName, encryptedFileName, dirName, bucketName, bigFile;
     private FileObject file, dir;
+    private int bigFileMaxThreads;
 
     @BeforeClass
-    public void setUp() throws FileNotFoundException, IOException {
+    public void setUp() throws IOException {
         Properties config = TestEnvironment.getInstance().getConfig();
 
         fsManager = VFS.getManager();
@@ -47,6 +50,7 @@ public class S3ProviderTest {
         dirName = "vfs-dir" + r.nextInt(1000);
         bucketName = config.getProperty("s3.testBucket", "vfs-s3-tests");
         bigFile = config.getProperty("big.file");
+        bigFileMaxThreads = Integer.parseInt(config.getProperty("big.file.maxThreads", "2"));
     }
 
     @Test
@@ -130,7 +134,7 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods={"upload"})
-    public void exists() throws FileNotFoundException, IOException {
+    public void exists() throws IOException {
         // Existed dir
         FileObject existedDir = fsManager.resolveFile("s3://" + bucketName + "/test-place");
         assertTrue(existedDir.exists());
@@ -149,7 +153,7 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods={"createFileOk"})
-    public void upload() throws FileNotFoundException, IOException {
+    public void upload() throws IOException {
         FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
 
         // Delete file if exists
@@ -171,7 +175,7 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods = {"createEncryptedFileOk"})
-    public void uploadEncrypted() throws FileNotFoundException, IOException {
+    public void uploadEncrypted() throws IOException {
         FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
         ((S3FileSystem)dest.getFileSystem()).setServerSideEncryption(true);
 
@@ -218,7 +222,10 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods={"createFileOk"})
-    public void uploadBigFile() throws FileNotFoundException, IOException {
+    public void uploadBigFile() throws IOException {
+        FileSystemOptions fso = (FileSystemOptions) S3FileProvider.getDefaultFileSystemOptions().clone();
+        S3FileSystemConfigBuilder.getInstance().setMaxUploadThreads(fso, bigFileMaxThreads);
+
         FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/" + BIG_FILE);
 
         // Delete file if exists
@@ -233,13 +240,17 @@ public class S3ProviderTest {
 
         FileObject src = fsManager.resolveFile(file.getAbsolutePath());
 
+        if (src.getContent().getSize() < new TransferManagerConfiguration().getMultipartUploadThreshold()) {
+            System.err.println("uploadBigFile() needs a file larger than 16MB in order to be useful");
+        }
+
         dest.copyFrom(src, Selectors.SELECT_SELF);
 
         assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
     }
 
     @Test(dependsOnMethods={"createFileOk"})
-    public void outputStream() throws FileNotFoundException, IOException {
+    public void outputStream() throws IOException {
         FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/output.txt");
 
         // Delete file if exists
@@ -268,7 +279,7 @@ public class S3ProviderTest {
     }
 
     @Test(dependsOnMethods = {"createEncryptedFileOk"})
-    public void outputStreamEncrypted() throws FileNotFoundException, IOException {
+    public void outputStreamEncrypted() throws IOException {
         FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/output.txt");
         ((S3FileSystem)dest.getFileSystem()).setServerSideEncryption(true);
 
@@ -393,7 +404,7 @@ public class S3ProviderTest {
             sourceFile.moveTo(sourceFile);
 
             assertTrue(false); // Should block copy into itself
-        } catch (FileSystemException e) {
+        } catch (FileSystemException ignored) {
         }
     }
 
@@ -456,13 +467,13 @@ public class S3ProviderTest {
         assertTrue(
             signedUrl.startsWith("https://" + bucketName + ".s3.amazonaws.com/test-place/backup.zip?"),
             signedUrl);
-        assertTrue(signedUrl.indexOf("Signature=") != (-1));
-        assertTrue(signedUrl.indexOf("Expires=") != (-1));
-        assertTrue(signedUrl.indexOf("AWSAccessKeyId=") != (-1));
+        assertTrue(signedUrl.contains("Signature="));
+        assertTrue(signedUrl.contains("Expires="));
+        assertTrue(signedUrl.contains("AWSAccessKeyId="));
     }
 
     @Test(dependsOnMethods={"upload"})
-    public void getMD5Hash() throws NoSuchAlgorithmException, FileNotFoundException, IOException {
+    public void getMD5Hash() throws NoSuchAlgorithmException, IOException {
         FileObject backup = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
 
         assertTrue(backup.getFileOperations().hasOperation(IMD5HashGetter.class));
@@ -536,7 +547,7 @@ public class S3ProviderTest {
             fsManager.resolveFile("s3://" + bucketName + "/test-place-2").delete(SELECT_ALL);
 
             ((S3FileSystem) fsManager.resolveFile("s3://" + bucketName + "/").getFileSystem()).shutdown();
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
     }
 
@@ -549,8 +560,8 @@ public class S3ProviderTest {
      */
     private String toHex(byte[] data) {
         StringBuilder sb = new StringBuilder(data.length * 2);
-        for (int i = 0; i < data.length; i++) {
-            String hex = Integer.toHexString(data[i]);
+        for (byte aData : data) {
+            String hex = Integer.toHexString(aData);
             if (hex.length() == 1) {
                 // Append leading zero.
                 sb.append("0");
@@ -569,7 +580,7 @@ public class S3ProviderTest {
         try {
             MessageDigest messageDigest = MessageDigest.getInstance("MD5");
             byte[] buffer = new byte[16384];
-            int bytesRead = -1;
+            int bytesRead;
             while ((bytesRead = bis.read(buffer, 0, buffer.length)) != -1) {
                 messageDigest.update(buffer, 0, bytesRead);
             }
