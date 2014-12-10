@@ -32,6 +32,13 @@ Add this section to your repository configuration
         </repository>
     </repositories>
 
+Why using commons-vfs is a bad idea
+---------------
+
+It is one hour monitoring for heavy loaded tomcat server
+
+![Monitoring](https://raw.githubusercontent.com/abashev/vfs-s3/branch-2.2.x/docs/pasted_image_at_2014_12_07_23_44.png)
+
 
 Bootstraping with Spring
 ------------------------
