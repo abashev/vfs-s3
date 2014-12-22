@@ -1,9 +1,9 @@
 package com.intridea.io.vfs.provider.s3;
 
-import java.util.Collection;
-
-import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.Region;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -14,8 +14,7 @@ import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileSystem;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.Bucket;
+import java.util.Collection;
 
 /**
  * An S3 file system.
@@ -30,26 +29,17 @@ public class S3FileSystem extends AbstractFileSystem {
 
     private final AmazonS3Client service;
     private final Bucket bucket;
-    private final AWSCredentials awsCredentials;
 
-    private Boolean serverSideEncryption;
+    private boolean shutdownServiceOnClose = false;
 
     public S3FileSystem(
-            S3FileName fileName, AWSCredentials awsCredentials, AmazonS3Client service,
-            FileSystemOptions fileSystemOptions) throws FileSystemException {
+            S3FileName fileName, AmazonS3Client service, FileSystemOptions fileSystemOptions
+    ) throws FileSystemException {
         super(fileName, null, fileSystemOptions);
 
         String bucketId = fileName.getBucketId();
 
-        this.awsCredentials = awsCredentials;
         this.service = service;
-        this.serverSideEncryption = S3FileSystemConfigBuilder
-            .getInstance().getServerSideEncryption(fileSystemOptions);
-
-        Region region = S3FileSystemConfigBuilder.getInstance().getRegion(
-            fileSystemOptions);
-        if (region != null)
-            service.setRegion(region.toAWSRegion());
 
         try {
             if (service.doesBucketExist(bucketId)) {
@@ -77,31 +67,15 @@ public class S3FileSystem extends AbstractFileSystem {
         caps.addAll(S3FileProvider.capabilities);
     }
 
-    public void shutdown() {
-        getService().shutdown();
-    }
-
-    protected Boolean getServerSideEncryption() {
-        return serverSideEncryption;
-    }
-
-    protected void setServerSideEncryption(Boolean serverSideEncryption) {
-        this.serverSideEncryption = serverSideEncryption;
-    }
-
     protected Bucket getBucket() {
         return bucket;
     }
 
     protected Region getRegion() {
-        return getService().getRegion();
+        return S3FileSystemConfigBuilder.getInstance().getRegion(getFileSystemOptions());
     }
 
-    protected AWSCredentials getAwsCredentials() {
-        return awsCredentials;
-    }
-
-    protected AmazonS3Client getService() {
+    protected AmazonS3 getService() {
         return service;
     }
 
@@ -111,7 +85,13 @@ public class S3FileSystem extends AbstractFileSystem {
     }
 
     @Override
-    protected void doCloseCommunicationLink()
-    {
+    protected void doCloseCommunicationLink() {
+        if (shutdownServiceOnClose) {
+            service.shutdown();
+        }
+    }
+
+    public void setShutdownServiceOnClose(boolean shutdownServiceOnClose) {
+        this.shutdownServiceOnClose = shutdownServiceOnClose;
     }
 }

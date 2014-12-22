@@ -1,6 +1,5 @@
 package com.intridea.io.vfs.provider.s3;
 
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.Region;
 import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.intridea.io.vfs.TestEnvironment;
@@ -8,14 +7,13 @@ import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.vfs2.*;
-import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
+import org.apache.commons.vfs2.provider.AbstractFileSystem;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.*;
-import java.io.FileNotFoundException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -23,6 +21,7 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Random;
 
+import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 import static com.intridea.io.vfs.FileAssert.assertHasChildren;
 import static org.apache.commons.vfs2.Selectors.SELECT_ALL;
 import static org.testng.Assert.*;
@@ -78,20 +77,21 @@ public class S3ProviderTest {
 
     @Test(dependsOnMethods = {"createFileOk"})
     public void defaultRegion() {
-        assertEquals(
-            ((S3FileSystem)file.getFileSystem()).getRegion(),
-            Region.US_Standard);
+        assertEquals(((S3FileSystem)file.getFileSystem()).getRegion(), Region.US_Standard);
     }
 
     @Test(dependsOnMethods = {"createFileOk"})
     public void createEncryptedFileOk() throws FileSystemException {
-        file = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + encryptedFileName);
-        ((S3FileSystem)file.getFileSystem()).setServerSideEncryption(true);
+        final FileSystemOptions options = (FileSystemOptions) S3FileProvider.getDefaultFileSystemOptions().clone();
+
+        S3FileSystemConfigBuilder.getInstance().setServerSideEncryption(options, true);
+
+        file = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + encryptedFileName, options);
+
         file.createFile();
+
         assertTrue(file.exists());
-        assertEquals(
-            ((S3FileObject) file).getObjectMetadata().getServerSideEncryption(),
-            ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        assertEquals(((S3FileObject) file).getObjectMetadata().getSSEAlgorithm(), AES_256_SERVER_SIDE_ENCRYPTION);
     }
 
     @Test(expectedExceptions={FileSystemException.class})
@@ -176,8 +176,11 @@ public class S3ProviderTest {
 
     @Test(dependsOnMethods = {"createEncryptedFileOk"})
     public void uploadEncrypted() throws IOException {
-        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
-        ((S3FileSystem)dest.getFileSystem()).setServerSideEncryption(true);
+        final FileSystemOptions options = (FileSystemOptions) S3FileProvider.getDefaultFileSystemOptions().clone();
+
+        S3FileSystemConfigBuilder.getInstance().setServerSideEncryption(options, true);
+
+        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip", options);
 
         // Delete file if exists
         if (dest.exists()) {
@@ -193,8 +196,7 @@ public class S3ProviderTest {
         dest.copyFrom(src, Selectors.SELECT_SELF);
 
         assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
-        assertEquals(((S3FileObject)dest).getObjectMetadata().getServerSideEncryption(),
-            ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        assertEquals(((S3FileObject)dest).getObjectMetadata().getSSEAlgorithm(), AES_256_SERVER_SIDE_ENCRYPTION);
     }
 
     @Test(dependsOnMethods={"createFileOk"})
@@ -280,8 +282,11 @@ public class S3ProviderTest {
 
     @Test(dependsOnMethods = {"createEncryptedFileOk"})
     public void outputStreamEncrypted() throws IOException {
-        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/output.txt");
-        ((S3FileSystem)dest.getFileSystem()).setServerSideEncryption(true);
+        final FileSystemOptions options = (FileSystemOptions) S3FileProvider.getDefaultFileSystemOptions().clone();
+
+        S3FileSystemConfigBuilder.getInstance().setServerSideEncryption(options, true);
+
+        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/output.txt", options);
 
         // Delete file if exists
         if (dest.exists()) {
@@ -297,8 +302,8 @@ public class S3ProviderTest {
         }
         assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
         assertEquals(dest.getContent().getSize(), BACKUP_ZIP.length());
-        assertEquals(((S3FileObject)dest).getObjectMetadata().getServerSideEncryption(),
-                ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        assertEquals(((S3FileObject)dest).getObjectMetadata().getSSEAlgorithm(), AES_256_SERVER_SIDE_ENCRYPTION);
+
         BufferedReader reader = new BufferedReader(new InputStreamReader(dest.getContent().getInputStream(), "US-ASCII"));
         try {
             assertEquals(reader.readLine(), BACKUP_ZIP);
@@ -508,9 +513,12 @@ public class S3ProviderTest {
 
     @Test(dependsOnMethods={"findFiles"})
     public void copyAllToEncryptedInsideBucket() throws FileSystemException {
+        final FileSystemOptions options = (FileSystemOptions) S3FileProvider.getDefaultFileSystemOptions().clone();
+
+        S3FileSystemConfigBuilder.getInstance().setServerSideEncryption(options, true);
+
         FileObject testsDir = fsManager.resolveFile(dir, "find-tests");
-        FileObject testsDirCopy = testsDir.getParent().resolveFile("find-tests-encrypted-copy");
-        ((S3FileSystem)testsDirCopy.getFileSystem()).setServerSideEncryption(true);
+        FileObject testsDirCopy = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + dirName, options).resolveFile("find-tests-encrypted-copy");
 
         testsDirCopy.copyFrom(testsDir, SELECT_ALL);
 
@@ -521,10 +529,8 @@ public class S3ProviderTest {
 
         for (int i = 0; i < files.length; i++) {
             if (files[i].getType() == FileType.FILE) {
-                assertEquals(((S3FileObject)files[i]).getObjectMetadata().getServerSideEncryption(),
-                    null);
-                assertEquals(((S3FileObject)filesCopy[i]).getObjectMetadata().getServerSideEncryption(),
-                    ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+                assertEquals(((S3FileObject)files[i]).getObjectMetadata().getSSEAlgorithm(), null);
+                assertEquals(((S3FileObject)filesCopy[i]).getObjectMetadata().getSSEAlgorithm(), AES_256_SERVER_SIDE_ENCRYPTION);
             }
         }
     }
@@ -546,7 +552,7 @@ public class S3ProviderTest {
             fsManager.resolveFile("s3://" + bucketName + "/test-place").delete(SELECT_ALL);
             fsManager.resolveFile("s3://" + bucketName + "/test-place-2").delete(SELECT_ALL);
 
-            ((S3FileSystem) fsManager.resolveFile("s3://" + bucketName + "/").getFileSystem()).shutdown();
+            ((AbstractFileSystem) fsManager.resolveFile("s3://" + bucketName + "/").getFileSystem()).close();
         } catch (Exception ignored) {
         }
     }

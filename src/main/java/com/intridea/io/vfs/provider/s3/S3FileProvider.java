@@ -2,22 +2,16 @@ package com.intridea.io.vfs.provider.s3;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.retry.PredefinedRetryPolicies;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.Region;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.provider.AbstractOriginatingFileProvider;
-import org.apache.commons.vfs2.util.UserAuthenticatorUtils;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-
-import static org.apache.commons.vfs2.UserAuthenticationData.PASSWORD;
-import static org.apache.commons.vfs2.UserAuthenticationData.USERNAME;
-import static org.apache.commons.vfs2.util.UserAuthenticatorUtils.getData;
 
 /**
  * An S3 file provider. Create an S3 file system out of an S3 file name. Also
@@ -43,13 +37,6 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     ));
 
     /**
-     * Auth data types necessary for AWS authentification.
-     */
-    public final static UserAuthenticationData.Type[] AUTHENTICATOR_TYPES = new UserAuthenticationData.Type[] {
-        USERNAME, PASSWORD
-    };
-
-    /**
      * Default options for S3 file system.
      */
     private static FileSystemOptions defaultOptions = new FileSystemOptions();
@@ -59,7 +46,7 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
      * Use it to set AWS auth credentials.
      * @return default S3 file system options
      */
-    public static FileSystemOptions getDefaultFileSystemOptions () {
+    public static FileSystemOptions getDefaultFileSystemOptions() {
         return defaultOptions;
     }
 
@@ -85,41 +72,32 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     protected FileSystem doCreateFileSystem(
             FileName fileName, FileSystemOptions fileSystemOptions
     ) throws FileSystemException {
+        final FileSystemOptions fsOptions = (fileSystemOptions != null) ? fileSystemOptions : getDefaultFileSystemOptions();
+        final S3FileSystemConfigBuilder config = S3FileSystemConfigBuilder.getInstance();
 
-        FileSystemOptions fsOptions = (fileSystemOptions != null) ? fileSystemOptions : getDefaultFileSystemOptions();
+        final AWSCredentials awsCredentials = config.getAWSCredentials(fsOptions);
 
-        // Initialize once S3 service.
-        UserAuthenticationData authData = null;
+        AmazonS3Client service = config.getAmazonS3Client(fsOptions);
 
-        AWSCredentials awsCredentials = null;
-        AmazonS3Client service = null;
-        ClientConfiguration clientConfiguration = S3FileSystemConfigBuilder
-            .getInstance().getClientConfiguration(fsOptions);
-
-        try {
-            // Read authData from file system options
-            authData = UserAuthenticatorUtils.authenticate(fsOptions, AUTHENTICATOR_TYPES);
-
-            logger.info("Start to initialize Amazon S3 service client");
-
-            // Fetch AWS key-id and secret key from authData
-            String accessKey = UserAuthenticatorUtils.toString(getData(authData, USERNAME, null));
-            String secretKey = UserAuthenticatorUtils.toString(getData(authData, PASSWORD, null));
-
-            if (isEmpty(accessKey) || isEmpty(secretKey)) {
-                throw new FileSystemException("Empty AWS credentials");
-            }
-
-            // Initialize S3 service client.
-            awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
+        if (service == null) {
+            ClientConfiguration clientConfiguration = config.getClientConfiguration(fsOptions);
 
             service = new AmazonS3Client(awsCredentials, clientConfiguration);
-        } finally {
-            UserAuthenticatorUtils.cleanup(authData);
+
+            Region region = config.getRegion(fsOptions);
+
+            if (region != null) {
+                service.setRegion(region.toAWSRegion());
+            }
         }
 
-        // Construct S3 file system
-        return new S3FileSystem((S3FileName) fileName, awsCredentials, service, fsOptions);
+        S3FileSystem fileSystem = new S3FileSystem((S3FileName) fileName, service, fsOptions);
+
+        if (config.getAmazonS3Client(fsOptions) == null) {
+            fileSystem.setShutdownServiceOnClose(true);
+        }
+
+        return fileSystem;
     }
 
     /**
@@ -130,15 +108,5 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     @Override
     public Collection<Capability> getCapabilities() {
         return capabilities;
-    }
-
-    /**
-     * Check for empty string FIXME find the same at Amazon SDK
-     *
-     * @param s string
-     * @return true iff string is null or zero length
-     */
-    private boolean isEmpty(String s) {
-        return ((s == null) || (s.length() == 0));
     }
 }

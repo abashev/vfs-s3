@@ -3,7 +3,7 @@ package com.intridea.io.vfs.provider.s3;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.internal.Mimetypes;
 import com.amazonaws.services.s3.model.*;
@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
+import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 import static com.intridea.io.vfs.operations.Acl.Permission.READ;
 import static com.intridea.io.vfs.operations.Acl.Permission.WRITE;
 import static java.nio.channels.Channels.newInputStream;
@@ -40,7 +41,7 @@ import static org.apache.commons.vfs2.NameScope.FILE_SYSTEM;
 /**
  * Implementation of the virtual S3 file system object using the AWS-SDK.<p/>
  * Based on Matthias Jugel code.
- * {@link http://thinkberg.com/svn/moxo/trunk/modules/vfs.s3/}
+ * {@link http://thinkberg.com/svn/moxo/trunk/modules/vfs.s3/ }
  *
  * @author Marat Komarov
  * @author Matthias L. Jugel
@@ -173,9 +174,11 @@ public class S3FileObject extends AbstractFileObject {
         InputStream input = new ByteArrayInputStream(new byte[0]);
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(0);
-        if (((S3FileSystem)getFileSystem()).getServerSideEncryption())
-            metadata.setServerSideEncryption(
-                ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+
+        if (getServerSideEncryption()) {
+            metadata.setSSEAlgorithm(AES_256_SERVER_SIDE_ENCRYPTION);
+        }
+
         String dirName = objectKey.endsWith(SEPARATOR) ? objectKey : objectKey + SEPARATOR;
         getService().putObject(new PutObjectRequest(getBucket().getName(), dirName, input, metadata));
     }
@@ -342,13 +345,15 @@ public class S3FileObject extends AbstractFileObject {
      * Download S3 object content and save it in temporary file.
      * Do it only if object was not already downloaded.
      */
-    private void downloadOnce () throws FileSystemException {
+    private void downloadOnce() throws FileSystemException {
         if (!downloaded) {
-            final String failedMessage = "Failed to download S3 Object %s. %s";
             final String objectPath = getName().getPath();
+
             try {
                 S3Object obj = getService().getObject(getBucket().getName(), objectKey);
+
                 logger.info(String.format("Downloading S3 Object: %s", objectPath));
+
                 InputStream is = obj.getObjectContent();
                 if (obj.getObjectMetadata().getContentLength() > 0) {
                     ReadableByteChannel rbc = Channels.newChannel(is);
@@ -359,15 +364,14 @@ public class S3FileObject extends AbstractFileObject {
                 } else {
                     is.close();
                 }
-            } catch (AmazonServiceException e) {
-                throw new FileSystemException(String.format(failedMessage, objectPath, e.getMessage()), e);
-            } catch (IOException e) {
+            } catch (AmazonServiceException | IOException e) {
+                final String failedMessage = "Failed to download S3 Object %s. %s";
+
                 throw new FileSystemException(String.format(failedMessage, objectPath, e.getMessage()), e);
             }
 
             downloaded = true;
         }
-
     }
 
     /**
@@ -650,11 +654,13 @@ public class S3FileObject extends AbstractFileObject {
      *
      * @return the private url
      */
-    public String getPrivateUrl() {
+    public String getPrivateUrl() throws FileSystemException {
+        AWSCredentials awsCredentials = S3FileSystemConfigBuilder.getInstance().getAWSCredentials(getFileSystem().getFileSystemOptions());
+
         return String.format(
                 "s3://%s:%s@%s/%s",
-                getAwsCredentials().getAWSAccessKeyId(),
-                getAwsCredentials().getAWSSecretKey(),
+                awsCredentials.getAWSAccessKeyId(),
+                awsCredentials.getAWSSecretKey(),
                 getBucket().getName(),
                 getS3Key()
         );
@@ -704,12 +710,20 @@ public class S3FileObject extends AbstractFileObject {
         }
     }
 
-    /** FileSystem object containing configuration */
-    protected AWSCredentials getAwsCredentials() {
-        return ((S3FileSystem)getFileSystem()).getAwsCredentials();
+    /**
+     * Returns file that was used as local cache. Useful to do something with local tools like image resizing and so on
+     *
+     * @return absolute path to file or nul if nothing were downloaded
+     */
+    public String getCacheFile() {
+        if (downloaded && (cacheFile != null)) {
+            return cacheFile.getAbsolutePath();
+        }
+
+        return null;
     }
 
-    protected AmazonS3Client getService() {
+    protected AmazonS3 getService() {
         return ((S3FileSystem)getFileSystem()).getService();
     }
 
@@ -807,20 +821,17 @@ public class S3FileObject extends AbstractFileObject {
 				if (srcFile.getType().hasChildren()) {
 					destFile.createFolder();
 					// do server side copy if both source and dest are in S3 and using same credentials
-				} else if (srcFile instanceof S3FileObject &&
-				    ((S3FileObject)srcFile).getAwsCredentials().getAWSAccessKeyId().equals(getAwsCredentials().getAWSAccessKeyId()) &&
-				    ((S3FileObject)srcFile).getAwsCredentials().getAWSSecretKey().equals(getAwsCredentials().getAWSSecretKey())) {
-				     S3FileObject s3SrcFile = (S3FileObject)srcFile;
+				} else if (srcFile instanceof S3FileObject) {
+                    S3FileObject s3SrcFile = (S3FileObject)srcFile;
                     String srcBucketName = s3SrcFile.getBucket().getName();
                     String srcFileName = s3SrcFile.getS3Key();
                     String destBucketName = destFile.getBucket().getName();
                     String destFileName = destFile.getS3Key();
                     CopyObjectRequest copy = new CopyObjectRequest(
-                        srcBucketName, srcFileName, destBucketName, destFileName);
-                    if (srcFile.getType() == FileType.FILE
-                        && ((S3FileSystem)destFile.getFileSystem()).getServerSideEncryption()) {
+                            srcBucketName, srcFileName, destBucketName, destFileName);
+                    if (srcFile.getType() == FileType.FILE && getServerSideEncryption()) {
                         ObjectMetadata meta = s3SrcFile.getObjectMetadata();
-                        meta.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+                        meta.setSSEAlgorithm(AES_256_SERVER_SIDE_ENCRYPTION);
                         copy.setNewObjectMetadata(meta);
                     }
                     getService().copyObject(copy);
@@ -847,22 +858,41 @@ public class S3FileObject extends AbstractFileObject {
     }
 
     /**
+     * Creates an executor service for use with a TransferManager. This allows us to control the maximum number
+     * of threads used because for the TransferManager default of 10 is way too many.
+     *
+     * @return an executor service
+     */
+    private ExecutorService createTransferManagerExecutorService() {
+        int maxThreads = S3FileSystemConfigBuilder.getInstance().getMaxUploadThreads(getFileSystem().getFileSystemOptions());
+        ThreadFactory threadFactory = new ThreadFactory() {
+            private int threadCount = 1;
+
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r);
+                thread.setName("s3-upload-" + getName().getBaseName() + "-" + threadCount++);
+                return thread;
+            }
+        };
+        return Executors.newFixedThreadPool(maxThreads, threadFactory);
+    }
+
+    /**
      * Uploads File to S3
      *
      * @param file the File
-     * @param size        the size of the stream
      */
-    private void upload(File file)
-            throws IOException {
+    private void upload(File file) throws IOException {
         PutObjectRequest request = new PutObjectRequest(getBucket().getName(), getS3Key(), file);
 
         ObjectMetadata md = new ObjectMetadata();
         md.setContentLength(file.length());
         md.setContentType(Mimetypes.getInstance().getMimetype(getName().getBaseName()));
         // set encryption if needed
-        if (((S3FileSystem) getFileSystem()).getServerSideEncryption()) {
-            md.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        if (getServerSideEncryption()) {
+            md.setSSEAlgorithm(AES_256_SERVER_SIDE_ENCRYPTION);
         }
+
         request.setMetadata(md);
         try {
             TransferManagerConfiguration tmConfig = new TransferManagerConfiguration();
@@ -887,24 +917,7 @@ public class S3FileObject extends AbstractFileObject {
         }
     }
 
-    /**
-     * Creates an executor service for use with a TransferManager. This allows us to control the maximum number
-     * of threads used because for the TransferManager default of 10 is way too many.
-     *
-     * @return an executor service
-     */
-    private ExecutorService createTransferManagerExecutorService() {
-        int maxThreads = S3FileSystemConfigBuilder.getInstance().getMaxUploadThreads(getFileSystem().getFileSystemOptions());
-        ThreadFactory threadFactory = new ThreadFactory() {
-            private int threadCount = 1;
-
-            public Thread newThread(Runnable r) {
-                Thread thread = new Thread(r);
-                thread.setName("s3-upload-" + getName().getBaseName() + "-" + threadCount++);
-                return thread;
-            }
-        };
-        return Executors.newFixedThreadPool(maxThreads, threadFactory);
+    private boolean getServerSideEncryption() {
+        return S3FileSystemConfigBuilder.getInstance().getServerSideEncryption(getFileSystem().getFileSystemOptions());
     }
-
 }

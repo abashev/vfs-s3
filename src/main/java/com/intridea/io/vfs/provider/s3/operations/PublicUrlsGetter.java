@@ -23,7 +23,11 @@ class PublicUrlsGetter implements IPublicUrlsGetter {
 
     @Override
     public String getPrivateUrl() {
-        return file.getPrivateUrl();
+        try {
+            return file.getPrivateUrl();
+        } catch (FileSystemException e) {
+            throw new IllegalStateException("Not able to get private url", e);
+        }
     }
 
     @Override
