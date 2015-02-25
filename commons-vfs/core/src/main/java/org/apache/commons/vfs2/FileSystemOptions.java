@@ -124,6 +124,14 @@ public final class FileSystemOptions implements Cloneable
             result = HASH * result + name.hashCode();
             return result;
         }
+
+        @Override
+        public String toString() {
+            return "{" +
+                    "class=" + fileSystemClass.getName() +
+                    ",name='" + name + '\'' +
+                    '}';
+        }
     }
 
     void setOption(final Class<? extends FileSystem> fileSystemClass, final String name, final Object value)
@@ -179,7 +187,16 @@ public final class FileSystemOptions implements Cloneable
         }
 
         // bad props not the same instance, but looks like the same
-        // TODO: compare Entry by Entry
+        if (options.size() != other.options.size()) {
+            return (options.size() - other.options.size());
+        }
+
+        for (FileSystemOptionKey key: options.keySet()) {
+            if (!options.get(key).equals(other.options.get(key))) {
+                return (-1);
+            }
+        }
+
         return 0;
     }
 
@@ -198,5 +215,17 @@ public final class FileSystemOptions implements Cloneable
     public String toString()
     {
         return options.toString();
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 1;
+
+        for (FileSystemOptionKey key: options.keySet()) {
+            result = 31 * result + key.hashCode();
+            result = 31 * result + options.get(key).hashCode();
+        }
+
+        return result;
     }
 }

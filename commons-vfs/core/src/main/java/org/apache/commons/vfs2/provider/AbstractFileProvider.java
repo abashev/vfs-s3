@@ -16,16 +16,11 @@
  */
 package org.apache.commons.vfs2.provider;
 
-import java.util.Map;
-import java.util.TreeMap;
-
-import org.apache.commons.vfs2.FileName;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystem;
-import org.apache.commons.vfs2.FileSystemConfigBuilder;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemOptions;
+import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.provider.local.GenericFileNameParser;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * A partial {@link FileProvider} implementation.  Takes care of managing the
@@ -39,7 +34,7 @@ public abstract class AbstractFileProvider
      * The cached file systems.  This is a mapping from root URI to
      * FileSystem object.
      */
-    private final Map<FileSystemKey, FileSystem> fileSystems = new TreeMap<FileSystemKey, FileSystem>();
+    private final ConcurrentMap<FileSystemKey, FileSystem> fileSystems = new ConcurrentHashMap<>();
 
     private FileNameParser parser;
 
@@ -64,10 +59,7 @@ public abstract class AbstractFileProvider
     @Override
     public void close()
     {
-        synchronized (this)
-        {
-            fileSystems.clear();
-        }
+        fileSystems.clear();
 
         super.close();
     }
@@ -105,10 +97,7 @@ public abstract class AbstractFileProvider
         final FileSystemKey treeKey = new FileSystemKey(key, fs.getFileSystemOptions());
         ((AbstractFileSystem) fs).setCacheKey(treeKey);
 
-        synchronized (this)
-        {
-            fileSystems.put(treeKey, fs);
-        }
+        fileSystems.put(treeKey, fs);
     }
 
     /**
@@ -122,10 +111,7 @@ public abstract class AbstractFileProvider
     {
         final FileSystemKey treeKey = new FileSystemKey(key, fileSystemProps);
 
-        synchronized (this)
-        {
-            return fileSystems.get(treeKey);
-        }
+        return fileSystems.get(treeKey);
     }
 
     /**
@@ -143,12 +129,7 @@ public abstract class AbstractFileProvider
      */
     public void freeUnusedResources()
     {
-        Object[] item;
-        synchronized (this)
-        {
-            item = fileSystems.values().toArray();
-        }
-        for (final Object element : item)
+        for (final Object element : fileSystems.values().toArray())
         {
             final AbstractFileSystem fs = (AbstractFileSystem) element;
             if (fs.isReleaseable())
@@ -166,12 +147,9 @@ public abstract class AbstractFileProvider
     {
         final AbstractFileSystem fs = (AbstractFileSystem) filesystem;
 
-        synchronized (this)
+        if (fs.getCacheKey() != null)
         {
-            if (fs.getCacheKey() != null)
-            {
-                fileSystems.remove(fs.getCacheKey());
-            }
+            fileSystems.remove(fs.getCacheKey());
         }
 
         removeComponent(fs);

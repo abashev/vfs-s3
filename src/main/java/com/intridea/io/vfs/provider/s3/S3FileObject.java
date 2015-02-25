@@ -17,6 +17,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileObject;
+import org.apache.commons.vfs2.provider.LockByFileStrategyFactory;
 import org.apache.commons.vfs2.util.MonitorOutputStream;
 
 import java.io.*;
@@ -85,7 +86,7 @@ public class S3FileObject extends AbstractFileObject {
 
     public S3FileObject(AbstractFileName fileName,
                         S3FileSystem fileSystem) throws FileSystemException {
-        super(fileName, fileSystem);
+        super(fileName, fileSystem, (new LockByFileStrategyFactory()));
     }
 
     @Override
@@ -349,25 +350,52 @@ public class S3FileObject extends AbstractFileObject {
         if (!downloaded) {
             final String objectPath = getName().getPath();
 
+            S3Object obj = null;
+
             try {
-                S3Object obj = getService().getObject(getBucket().getName(), objectKey);
+                obj = getService().getObject(getBucket().getName(), objectKey);
 
                 logger.info(String.format("Downloading S3 Object: %s", objectPath));
 
-                InputStream is = obj.getObjectContent();
                 if (obj.getObjectMetadata().getContentLength() > 0) {
-                    ReadableByteChannel rbc = Channels.newChannel(is);
-                    FileChannel cacheFc = getCacheFileChannel();
-                    cacheFc.transferFrom(rbc, 0, obj.getObjectMetadata().getContentLength());
-                    cacheFc.close();
-                    rbc.close();
-                } else {
-                    is.close();
+                    InputStream is = obj.getObjectContent();
+
+                    ReadableByteChannel rbc = null;
+                    FileChannel cacheFc = null;
+
+                    try {
+                        rbc = Channels.newChannel(is);
+                        cacheFc = getCacheFileChannel();
+
+                        cacheFc.transferFrom(rbc, 0, obj.getObjectMetadata().getContentLength());
+                    } finally {
+                        if (rbc != null) {
+                            try {
+                                rbc.close();
+                            } catch (IOException e) {
+                            }
+                        }
+
+                        if (cacheFc != null) {
+                            try {
+                                cacheFc.close();
+                            } catch (IOException e) {
+                            }
+                        }
+                    }
                 }
             } catch (AmazonServiceException | IOException e) {
                 final String failedMessage = "Failed to download S3 Object %s. %s";
 
                 throw new FileSystemException(String.format(failedMessage, objectPath, e.getMessage()), e);
+            } finally {
+                if (obj != null) {
+                    try {
+                        obj.close();
+                    } catch (IOException e) {
+                        logger.warn("Not able to close S3 object [" + objectPath + "]", e);
+                    }
+                }
             }
 
             downloaded = true;
