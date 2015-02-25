@@ -62,4 +62,19 @@ class FileSystemKey implements Comparable<FileSystemKey>
 
         return fileSystemOptions.compareTo(o.fileSystemOptions);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        return (this.compareTo((FileSystemKey) o) == 0);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = key != null ? key.hashCode() : 0;
+        result = 31 * result + (fileSystemOptions != null ? fileSystemOptions.hashCode() : 0);
+        return result;
+    }
 }
