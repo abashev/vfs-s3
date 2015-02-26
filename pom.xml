@@ -88,6 +88,17 @@
         </repository>
     </distributionManagement>
 
+    <repositories>
+        <repository>
+            <id>vfs-s3.repository</id>
+            <name>vfs-s3 project repository</name>
+            <url>http://dl.bintray.com/content/abashev/vfs-s3</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
