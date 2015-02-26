@@ -31,7 +31,7 @@ import static org.junit.Assert.assertNotEquals;
  */
 public class FileSystemKeyTest {
     @Test
-    public void compareAndHashing() {
+    public void compareKeys() {
         assertEquals(new FileSystemKey("key", null), new FileSystemKey("key", null));
         assertEquals(new FileSystemKey("key", null), new FileSystemKey("key", new FileSystemOptions()));
 
@@ -49,21 +49,37 @@ public class FileSystemKeyTest {
 
         assertNotEquals(new FileSystemKey("key", opts1), new FileSystemKey("key", opts2));
 
+    }
+
+    @Test
+    public void saveNullKey() {
         Map<FileSystemKey, Object> map = new HashMap<>();
 
         for (int i = 0; i < 10; i++) {
-            FileSystemOptions opts3 = new FileSystemOptions();
-
-            FtpFileSystemConfigBuilder.getInstance().setConnectTimeout(opts2, 500);
-
-            map.put(new FileSystemKey("key", opts3), i);
+            map.put(new FileSystemKey("key", null), i);
         }
 
-        FileSystemOptions opts4 = new FileSystemOptions();
+        assertEquals(1, map.size());
+        assertEquals(9, map.get(new FileSystemKey("key", null)));
+    }
 
-        FtpFileSystemConfigBuilder.getInstance().setConnectTimeout(opts2, 500);
+    @Test
+    public void saveNotEmptyKey() {
+        Map<FileSystemKey, Object> map = new HashMap<>();
+
+        for (int i = 0; i < 10; i++) {
+            FileSystemOptions opts = new FileSystemOptions();
+
+            FtpFileSystemConfigBuilder.getInstance().setConnectTimeout(opts, 500);
+
+            map.put(new FileSystemKey("key", opts), i);
+        }
+
+        FileSystemOptions opts1 = new FileSystemOptions();
+
+        FtpFileSystemConfigBuilder.getInstance().setConnectTimeout(opts1, 500);
 
         assertEquals(1, map.size());
-        assertEquals(9, map.get(new FileSystemKey("key", opts4)));
+        assertEquals(9, map.get(new FileSystemKey("key", opts1)));
     }
 }

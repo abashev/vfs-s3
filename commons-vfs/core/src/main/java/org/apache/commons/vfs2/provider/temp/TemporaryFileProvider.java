@@ -16,21 +16,15 @@
  */
 package org.apache.commons.vfs2.provider.temp;
 
-import java.io.File;
-import java.util.Collection;
-
-import org.apache.commons.vfs2.Capability;
-import org.apache.commons.vfs2.FileName;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystem;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemOptions;
-import org.apache.commons.vfs2.FileType;
+import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.provider.AbstractFileProvider;
 import org.apache.commons.vfs2.provider.FileProvider;
 import org.apache.commons.vfs2.provider.UriParser;
 import org.apache.commons.vfs2.provider.local.DefaultLocalFileProvider;
 import org.apache.commons.vfs2.provider.local.LocalFileSystem;
+
+import java.io.File;
+import java.util.Collection;
 
 /**
  * A provider for temporary files.
@@ -120,7 +114,7 @@ public class TemporaryFileProvider
             // final FileName rootName =
             //    new LocalFileName(scheme, scheme + ":", FileName.ROOT_PATH);
             filesystem = new LocalFileSystem(rootName, rootFile.getAbsolutePath(), properties);
-            addFileSystem(this, filesystem);
+            addFileSystem(this, properties, filesystem);
         }
 
         // Find the file
