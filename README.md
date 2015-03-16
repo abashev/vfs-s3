@@ -1,6 +1,8 @@
 Amazon S3 driver for VFS (Apache Commons Virtual File System)
 =============================================================
 
+[![Join the chat at https://gitter.im/abashev/vfs-s3](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/abashev/vfs-s3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 
 Branch | Description | Build Status
 ------------ | ------------- | ------------
