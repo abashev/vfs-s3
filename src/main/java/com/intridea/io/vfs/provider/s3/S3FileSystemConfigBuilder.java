@@ -21,6 +21,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final String MAX_UPLOAD_THREADS = S3FileSystemConfigBuilder.class.getName() + ".MAX_UPLOAD_THREADS";
     private static final String AWS_CREDENTIALS = S3FileSystemConfigBuilder.class.getName() + ".AWS_CREDENTIALS";
     private static final String AMAZON_S3_CLIENT = S3FileSystemConfigBuilder.class.getName() + ".AMAZON_S3_CLIENT";
+    private static final String ENDPOINT = S3FileSystemConfigBuilder.class.getName() + ".ENDPOINT";
 
     public static final int DEFAULT_MAX_UPLOAD_THREADS = 2;
 
@@ -72,6 +73,9 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      * @param region The S3 region to connect to (if null, then US Standard)
      */
     public void setRegion(FileSystemOptions opts, Region region) {
+        if (!isEmpty(getEndpoint(opts))) {
+            throw new IllegalArgumentException("Cannot set both Region and Endpoint");
+        }
         setParam(opts, REGION, region.toString());
     }
 
@@ -193,6 +197,25 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      */
     public AmazonS3Client getAmazonS3Client(FileSystemOptions opts) {
         return (AmazonS3Client) getParam(opts, AMAZON_S3_CLIENT);
+    }
+
+    /**
+     * @param opts The FileSystemOptions.
+     * @param endpoint The S3 endpoint to connect to (if null, then determined by region)
+     */
+    public void setEndpoint(FileSystemOptions opts, String endpoint) {
+        if (hasParam(opts, REGION)) {
+            throw new IllegalArgumentException("Cannot set both Region and Endpoint");
+        }
+        setParam(opts, ENDPOINT, endpoint);
+    }
+
+    /**
+     * @param opts The FileSystemOptions.
+     * @return The S3 endpoint to connect to (if null, then determined by region)
+     */
+    public String getEndpoint(FileSystemOptions opts) {
+        return getString(opts, ENDPOINT, null);
     }
 
     /**
