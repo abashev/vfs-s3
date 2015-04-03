@@ -65,20 +65,45 @@ public class S3ProviderTest {
             (FileSystemOptions)S3FileProvider.getDefaultFileSystemOptions().clone();
 
         S3FileSystemConfigBuilder.getInstance().setRegion(
-            regionOpts, Region.US_West_2);
+                regionOpts, Region.US_West_2);
 
         FileObject regFile = fsManager.resolveFile(
             "s3://" + bucketName + "/test-place/" + fileName, regionOpts);
 
         assertEquals(
-            ((S3FileSystem) regFile.getFileSystem()).getRegion(),
-            Region.US_West_2);
+                ((S3FileSystem) regFile.getFileSystem()).getRegion(),
+                Region.US_West_2);
     }
 
     @Test(dependsOnMethods = {"createFileOk"})
     public void defaultRegion() {
         assertEquals(((S3FileSystem)file.getFileSystem()).getRegion(), Region.US_Standard);
     }
+
+    @Test(dependsOnMethods = {"createFileOk"})
+    public void defaultEndpoint() {
+        assertNull(((S3FileSystem) file.getFileSystem()).getEndpoint());
+    }
+
+    @Test(dependsOnMethods = {"createFileOk"})
+    public void setEndpoint() throws FileSystemException {
+        FileSystemOptions endpointOpts =
+                (FileSystemOptions)S3FileProvider.getDefaultFileSystemOptions().clone();
+
+        S3FileSystemConfigBuilder.getInstance().setEndpoint(
+                endpointOpts, "s3-external-1.amazonaws.com");
+
+        FileObject regFile = fsManager.resolveFile(
+                "s3://" + bucketName + "/test-place/", endpointOpts);
+
+        assertEquals(
+                ((S3FileSystem) regFile.getFileSystem()).getEndpoint(),
+                "s3-external-1.amazonaws.com");
+
+        assertTrue(
+                regFile.exists());
+    }
+
 
     @Test(dependsOnMethods = {"createFileOk"})
     public void createEncryptedFileOk() throws FileSystemException {

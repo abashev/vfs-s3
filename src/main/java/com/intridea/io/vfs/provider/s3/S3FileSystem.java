@@ -75,6 +75,11 @@ public class S3FileSystem extends AbstractFileSystem {
         return S3FileSystemConfigBuilder.getInstance().getRegion(getFileSystemOptions());
     }
 
+
+    protected String getEndpoint() {
+        return S3FileSystemConfigBuilder.getInstance().getEndpoint(getFileSystemOptions());
+    }
+
     protected AmazonS3 getService() {
         return service;
     }
