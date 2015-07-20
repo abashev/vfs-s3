@@ -81,7 +81,11 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
             AWSCredentials awsCredentials = config.getAWSCredentials(fsOptions);
             ClientConfiguration clientConfiguration = config.getClientConfiguration(fsOptions);
 
-            service = new AmazonS3Client(awsCredentials, clientConfiguration);
+            if (awsCredentials == null) {
+                service = new AmazonS3Client(clientConfiguration);
+            } else {
+                service = new AmazonS3Client(awsCredentials, clientConfiguration);
+            }
 
             Region region = config.getRegion(fsOptions);
 

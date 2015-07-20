@@ -5,6 +5,8 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Region;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.util.UserAuthenticatorUtils;
 
@@ -23,6 +25,8 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final String AMAZON_S3_CLIENT = S3FileSystemConfigBuilder.class.getName() + ".AMAZON_S3_CLIENT";
 
     public static final int DEFAULT_MAX_UPLOAD_THREADS = 2;
+
+    private static final Log log = LogFactory.getLog(S3FileSystemConfigBuilder.class);
 
     /**
      * Auth data types necessary for AWS authentification.
@@ -164,7 +168,9 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
             String secretKey = UserAuthenticatorUtils.toString(getData(authData, PASSWORD, null));
 
             if (isEmpty(accessKey) || isEmpty(secretKey)) {
-                throw new FileSystemException("Empty AWS credentials");
+                log.warn("Not able to find access or secret keys. Use empty values");
+
+                return null;
             }
 
             // Initialize S3 service client.

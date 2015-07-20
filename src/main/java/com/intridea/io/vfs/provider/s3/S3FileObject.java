@@ -33,6 +33,7 @@ import java.util.concurrent.ThreadFactory;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 import static com.intridea.io.vfs.operations.Acl.Permission.READ;
 import static com.intridea.io.vfs.operations.Acl.Permission.WRITE;
+import static com.intridea.io.vfs.provider.s3.AmazonS3ClientHack.extractCredentials;
 import static java.nio.channels.Channels.newInputStream;
 import static java.util.Calendar.SECOND;
 import static org.apache.commons.vfs2.FileName.SEPARATOR;
@@ -684,6 +685,14 @@ public class S3FileObject extends AbstractFileObject {
      */
     public String getPrivateUrl() throws FileSystemException {
         AWSCredentials awsCredentials = S3FileSystemConfigBuilder.getInstance().getAWSCredentials(getFileSystem().getFileSystemOptions());
+
+        if (awsCredentials == null) {
+            awsCredentials = extractCredentials(getService());
+        }
+
+        if (awsCredentials == null) {
+            throw new FileSystemException("Not able to build private URL - empty AWS credentials");
+        }
 
         return String.format(
                 "s3://%s:%s@%s/%s",
