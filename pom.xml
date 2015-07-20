@@ -68,6 +68,18 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.2</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-scm-plugin</artifactId>
+                <version>1.9.4</version>
+                <configuration>
+                    <tag>${project.version}</tag>
+                </configuration>
+            </plugin>
         </plugins>
         <testResources>
             <testResource>
@@ -98,6 +110,10 @@
             </snapshots>
         </repository>
     </repositories>
+
+    <scm>
+        <connection>scm:git:git@github.com:abashev/vfs-s3.git</connection>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
