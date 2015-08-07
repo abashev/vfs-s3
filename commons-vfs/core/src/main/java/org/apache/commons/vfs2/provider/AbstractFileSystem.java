@@ -317,52 +317,47 @@ public abstract class AbstractFileSystem
         return resolveFile(name, true);
     }
 
-    private synchronized FileObject resolveFile(final FileName name, final boolean useCache) throws FileSystemException
+    private FileObject resolveFile(final FileName name, final boolean useCache) throws FileSystemException
     {
-        if (!rootName.getRootURI().equals(name.getRootURI()))
-        {
-            throw new FileSystemException("vfs.provider/mismatched-fs-for-name.error",
-                    name, rootName, name.getRootURI());
-        }
-
-        // imario@apache.org ==> use getFileFromCache
         FileObject file;
-        if (useCache)
-        {
-            file = getFileFromCache(name);
-        }
-        else
-        {
-            file = null;
-        }
 
-        if (file == null)
-        {
-            try
-            {
-                file = createFile((AbstractFileName) name);
-            }
-            catch (final Exception e)
-            {
-                throw new FileSystemException("vfs.provider/resolve-file.error", name, e);
+        synchronized (this) {
+            if (!rootName.getRootURI().equals(name.getRootURI())) {
+                throw new FileSystemException("vfs.provider/mismatched-fs-for-name.error",
+                        name, rootName, name.getRootURI());
             }
 
-            file = decorateFileObject(file);
+            // imario@apache.org ==> use getFileFromCache
+            if (useCache) {
+                file = getFileFromCache(name);
+            } else {
+                file = null;
+            }
 
-            // imario@apache.org ==> use putFileToCache
-            if (useCache)
-            {
-                putFileToCache(file);
+            if (file == null) {
+                try {
+                    file = createFile((AbstractFileName) name);
+                } catch (final Exception e) {
+                    throw new FileSystemException("vfs.provider/resolve-file.error", name, e);
+                }
+
+                file = decorateFileObject(file);
+
+                // imario@apache.org ==> use putFileToCache
+                if (useCache) {
+                    putFileToCache(file);
+                }
             }
         }
 
         /**
          * resync the file information if requested
          */
-        if (getFileSystemManager().getCacheStrategy().equals(CacheStrategy.ON_RESOLVE))
+        if ((file != null) && getFileSystemManager().getCacheStrategy().equals(CacheStrategy.ON_RESOLVE))
         {
             file.refresh();
         }
+
         return file;
     }
 
