@@ -1,9 +1,6 @@
 package com.intridea.io.vfs.operations;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * ACL for S3.
@@ -27,11 +24,11 @@ import java.util.Map;
  *
  */
 public class Acl {
-    public static enum Permission {
+    public enum Permission {
         READ, WRITE
     }
 
-    public static enum Group {
+    public enum Group {
         OWNER, AUTHORIZED, EVERYONE
     };
 
@@ -279,5 +276,18 @@ public class Acl {
             }
         }
         changed = true;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        if (rules != null) {
+            for (Map.Entry<Group, Permission[]> entry : rules.entrySet()) {
+                sb.append(entry.getKey()).append("=").append(Arrays.toString(entry.getValue())).append(',');
+            }
+        }
+
+        return "Acl{rules={" + sb.toString() + "}}";
     }
 }

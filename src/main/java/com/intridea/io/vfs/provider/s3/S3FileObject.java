@@ -497,8 +497,18 @@ public class S3FileObject extends AbstractFileObject {
      * @return acl list
      */
     private AccessControlList getS3Acl() {
-        String key = getS3Key();
-        return "".equals(key) ? getService().getBucketAcl(getBucket().getName()) : getService().getObjectAcl(getBucket().getName(), key);
+        final String key = getS3Key();
+        final String bucketName = getBucket().getName();
+
+        if ("".equals(key)) {
+            logger.info("Get acl for bucket [" + bucketName + "]");
+
+            return getService().getBucketAcl(bucketName);
+        } else {
+            logger.info("Get acl for object [bucket=" + bucketName + ",key=" + key + "]");
+
+            return getService().getObjectAcl(bucketName, key);
+        }
     }
 
     /**
