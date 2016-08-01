@@ -26,11 +26,9 @@ import static com.intridea.io.vfs.FileAssert.assertHasChildren;
 import static org.apache.commons.vfs2.Selectors.SELECT_ALL;
 import static org.testng.Assert.*;
 
-
-@Test(groups={"storage"})
 public class S3ProviderTest {
 
-    private static final String BACKUP_ZIP = "src/test/resources/backup.zip";
+    public static final String BACKUP_ZIP = "src/test/resources/backup.zip";
     private static final String BIG_FILE = "big_file.iso";
 
     private FileSystemManager fsManager;
@@ -346,7 +344,7 @@ public class S3ProviderTest {
     public void listChildrenRoot() throws FileSystemException {
         final String bucketUrl = "s3://" + bucketName + "/";
 
-        assertHasChildren(fsManager.resolveFile(bucketUrl), "test-place", BIG_FILE);
+        assertHasChildren(fsManager.resolveFile(bucketUrl), "test-place", BIG_FILE, "acl"); // 'acl' came from ACL test
         assertHasChildren(fsManager.resolveFile(bucketUrl + "test-place/"), "backup.zip", dirName, encryptedFileName);
         assertHasChildren(fsManager.resolveFile(bucketUrl + "test-place"), "backup.zip", dirName, encryptedFileName);
 

@@ -4,41 +4,60 @@ import com.intridea.io.vfs.TestEnvironment;
 import com.intridea.io.vfs.operations.Acl;
 import com.intridea.io.vfs.operations.IAclGetter;
 import com.intridea.io.vfs.operations.IAclSetter;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemManager;
-import org.apache.commons.vfs2.VFS;
+import com.intridea.io.vfs.provider.s3.S3ProviderTest;
+import org.apache.commons.vfs2.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Properties;
 
 import static com.intridea.io.vfs.operations.Acl.Group.*;
 import static com.intridea.io.vfs.operations.Acl.Permission.READ;
 import static com.intridea.io.vfs.operations.Acl.Permission.WRITE;
+import static org.testng.Assert.assertTrue;
 
 public class PackageTest {
-    private FileSystemManager fsManager;
     private FileObject file;
     private Acl fileAcl;
-    private String bucketName;
-
+    
     @BeforeClass
     public void setUp() throws IOException {
         Properties config = TestEnvironment.getInstance().getConfig();
-        bucketName = config.getProperty("s3.testBucket", "vfs-s3-tests");
+        String bucketName = config.getProperty("s3.testBucket", "vfs-s3-tests");
+        FileSystemManager fsManager = VFS.getManager();
 
-        fsManager = VFS.getManager();
-        file = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip");
+        file = fsManager.resolveFile("s3://" + bucketName + "/acl/check_acl.zip");
+
+        if (!file.exists()) {
+            final File backupFile = new File(S3ProviderTest.BACKUP_ZIP);
+
+            assertTrue(backupFile.exists(), "Backup file should exists");
+
+            FileObject src = fsManager.resolveFile(backupFile.getAbsolutePath());
+
+            file.copyFrom(src, Selectors.SELECT_SELF);
+        }
     }
 
     @Test
     public void getAcl() throws FileSystemException {
+        if (!file.exists()) {
+            Assert.fail("Target file should be in place");
+        }
+
+//        FileObject[] files = file.findFiles(Selectors.SELECT_CHILDREN);
+
+//        System.out.println(">>> files " + Arrays.toString(files));
+
         // Get ACL
-        IAclGetter aclGetter = (IAclGetter)file.getFileOperations().getOperation(IAclGetter.class);
+        IAclGetter aclGetter = (IAclGetter) file.getFileOperations().getOperation(IAclGetter.class);
         aclGetter.process();
         fileAcl = aclGetter.getAcl();
 
@@ -55,8 +74,12 @@ public class PackageTest {
         Assert.assertFalse(aclGetter.canWrite(EVERYONE));
     }
 
-    @Test(dependsOnMethods="getAcl")
+    @Test(dependsOnMethods = "getAcl")
     public void setAcl() throws FileSystemException {
+        if (!file.exists()) {
+            Assert.fail("Target file should be in place");
+        }
+
         // Set allow read to Guest
         fileAcl.allow(EVERYONE, READ);
         IAclSetter aclSetter = (IAclSetter)file.getFileOperations().getOperation(IAclSetter.class);
@@ -88,8 +111,12 @@ public class PackageTest {
         fileAcl = changedAcl;
     }
 
-    @Test(dependsOnMethods="setAcl")
+    @Test(dependsOnMethods = "setAcl")
     public void setAcl2() throws FileSystemException {
+        if (!file.exists()) {
+            Assert.fail("Target file should be in place");
+        }
+
         // Set allow all to Authorized
         fileAcl.allow(AUTHORIZED);
         IAclSetter aclSetter = (IAclSetter)file.getFileOperations().getOperation(IAclSetter.class);
@@ -149,14 +176,8 @@ public class PackageTest {
 
     @AfterClass
     public void restoreAcl() throws FileSystemException {
-        if (fileAcl != null) {
-            fileAcl.denyAll();
-            fileAcl.allow(OWNER);
-
-            // Set ACL
-            IAclSetter aclSetter = (IAclSetter) file.getFileOperations().getOperation(IAclSetter.class);
-            aclSetter.setAcl(fileAcl);
-            aclSetter.process();
+        if (file != null) {
+            file.delete();
         }
     }
 }

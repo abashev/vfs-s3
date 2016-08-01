@@ -505,9 +505,12 @@ public class S3FileObject extends AbstractFileObject {
 
             return getService().getBucketAcl(bucketName);
         } else {
-            logger.info("Get acl for object [bucket=" + bucketName + ",key=" + key + "]");
+            // Before any operations with object it must be attached
+            doAttach();
 
-            return getService().getObjectAcl(bucketName, key);
+            logger.info("Get acl for object [bucket=" + bucketName + ",key=" + objectKey + "]");
+
+            return getService().getObjectAcl(bucketName, objectKey);
         }
     }
 

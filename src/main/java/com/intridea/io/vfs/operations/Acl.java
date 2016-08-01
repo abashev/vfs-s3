@@ -282,10 +282,8 @@ public class Acl {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        if (rules != null) {
-            for (Map.Entry<Group, Permission[]> entry : rules.entrySet()) {
-                sb.append(entry.getKey()).append("=").append(Arrays.toString(entry.getValue())).append(',');
-            }
+        for (Map.Entry<Group, Permission[]> entry : getRules().entrySet()) {
+            sb.append(entry.getKey()).append("=").append(Arrays.toString(entry.getValue())).append(',');
         }
 
         return "Acl{rules={" + sb.toString() + "}}";
