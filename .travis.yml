@@ -1,6 +1,10 @@
 language: java
 sudo: false
-script: mvn test -Ptravis-ci
+install: true
+script:
+  - mvn test -Ptravis-ci
+jdk:
+  - oraclejdk8
 env:
   global:
   - AWS_TEST_PREFIX=s3
