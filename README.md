@@ -4,7 +4,8 @@ Amazon S3 driver for VFS (Apache Commons Virtual File System)
 
 Branch | Description | Build Status
 ------------ | ------------- | ------------
-branch-2.3.x | **Current** See below | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.3.x)](http://travis-ci.org/abashev/vfs-s3)
+branch-2.4.x | **Current** See below | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.4.x)](http://travis-ci.org/abashev/vfs-s3)
+branch-2.3.x | **Out-dated** | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.3.x)](http://travis-ci.org/abashev/vfs-s3)
 branch-2.2.x | **Out-dated** | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.2.x)](http://travis-ci.org/abashev/vfs-s3)
 branch-2.1.x | **Out-dated** Switch to Amazon SDK for better integration and stability | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.1.x)](http://travis-ci.org/abashev/vfs-s3)
 branch-2.0.x | **Out-dated** It uses Jets3t as back-end for interracting with Amazon S3 | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.0.x)](http://travis-ci.org/abashev/vfs-s3)
@@ -37,7 +38,7 @@ commons-vfs2 | [![Download](https://api.bintray.com/packages/abashev/vfs-s3/comm
 vfs-s3 | [![Download](https://api.bintray.com/packages/abashev/vfs-s3/vfs-s3/images/download.svg) ](https://bintray.com/abashev/vfs-s3/vfs-s3/_latestVersion)
 
 
-TODO for branch-2.3.x development
+TODO for branch-2.4.x development
 ---
 1. Total refactoring for package names - move everything into com.github
 1. Merge changes back to `commons-vfs` project
