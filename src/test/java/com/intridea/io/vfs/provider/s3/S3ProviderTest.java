@@ -496,6 +496,13 @@ public class S3ProviderTest {
         assertEquals(md5Remote, md5Local, "Local and remote md5 should be equal");
     }
 
+    @Test(dependsOnMethods = "upload")
+    public void getLastModified() throws FileSystemException {
+        FileObject backup = fsManager.resolveFile("s3://" + bucketName);
+
+        assertEquals(backup.getContent().getLastModifiedTime(), 0L);
+    }
+
     @Test(dependsOnMethods={"findFiles"})
 	public void copyInsideBucket() throws FileSystemException {
         FileObject testsDir = fsManager.resolveFile(dir, "find-tests");

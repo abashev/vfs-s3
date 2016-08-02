@@ -187,7 +187,9 @@ public class S3FileObject extends AbstractFileObject {
 
     @Override
     protected long doGetLastModifiedTime() throws Exception {
-        return objectMetadata.getLastModified().getTime();
+        Date lastModified = objectMetadata.getLastModified();
+
+        return (lastModified != null) ? lastModified.getTime() : 0L;
     }
 
     @Override
