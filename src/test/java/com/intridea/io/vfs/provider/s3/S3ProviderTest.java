@@ -47,7 +47,7 @@ public class S3ProviderTest {
         dirName = "vfs-dir" + r.nextInt(1000);
         bucketName = config.getProperty("s3.testBucket", "vfs-s3-tests");
         bigFile = config.getProperty("big.file");
-        bigFileMaxThreads = Integer.parseInt(config.getProperty("big.file.maxThreads", "2"));
+        bigFileMaxThreads = Integer.parseInt(config.getProperty("big.file.maxThreads", "10"));
     }
 
     @Test
@@ -59,32 +59,32 @@ public class S3ProviderTest {
 
     @Test(dependsOnMethods = {"createFileOk"})
     public void setRegion() throws FileSystemException {
-        FileSystemOptions regionOpts =
-            (FileSystemOptions)S3FileProvider.getDefaultFileSystemOptions().clone();
+        final S3FileSystemOptions regionOpts = new S3FileSystemOptions();
 
-        S3FileSystemConfigBuilder.getInstance().setRegion(
-            regionOpts, Region.US_West_2);
+        regionOpts.setRegion(Region.US_West_2);
 
         FileObject regFile = fsManager.resolveFile(
-            "s3://" + bucketName + "/test-place/" + fileName, regionOpts);
+                "s3://" + bucketName + "/test-place/" + fileName,
+                regionOpts.toFileSystemOptions()
+        );
 
         assertEquals(
-            ((S3FileSystem) regFile.getFileSystem()).getRegion(),
+            ((S3FileSystem) regFile.getFileSystem()).getRegion().get(),
             Region.US_West_2);
     }
 
     @Test(dependsOnMethods = {"createFileOk"})
     public void defaultRegion() {
-        assertEquals(((S3FileSystem)file.getFileSystem()).getRegion(), Region.US_Standard);
+        assertFalse(((S3FileSystem)file.getFileSystem()).getRegion().isPresent());
     }
 
     @Test(dependsOnMethods = {"createFileOk"})
     public void createEncryptedFileOk() throws FileSystemException {
-        final FileSystemOptions options = (FileSystemOptions) S3FileProvider.getDefaultFileSystemOptions().clone();
+        final S3FileSystemOptions options = new S3FileSystemOptions();
 
-        S3FileSystemConfigBuilder.getInstance().setServerSideEncryption(options, true);
+        options.setServerSideEncryption(true);
 
-        file = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + encryptedFileName, options);
+        file = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + encryptedFileName, options.toFileSystemOptions());
 
         file.createFile();
 
@@ -174,11 +174,11 @@ public class S3ProviderTest {
 
     @Test(dependsOnMethods = {"createEncryptedFileOk"})
     public void uploadEncrypted() throws IOException {
-        final FileSystemOptions options = (FileSystemOptions) S3FileProvider.getDefaultFileSystemOptions().clone();
+        final S3FileSystemOptions options = new S3FileSystemOptions();
 
-        S3FileSystemConfigBuilder.getInstance().setServerSideEncryption(options, true);
+        options.setServerSideEncryption(true);
 
-        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip", options);
+        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/backup.zip", options.toFileSystemOptions());
 
         // Delete file if exists
         if (dest.exists()) {
@@ -223,10 +223,11 @@ public class S3ProviderTest {
 
     @Test(dependsOnMethods={"createFileOk"})
     public void uploadBigFile() throws IOException {
-        FileSystemOptions fso = (FileSystemOptions) S3FileProvider.getDefaultFileSystemOptions().clone();
-        S3FileSystemConfigBuilder.getInstance().setMaxUploadThreads(fso, bigFileMaxThreads);
+        S3FileSystemOptions fso = new S3FileSystemOptions();
 
-        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/" + BIG_FILE);
+        fso.setMaxUploadThreads(bigFileMaxThreads);
+
+        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/" + BIG_FILE, fso.toFileSystemOptions());
 
         // Delete file if exists
         if (dest.exists()) {
@@ -280,11 +281,11 @@ public class S3ProviderTest {
 
     @Test(dependsOnMethods = {"createEncryptedFileOk"})
     public void outputStreamEncrypted() throws IOException {
-        final FileSystemOptions options = (FileSystemOptions) S3FileProvider.getDefaultFileSystemOptions().clone();
+        final S3FileSystemOptions options = new S3FileSystemOptions();
 
-        S3FileSystemConfigBuilder.getInstance().setServerSideEncryption(options, true);
+        options.setServerSideEncryption(true);
 
-        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/output.txt", options);
+        FileObject dest = fsManager.resolveFile("s3://" + bucketName + "/test-place/output.txt", options.toFileSystemOptions());
 
         // Delete file if exists
         if (dest.exists()) {
@@ -468,11 +469,12 @@ public class S3ProviderTest {
         final String signedUrl = urlsGetter.getSignedUrl(60);
 
         assertTrue(
-            signedUrl.startsWith("https://" + bucketName + ".s3.amazonaws.com/test-place/backup.zip?"),
+            signedUrl.startsWith("https://" + bucketName + ".s3-eu-west-1.amazonaws.com/test-place/backup.zip?"),
             signedUrl);
         assertTrue(signedUrl.contains("Signature="));
         assertTrue(signedUrl.contains("Expires="));
-        assertTrue(signedUrl.contains("AWSAccessKeyId="));
+        assertTrue(signedUrl.contains("X-Amz-Credential="));
+        assertTrue(signedUrl.contains("X-Amz-Signature="));
     }
 
     @Test(dependsOnMethods={"upload"})
@@ -518,12 +520,14 @@ public class S3ProviderTest {
 
     @Test(dependsOnMethods={"findFiles"})
     public void copyAllToEncryptedInsideBucket() throws FileSystemException {
-        final FileSystemOptions options = (FileSystemOptions) S3FileProvider.getDefaultFileSystemOptions().clone();
+        final S3FileSystemOptions options = new S3FileSystemOptions();
 
-        S3FileSystemConfigBuilder.getInstance().setServerSideEncryption(options, true);
+        options.setServerSideEncryption(true);
 
         FileObject testsDir = fsManager.resolveFile(dir, "find-tests");
-        FileObject testsDirCopy = fsManager.resolveFile("s3://" + bucketName + "/test-place/" + dirName, options).resolveFile("find-tests-encrypted-copy");
+        FileObject testsDirCopy = fsManager.
+                resolveFile("s3://" + bucketName + "/test-place/" + dirName, options.toFileSystemOptions()).
+                resolveFile("find-tests-encrypted-copy");
 
         testsDirCopy.copyFrom(testsDir, SELECT_ALL);
 

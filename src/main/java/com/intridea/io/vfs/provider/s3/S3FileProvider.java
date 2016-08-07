@@ -2,6 +2,8 @@ package com.intridea.io.vfs.provider.s3;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Region;
 import org.apache.commons.logging.Log;
@@ -12,6 +14,7 @@ import org.apache.commons.vfs2.provider.AbstractOriginatingFileProvider;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 
 /**
  * An S3 file provider. Create an S3 file system out of an S3 file name. Also
@@ -22,7 +25,6 @@ import java.util.Collections;
  * @author Moritz Siuts
  */
 public class S3FileProvider extends AbstractOriginatingFileProvider {
-
     public final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
         Capability.CREATE,
         Capability.DELETE,
@@ -36,27 +38,7 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
         Capability.WRITE_CONTENT
     ));
 
-    /**
-     * Default options for S3 file system.
-     */
-    private static FileSystemOptions defaultOptions = new FileSystemOptions();
-
-    /**
-     * Returns default S3 file system options.
-     * Use it to set AWS auth credentials.
-     * @return default S3 file system options
-     */
-    public static FileSystemOptions getDefaultFileSystemOptions() {
-        return defaultOptions;
-    }
-
-    /**
-     * Logger instance
-     */
-    private final Log logger = LogFactory.getLog(S3FileProvider.class);
-
     public S3FileProvider() {
-        super();
         setFileNameParser(S3FileNameParser.getInstance());
     }
 
@@ -72,31 +54,20 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     protected FileSystem doCreateFileSystem(
             FileName fileName, FileSystemOptions fileSystemOptions
     ) throws FileSystemException {
-        final FileSystemOptions fsOptions = (fileSystemOptions != null) ? fileSystemOptions : getDefaultFileSystemOptions();
-        final S3FileSystemConfigBuilder config = S3FileSystemConfigBuilder.getInstance();
+        final S3FileSystemOptions options = new S3FileSystemOptions(fileSystemOptions);
 
-        AmazonS3Client service = config.getAmazonS3Client(fsOptions);
+        AmazonS3Client service = options.getS3Client().orElseGet(() -> {
+            ClientConfiguration clientConfiguration = options.getClientConfiguration();
+            AmazonS3Client s3 = new AmazonS3Client(new DefaultAWSCredentialsProviderChain(), clientConfiguration);
 
-        if (service == null) {
-            AWSCredentials awsCredentials = config.getAWSCredentials(fsOptions);
-            ClientConfiguration clientConfiguration = config.getClientConfiguration(fsOptions);
+            options.getRegion().ifPresent(r -> s3.setRegion(r.toAWSRegion()));
 
-            if (awsCredentials == null) {
-                service = new AmazonS3Client(clientConfiguration);
-            } else {
-                service = new AmazonS3Client(awsCredentials, clientConfiguration);
-            }
+            return s3;
+        });
 
-            Region region = config.getRegion(fsOptions);
+        S3FileSystem fileSystem = new S3FileSystem((S3FileName) fileName, service, options);
 
-            if (region != null) {
-                service.setRegion(region.toAWSRegion());
-            }
-        }
-
-        S3FileSystem fileSystem = new S3FileSystem((S3FileName) fileName, service, fsOptions);
-
-        if (config.getAmazonS3Client(fsOptions) == null) {
+        if (options.getS3Client().isPresent()) {
             fileSystem.setShutdownServiceOnClose(true);
         }
 

@@ -50,6 +50,7 @@ import static org.apache.commons.vfs2.NameScope.FILE_SYSTEM;
  * @author Moritz Siuts
  * @author Shon Vella
  */
+@SuppressWarnings("JavadocReference")
 public class S3FileObject extends AbstractFileObject {
     private static final Log logger = LogFactory.getLog(S3FileObject.class);
 
@@ -699,11 +700,7 @@ public class S3FileObject extends AbstractFileObject {
      * @return the private url
      */
     public String getPrivateUrl() throws FileSystemException {
-        AWSCredentials awsCredentials = S3FileSystemConfigBuilder.getInstance().getAWSCredentials(getFileSystem().getFileSystemOptions());
-
-        if (awsCredentials == null) {
-            awsCredentials = extractCredentials(getService());
-        }
+        AWSCredentials awsCredentials = extractCredentials(getService());
 
         if (awsCredentials == null) {
             throw new FileSystemException("Not able to build private URL - empty AWS credentials");
@@ -916,7 +913,7 @@ public class S3FileObject extends AbstractFileObject {
      * @return an executor service
      */
     private ExecutorService createTransferManagerExecutorService() {
-        int maxThreads = S3FileSystemConfigBuilder.getInstance().getMaxUploadThreads(getFileSystem().getFileSystemOptions());
+        int maxThreads = (new S3FileSystemOptions(getFileSystem().getFileSystemOptions())).getMaxUploadThreads();
         ThreadFactory threadFactory = new ThreadFactory() {
             private int threadCount = 1;
 
@@ -970,6 +967,6 @@ public class S3FileObject extends AbstractFileObject {
     }
 
     private boolean getServerSideEncryption() {
-        return S3FileSystemConfigBuilder.getInstance().getServerSideEncryption(getFileSystem().getFileSystemOptions());
+        return (new S3FileSystemOptions(getFileSystem().getFileSystemOptions())).getServerSideEncryption();
     }
 }

@@ -10,11 +10,11 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.Capability;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileSystem;
 
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * An S3 file system.
@@ -33,9 +33,9 @@ public class S3FileSystem extends AbstractFileSystem {
     private boolean shutdownServiceOnClose = false;
 
     public S3FileSystem(
-            S3FileName fileName, AmazonS3Client service, FileSystemOptions fileSystemOptions
+            S3FileName fileName, AmazonS3Client service, S3FileSystemOptions options
     ) throws FileSystemException {
-        super(fileName, null, fileSystemOptions);
+        super(fileName, null, options.toFileSystemOptions());
 
         String bucketId = fileName.getBucketId();
 
@@ -71,8 +71,8 @@ public class S3FileSystem extends AbstractFileSystem {
         return bucket;
     }
 
-    protected Region getRegion() {
-        return S3FileSystemConfigBuilder.getInstance().getRegion(getFileSystemOptions());
+    protected Optional<Region> getRegion() {
+        return (new S3FileSystemOptions(getFileSystemOptions())).getRegion();
     }
 
     protected AmazonS3 getService() {
