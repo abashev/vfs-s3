@@ -24,9 +24,9 @@ public class FileSystemManagerFactory implements FactoryBean<FileSystemManager> 
     @Override
     public FileSystemManager getObject() throws Exception {
         // Configure VFS
-        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, awsAccessKey, awsSecretKey);
-        FileSystemOptions opts = S3FileProvider.getDefaultFileSystemOptions();
-        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
+//        StaticUserAuthenticator auth = new StaticUserAuthenticator(null, awsAccessKey, awsSecretKey);
+//        FileSystemOptions opts = S3FileProvider.getDefaultFileSystemOptions();
+//        DefaultFileSystemConfigBuilder.getInstance().setUserAuthenticator(opts, auth);
 
         return VFS.getManager();
     }
