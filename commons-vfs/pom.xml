@@ -17,12 +17,11 @@
    limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.apache.commons</groupId>
     <artifactId>commons-parent</artifactId>
-    <version>36</version>
+    <version>40</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -30,7 +29,7 @@
   <name>Apache Commons VFS</name>
   <description>Apache Commons VFS is a Virtual File System library.</description>
   <packaging>pom</packaging>
-  <version>2.1.1660580.2</version>
+  <version>2.1.1744488.1</version>
 
   <url>http://commons.apache.org/proper/commons-vfs/</url>
   <inceptionYear>2002</inceptionYear>
@@ -47,9 +46,9 @@
   </issueManagement>
 
   <scm>
-    <connection>scm:svn:http://svn.apache.org/repos/asf/commons/proper/vfs/trunk</connection>
-    <developerConnection>scm:svn:https://svn.apache.org/repos/asf/commons/proper/vfs/trunk</developerConnection>
-    <url>http://svn.apache.org/viewvc/commons/proper/vfs/trunk/</url>
+    <connection>scm:svn:http://svn.apache.org/repos/asf/commons/proper/vfs/tags/commons-vfs2-project-2.1</connection>
+    <developerConnection>scm:svn:https://svn.apache.org/repos/asf/commons/proper/vfs/tags/commons-vfs2-project-2.1</developerConnection>
+    <url>http://svn.apache.org/viewvc/commons/proper/vfs/tags/commons-vfs2-project-2.1</url>
   </scm>
 
   <developers>
@@ -140,8 +139,8 @@
   <properties>
     <commons.encoding>UTF-8</commons.encoding>
 
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
 
     <!-- bare ID without major version or commons- prefix -->
     <commons.componentid>vfs</commons.componentid>
@@ -158,10 +157,17 @@
     <commons.release.2.version>2.0</commons.release.2.version>
     <commons.release.2.name>commons-vfs-2.0</commons.release.2.name>
     <commons.release.2.desc>(requires Java 1.5+)</commons.release.2.desc>
-    <commons.release.2.binary.suffix></commons.release.2.binary.suffix>
+    <commons.release.2.binary.suffix />
 
     <vfs.parent.dir>${basedir}</vfs.parent.dir>
     <version.checkstyle>2.13</version.checkstyle>
+    <!-- make sure bundle plugin has dependency informations for 'optional' -->
+    <commons.osgi.excludeDependencies />
+    <!-- Newer versions of clirr throw an NPE buildling the site -->
+    <commons.clirr.version>2.6</commons.clirr.version>
+    <!-- Avoid warnings about being unable to find jars during site buildling -->
+    <dependency.locations.enabled>false</dependency.locations.enabled>
+    <hadoop.version>2.6.0</hadoop.version>
   </properties>
 
   <build>
@@ -375,12 +381,12 @@
       <dependency>
         <groupId>commons-net</groupId>
         <artifactId>commons-net</artifactId>
-        <version>3.3</version>
+        <version>3.5</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-collections4</artifactId>
-        <version>4.0</version>
+        <version>4.1</version>
       </dependency>
       <dependency>
         <groupId>commons-httpclient</groupId>
@@ -390,7 +396,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.9</version>
+        <version>1.11</version>
       </dependency>
       <dependency>
         <groupId>org.apache.jackrabbit</groupId>
@@ -405,7 +411,7 @@
       <dependency>
         <groupId>com.jcraft</groupId>
         <artifactId>jsch</artifactId>
-        <version>0.1.51</version>
+        <version>0.1.53</version>
       </dependency>
       <dependency>
         <groupId>jcifs</groupId>
@@ -417,123 +423,120 @@
         <artifactId>mail</artifactId>
         <version>1.4.7</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-common</artifactId>
+        <version>${hadoop.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>*</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-hdfs</artifactId>
+        <version>${hadoop.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>*</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
       <!-- Testing -->
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>4.12</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.3.2</version>
-        <scope>test</scope>
+        <version>3.4</version>
       </dependency>
       <!-- Test FTP with Apache FTP Server (MINA) -->
       <dependency>
         <groupId>org.apache.ftpserver</groupId>
         <artifactId>ftpserver-core</artifactId>
         <version>1.0.6</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>1.5.11</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-log4j12</artifactId>
-        <version>1.5.11</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>jcl-over-slf4j</artifactId>
         <version>1.5.11</version>
-        <scope>test</scope>
       </dependency>
-      <!-- Test SFTP with Apache SHHd Server (MINA) -->
+      <!-- Test SFTP with Apache SSHd Server (MINA) -->
       <dependency>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd-core</artifactId>
         <version>0.8.0</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.mina</groupId>
         <artifactId>mina-core</artifactId>
         <version>2.0.7</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk16</artifactId>
         <version>1.46</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.4</version>
-        <scope>test</scope>
+        <version>2.5</version>
       </dependency>
       <!-- Test HTTP with Apache HttpComponent Core -->
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpcore-nio</artifactId>
         <version>4.3.2</version>
-        <scope>test</scope>
       </dependency>
       <!-- Test WebDAV with Apache Jackrabbit -->
       <dependency>
         <groupId>org.apache.jackrabbit</groupId>
         <artifactId>jackrabbit-standalone</artifactId>
         <version>1.6.5</version>
-        <scope>test</scope>
         <exclusions>
           <exclusion>
-            <!-- Exclude Derby due to a sealing violation -->
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derby</artifactId>
+            <!-- provides everything inlined. -->
+            <groupId>*</groupId>
+            <artifactId>*</artifactId>
           </exclusion>
         </exclusions>
-      </dependency>
-      <!-- HDFS dependencies -->
-      <dependency>
-        <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-common</artifactId>
-        <version>2.6.0</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-hdfs</artifactId>
-        <version>2.6.0</version>
-        <scope>provided</scope>
       </dependency>
       <!-- HDFS test dependencies -->
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-common</artifactId>
-        <version>2.6.0</version>
+        <version>${hadoop.version}</version>
         <type>test-jar</type>
-        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <!-- jackrabbit-standalone provides one, too -->
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-hdfs</artifactId>
-        <version>2.6.0</version>
+        <version>${hadoop.version}</version>
         <type>test-jar</type>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>javax.ws.rs</groupId>
         <artifactId>jsr311-api</artifactId>
         <version>1.1.1</version>
-        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

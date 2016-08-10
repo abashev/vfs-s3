@@ -66,7 +66,7 @@ public class HttpProviderTestCase extends AbstractProviderTestConfig
     private static void setUpClass() throws Exception
     {
         Server = new NHttpServer();
-        if (!Server.run(SocketPort, new File(getTestDirectoryString()), 5000))
+        if (!Server.run(SocketPort, new File(getTestDirectory()), 5000))
         {
             throw new IllegalStateException("The embedded HTTP server has not completed startup, increase wait time");
         }
@@ -202,6 +202,13 @@ public class HttpProviderTestCase extends AbstractProviderTestConfig
         testResloveFolderSlash(ConnectionUri + "/read-tests/", true);
     }
 
+    // Test no longer passing 2016/04/28
+    public void ignoreTestHttp405() throws FileSystemException
+    {
+        final FileObject f = VFS.getManager().resolveFile("http://www.w3schools.com/webservices/tempconvert.asmx?action=WSDL");
+        assert f.getContent().getSize() > 0;
+    }
+
 	/** Ensure VFS-453 options are present. */
     public void testHttpTimeoutConfig() throws FileSystemException
     {
@@ -211,13 +218,16 @@ public class HttpProviderTestCase extends AbstractProviderTestConfig
         // ensure defaults are 0
         assertEquals(0, builder.getConnectionTimeout(opts));
         assertEquals(0, builder.getSoTimeout(opts));
+        assertEquals("Jakarta-Commons-VFS", builder.getUserAgent(opts));
 
         builder.setConnectionTimeout(opts, 60000);
         builder.setSoTimeout(opts, 60000);
+        builder.setUserAgent(opts, "foo/bar");
 
         // ensure changes are visible
         assertEquals(60000, builder.getConnectionTimeout(opts));
         assertEquals(60000, builder.getSoTimeout(opts));
+        assertEquals("foo/bar", builder.getUserAgent(opts));
 
         // TODO: should also check the created HTTPClient
     }

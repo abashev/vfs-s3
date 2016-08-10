@@ -16,7 +16,10 @@
  */
 package org.apache.commons.vfs2;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
@@ -126,11 +129,9 @@ public final class FileSystemOptions implements Cloneable
         }
 
         @Override
-        public String toString() {
-            return "{" +
-                    "class=" + fileSystemClass.getName() +
-                    ",name='" + name + '\'' +
-                    '}';
+        public String toString()
+        {
+            return fileSystemClass.getName()+"."+name;
         }
     }
 
@@ -175,8 +176,27 @@ public final class FileSystemOptions implements Cloneable
             return 0;
         }
 
-        final int hash = options.hashCode();
-        final int hashFk = other.options.hashCode();
+        // ensure proper sequence of options
+        final SortedMap<FileSystemOptionKey, Object> myOptions =
+              options instanceof SortedMap
+            ? (SortedMap<FileSystemOptionKey, Object>)options
+            : new TreeMap<FileSystemOptionKey, Object>(options);
+        final SortedMap<FileSystemOptionKey, Object> theirOptions =
+              other.options instanceof SortedMap
+            ? (SortedMap<FileSystemOptionKey, Object>)other.options
+            : new TreeMap<FileSystemOptionKey, Object>(other.options);
+        final Iterator<FileSystemOptionKey> optKeysIter = myOptions.keySet().iterator();
+        final Iterator<FileSystemOptionKey> otherKeysIter = theirOptions.keySet().iterator();
+        while(optKeysIter.hasNext()) {
+            int comp = optKeysIter.next().compareTo(otherKeysIter.next());
+            if (comp != 0) {
+                return comp;
+            }
+        }
+
+        Object[] array = new Object[propsSz];
+        final int hash = Arrays.deepHashCode(myOptions.values().toArray(array));
+        final int hashFk = Arrays.deepHashCode(theirOptions.values().toArray(array));
         if (hash < hashFk)
         {
             return -1;
@@ -186,19 +206,44 @@ public final class FileSystemOptions implements Cloneable
             return 1;
         }
 
-        // bad props not the same instance, but looks like the same
-        if (options.size() != other.options.size()) {
-            return (options.size() - other.options.size());
-        }
-
-        for (FileSystemOptionKey key: options.keySet()) {
-            if (!options.get(key).equals(other.options.get(key))) {
-                return (-1);
-            }
-        }
-
+        // TODO: compare Entry by Entry ??
         return 0;
     }
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        if (options == null) {
+            result = prime * result;
+        } else {
+            final SortedMap<FileSystemOptionKey, Object> myOptions =
+                options instanceof SortedMap
+              ? (SortedMap<FileSystemOptionKey, Object>)options
+              : new TreeMap<FileSystemOptionKey, Object>(options);
+            result = prime * result + myOptions.keySet().hashCode();
+            result = prime * result + Arrays.deepHashCode(myOptions.values().toArray(new Object[options.size()]));
+        }
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        FileSystemOptions other = (FileSystemOptions)obj;
+        return compareTo(other) == 0;
+    }
+
 
     /**
      * {@inheritDoc}
@@ -215,17 +260,5 @@ public final class FileSystemOptions implements Cloneable
     public String toString()
     {
         return options.toString();
-    }
-
-    @Override
-    public int hashCode() {
-        int result = 1;
-
-        for (FileSystemOptionKey key: options.keySet()) {
-            result = 31 * result + key.hashCode();
-            result = 31 * result + options.get(key).hashCode();
-        }
-
-        return result;
     }
 }

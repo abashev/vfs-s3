@@ -16,15 +16,20 @@
  */
 package org.apache.commons.vfs2.provider.temp;
 
-import org.apache.commons.vfs2.*;
+import java.io.File;
+import java.util.Collection;
+
+import org.apache.commons.vfs2.Capability;
+import org.apache.commons.vfs2.FileName;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystem;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.provider.AbstractFileProvider;
 import org.apache.commons.vfs2.provider.FileProvider;
 import org.apache.commons.vfs2.provider.UriParser;
 import org.apache.commons.vfs2.provider.local.DefaultLocalFileProvider;
 import org.apache.commons.vfs2.provider.local.LocalFileSystem;
-
-import java.io.File;
-import java.util.Collection;
 
 /**
  * A provider for temporary files.
@@ -94,10 +99,8 @@ public class TemporaryFileProvider
         // Parse the name
         final StringBuilder buffer = new StringBuilder(uri);
         final String scheme = UriParser.extractScheme(uri, buffer);
-
         UriParser.fixSeparators(buffer);
-
-        final FileType fileType = UriParser.normalisePath(buffer);
+        UriParser.normalisePath(buffer);
         final String path = buffer.toString();
 
         // Create the temp file system if it does not exist
@@ -114,7 +117,7 @@ public class TemporaryFileProvider
             // final FileName rootName =
             //    new LocalFileName(scheme, scheme + ":", FileName.ROOT_PATH);
             filesystem = new LocalFileSystem(rootName, rootFile.getAbsolutePath(), properties);
-            addFileSystem(this, properties, filesystem);
+            addFileSystem(this, filesystem);
         }
 
         // Find the file

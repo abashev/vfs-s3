@@ -47,7 +47,7 @@ public class SoftRefFilesCache extends AbstractFilesCache
 {
     private static final int TIMEOUT = 1000;
 
-    private final Log log = LogFactory.getLog(SoftRefFilesCache.class);
+    private static final Log log = LogFactory.getLog(SoftRefFilesCache.class);
 
     private final ConcurrentMap<FileSystem, Map<FileName, Reference<FileObject>>> fileSystemCache =
           new ConcurrentHashMap<FileSystem, Map<FileName, Reference<FileObject>>>();
@@ -55,8 +55,7 @@ public class SoftRefFilesCache extends AbstractFilesCache
           new HashMap<Reference<FileObject>, FileSystemAndNameKey>(100);
     private final ReferenceQueue<FileObject> refQueue = new ReferenceQueue<FileObject>();
 
-    private final AtomicReference<SoftRefReleaseThread> softRefReleaseThread =
-            new AtomicReference<SoftRefReleaseThread>();
+    private volatile SoftRefReleaseThread softRefReleaseThread = null; // @GuardedBy("lock")
 
     private final Lock lock = new ReentrantLock();
 
@@ -122,31 +121,33 @@ public class SoftRefFilesCache extends AbstractFilesCache
 
     private void startThread()
     {
-        Thread thread;
-        SoftRefReleaseThread newThread;
-        do
+        // Double Checked Locking is allowed when volatile
+        if (softRefReleaseThread != null)
         {
-            newThread = null;
-            thread = softRefReleaseThread.get();
-            if (thread != null)
+            return;
+        }
+
+        synchronized (lock)
+        {
+            if (softRefReleaseThread == null)
             {
-                break;
+                softRefReleaseThread = new SoftRefReleaseThread();
+                softRefReleaseThread.start();
             }
-            newThread = new SoftRefReleaseThread();
-        } while (softRefReleaseThread.compareAndSet(null, newThread));
-        if (newThread != null)
-        {
-            newThread.start();
         }
     }
 
     private void endThread()
     {
-        final SoftRefReleaseThread thread = softRefReleaseThread.getAndSet(null);
-        if (thread != null)
+        synchronized (lock)
         {
-            thread.requestEnd = true;
-            thread.interrupt();
+            final SoftRefReleaseThread thread = softRefReleaseThread;
+            softRefReleaseThread = null;
+            if (thread != null)
+            {
+                thread.requestEnd = true;
+                thread.interrupt();
+            }
         }
     }
 

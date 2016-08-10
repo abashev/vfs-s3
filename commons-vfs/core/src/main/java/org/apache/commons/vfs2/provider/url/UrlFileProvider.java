@@ -16,14 +16,20 @@
  */
 package org.apache.commons.vfs2.provider.url;
 
-import org.apache.commons.vfs2.*;
-import org.apache.commons.vfs2.provider.AbstractFileProvider;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+
+import org.apache.commons.vfs2.Capability;
+import org.apache.commons.vfs2.FileName;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystem;
+import org.apache.commons.vfs2.FileSystemConfigBuilder;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemOptions;
+import org.apache.commons.vfs2.provider.AbstractFileProvider;
 
 /**
  * A file provider backed by Java's URL API.
@@ -75,7 +81,7 @@ public class UrlFileProvider
                 // final FileName rootName =
                 //    new BasicFileName(rootUrl, FileName.ROOT_PATH);
                 fs = new UrlFileSystem(rootName, fileSystemOptions);
-                addFileSystem(key, fileSystemOptions, fs);
+                addFileSystem(key, fs);
             }
             return fs.resolveFile(url.getPath());
         }

@@ -29,7 +29,7 @@ import org.apache.commons.vfs2.test.CacheTestSuite;
 import org.apache.commons.vfs2.test.ProviderTestConfig;
 
 /**
- * Tests the NullFilesCache
+ * Tests the {@link NullFilesCache} using {@link NullFilesCacheTests}.
  */
 public class NullFilesCacheTestCase
     extends AbstractProviderTestConfig
@@ -51,7 +51,7 @@ public class NullFilesCacheTestCase
     @Override
     public FileObject getBaseTestFolder(final FileSystemManager manager) throws Exception
     {
-        final File testDir = AbstractVfsTestCase.getTestDirectory();
+        final File testDir = AbstractVfsTestCase.getTestDirectoryFile();
         return manager.toFileObject(testDir);
     }
 }

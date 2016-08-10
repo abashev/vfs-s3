@@ -19,6 +19,8 @@ package org.apache.commons.vfs2.provider;
 import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.provider.local.GenericFileNameParser;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -31,8 +33,10 @@ public abstract class AbstractFileProvider
     implements FileProvider
 {
     /**
-     * The cached file systems.  This is a mapping from root URI to
-     * FileSystem object.
+     * The cached file systems.
+     * <p>
+     * This is a mapping from {@link FileSystemKey} (root URI and options)
+     * to {@link FileSystem}.
      */
     private final ConcurrentMap<FileSystemKey, FileSystem> fileSystems = new ConcurrentHashMap<>();
 
@@ -88,13 +92,13 @@ public abstract class AbstractFileProvider
      * @param fs the file system to add.
      * @throws FileSystemException if any error occurs.
      */
-    protected void addFileSystem(final Comparable<?> key, FileSystemOptions fileSystemOptions, final FileSystem fs)
+    protected void addFileSystem(final Comparable<?> key, final FileSystem fs)
         throws FileSystemException
     {
-        // Add to the cache
+        // Add to the container and initialize
         addComponent(fs);
 
-        final FileSystemKey treeKey = new FileSystemKey(key, fileSystemOptions);
+        final FileSystemKey treeKey = new FileSystemKey(key, fs.getFileSystemOptions());
         ((AbstractFileSystem) fs).setCacheKey(treeKey);
 
         fileSystems.put(treeKey, fs);
@@ -129,9 +133,20 @@ public abstract class AbstractFileProvider
      */
     public void freeUnusedResources()
     {
-        for (final Object element : fileSystems.values().toArray())
+        List<AbstractFileSystem> copy = new LinkedList<>();
+
+        // FIXME not really clean solution but easy to do
+        for (FileSystem fs : fileSystems.values()) {
+            try {
+                copy.add((AbstractFileSystem) fs);
+            } catch (ClassCastException e) {
+                // Skip not AbstractFileSystem
+            }
+        }
+
+        // process snapshot outside lock
+        for (final AbstractFileSystem fs : copy)
         {
-            final AbstractFileSystem fs = (AbstractFileSystem) element;
             if (fs.isReleaseable())
             {
                 fs.closeCommunicationLink();

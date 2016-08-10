@@ -116,7 +116,7 @@ public abstract class AbstractOriginatingFileProvider
 
                     fs = doCreateFileSystem(rootName, fileSystemOptions);
 
-                    addFileSystem(rootName, fileSystemOptions, fs);
+                    addFileSystem(rootName, fs);
                 }
             } finally {
                 createFileSystemLock.unlock();
