@@ -57,7 +57,14 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>6.8.8</version>
+            <version>6.9.10</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>4.0</version>
+            <classifier>no_aop</classifier>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -111,22 +118,6 @@
                 </configuration>
             </plugin>
         </plugins>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-                <includes>
-                    <include>*.properties</include>
-                </includes>
-                <filtering>true</filtering>
-            </testResource>
-            <testResource>
-                <directory>src/test/resources</directory>
-                <excludes>
-                    <exclude>*.properties</exclude>
-                </excludes>
-                <filtering>false</filtering>
-            </testResource>
-        </testResources>
     </build>
 
     <distributionManagement>
@@ -155,17 +146,4 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
-    <profiles>
-        <profile>
-            <!-- Profile for travis CI server build-->
-            <id>travis-ci</id>
-
-            <properties>
-                <aws.accessKey>${env.AWS_ACCESS_KEY}</aws.accessKey>
-                <aws.secretKey>${env.AWS_SECRET_KEY}</aws.secretKey>
-                <aws.testPrefix>${env.AWS_TEST_PREFIX}</aws.testPrefix>
-            </properties>
-        </profile>
-    </profiles>
 </project>

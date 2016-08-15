@@ -1,13 +1,12 @@
 package com.intridea.io.vfs.operations.acl;
 
-
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import com.intridea.io.vfs.operations.Acl;
 
-@Test(groups="storage")
 public class AclTest {
+    @Test
     public void testOperations () {
         Acl acl = new Acl(null);
         acl.denyAll();

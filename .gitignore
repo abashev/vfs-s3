@@ -7,7 +7,4 @@ target/
 *.iws
 /test-output
 .idea
-src/test/resources/commons-logging.properties
-src/test/.DS_Store
-.envrc
 atlassian-ide-plugin.xml

@@ -1,13 +1,12 @@
-package com.intridea.io.vfs.provider.s3.acl;
+package com.intridea.io.vfs.provider.s3;
 
-import com.intridea.io.vfs.TestEnvironment;
 import com.intridea.io.vfs.operations.Acl;
 import com.intridea.io.vfs.operations.IAclGetter;
 import com.intridea.io.vfs.operations.IAclSetter;
-import com.intridea.io.vfs.provider.s3.S3ProviderTest;
-import org.apache.commons.vfs2.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.intridea.io.vfs.support.AbstractS3FileSystemTest;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.Selectors;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -15,32 +14,26 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Properties;
 
 import static com.intridea.io.vfs.operations.Acl.Group.*;
 import static com.intridea.io.vfs.operations.Acl.Permission.READ;
 import static com.intridea.io.vfs.operations.Acl.Permission.WRITE;
 import static org.testng.Assert.assertTrue;
 
-public class PackageTest {
+public class AclHandlingTest extends AbstractS3FileSystemTest {
     private FileObject file;
     private Acl fileAcl;
     
     @BeforeClass
     public void setUp() throws IOException {
-        Properties config = TestEnvironment.getInstance().getConfig();
-        String bucketName = config.getProperty("s3.testBucket", "vfs-s3-tests");
-        FileSystemManager fsManager = VFS.getManager();
-
-        file = fsManager.resolveFile("s3://" + bucketName + "/acl/check_acl.zip");
+        file = env.resolveFile("/acl/check_acl.zip");
 
         if (!file.exists()) {
-            final File backupFile = new File(S3ProviderTest.BACKUP_ZIP);
+            final File backupFile = new File(env.binaryFile());
 
             assertTrue(backupFile.exists(), "Backup file should exists");
 
-            FileObject src = fsManager.resolveFile(backupFile.getAbsolutePath());
+            FileObject src = vfs.resolveFile(backupFile.getAbsolutePath());
 
             file.copyFrom(src, Selectors.SELECT_SELF);
         }
