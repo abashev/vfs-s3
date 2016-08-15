@@ -238,4 +238,9 @@ public class S3FileSystemOptions {
     private boolean isEmpty(String s) {
         return ((s == null) || (s.length() == 0));
     }
+
+    @Override
+    public String toString() {
+        return options.toString();
+    }
 }

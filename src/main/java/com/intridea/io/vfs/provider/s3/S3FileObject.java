@@ -99,7 +99,8 @@ public class S3FileObject extends AbstractFileObject {
                 String candidateKey = getS3Key();
                 objectMetadata = getService().getObjectMetadata(getBucket().getName(), candidateKey);
                 objectKey = candidateKey;
-                logger.info("Attach file to S3 Object: " + objectKey);
+
+                logger.info("Attach file to S3 Object [" + objectKey + "]");
 
                 attached = true;
                 return;
@@ -115,7 +116,7 @@ public class S3FileObject extends AbstractFileObject {
                 String candidateKey = getS3Key() + FileName.SEPARATOR;
                 objectMetadata = getService().getObjectMetadata(getBucket().getName(), candidateKey);
                 objectKey = candidateKey;
-                logger.info("Attach folder to S3 Object: " + objectKey);
+                logger.info("Attach folder to S3 Object [" + objectKey + "]");
 
                 attached = true;
                 return;
@@ -129,7 +130,7 @@ public class S3FileObject extends AbstractFileObject {
                 objectKey = getS3Key();
                 objectMetadata.setLastModified(new Date());
 
-                logger.info("Attach new S3 Object: " + objectKey);
+                logger.info("Attach new S3 Object [" + objectKey + "]");
 
                 downloaded = true;
                 attached = true;
