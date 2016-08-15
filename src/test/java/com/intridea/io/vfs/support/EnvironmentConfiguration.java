@@ -21,7 +21,7 @@ import static java.nio.file.Files.exists;
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
 class EnvironmentConfiguration {
-    private final Pattern ENV_PATTERN = Pattern.compile("export\\s([^=]+)=(.+)");
+    private final Pattern ENV_PATTERN = Pattern.compile("export\\s([^=]+)\\s*=\\s*(.+)");
 
     private final String configFile;
 

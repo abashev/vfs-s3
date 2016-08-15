@@ -8,3 +8,4 @@ target/
 /test-output
 .idea
 atlassian-ide-plugin.xml
+.envrc

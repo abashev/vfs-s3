@@ -2,11 +2,9 @@ language: java
 sudo: false
 install: true
 script:
-  - mvn test -Ptravis-ci
+  - mvn package
 jdk:
   - oraclejdk8
 env:
   global:
-  - AWS_TEST_PREFIX=s3
-  - secure: xRKGqDPjDOvSonin1ixcvv/Jzl1YlrNVWWj8c761Kue7My4F867W8L1p22URbZXnKrMJ2yeaUSeDcm8flkMvZvxSrbuRKvgzV/eJtoDFKY5mXhdviDdupm6d5fRCyuhTxtGg+pk6z1ynrOe1NhJGTOhAKyZtC7cusWzEwhEdIZ4=
-  - secure: ZKvWRGx8H6dqDB8Iu0VJDJUeOQ6tf3zm9z9DDbHZX+HZAdq58uk8Woa27JGUyGkASyLKSXXRqrIl2kKoH0wEBO2f4jVsG8beMSHAgtBufvq3QYKS7SO6qsqlaWSDfxADcxw5jev8zIXYgKmB93LxDiRcT40F09nT5rSjXGg3aX4=
+  - AWS_TEST_BUCKET=s3-tests
