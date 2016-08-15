@@ -9,7 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -40,9 +42,9 @@ class EnvironmentConfiguration {
      *
      * @return
      */
-    public Map<String, String> toMap() {
+    private Map<String, String> toMap() {
         Path envFile = Paths.get(configFile);
-        Map<String, String> result = Collections.emptyMap();
+        Map<String, String> result = new HashMap<>();
 
         if (!exists(envFile)) {
             log.info("No {} file for loading credentials", configFile);
@@ -76,6 +78,21 @@ class EnvironmentConfiguration {
      * @return
      */
     public String get(String key) {
-        return toMap().get(key);
+        String value = toMap().get(key);
+
+        if (value == null) {
+            // Check for environment
+            value = System.getenv(key);
+        }
+
+        return value;
+    }
+
+    public void computeIfPresent(String key, Consumer<String> valueConsumer) {
+        String value = get(key);
+
+        if (value != null) {
+            valueConsumer.accept(value);
+        }
     }
 }

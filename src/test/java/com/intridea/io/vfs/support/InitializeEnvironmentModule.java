@@ -47,9 +47,9 @@ class InitializeEnvironmentModule implements Module {
             log.info("Not able to load credentials from enviroment - try .envrc file");
         }
 
-        Map<String, String> params = (new EnvironmentConfiguration()).toMap();
+        EnvironmentConfiguration configuration = new EnvironmentConfiguration();
 
-        params.computeIfPresent(ACCESS_KEY_ENV_VAR, (k, v) -> setProperty(ACCESS_KEY_SYSTEM_PROPERTY, v));
-        params.computeIfPresent(SECRET_KEY_ENV_VAR, (k, v) -> setProperty(SECRET_KEY_SYSTEM_PROPERTY, v));
+        configuration.computeIfPresent(ACCESS_KEY_ENV_VAR, v -> setProperty(ACCESS_KEY_SYSTEM_PROPERTY, v));
+        configuration.computeIfPresent(SECRET_KEY_ENV_VAR, v -> setProperty(SECRET_KEY_SYSTEM_PROPERTY, v));
     }
 }
