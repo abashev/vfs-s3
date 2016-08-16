@@ -222,17 +222,17 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         }
 
         // Copy data
-        final File file = new File(env.binaryFile());
+        FileObject src = vfs.resolveFile(env.bigFile());
 
-        assertTrue(file.exists(), "Big file should exists");
-
-        FileObject src = vfs.resolveFile(file.getAbsolutePath());
+        assertTrue(src.exists(), "Big file should exists");
 
         assertTrue(src.getContent().getSize() > (new TransferManagerConfiguration()).getMultipartUploadThreshold());
 
         dest.copyFrom(src, Selectors.SELECT_SELF);
 
-        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
+        assertTrue(dest.exists(), "Destination file should be on place");
+        assertEquals(dest.getType(), FileType.FILE);
+        assertEquals(src.getContent().getSize(), dest.getContent().getSize());
     }
 
     @Test(dependsOnMethods={"createFileOk"})

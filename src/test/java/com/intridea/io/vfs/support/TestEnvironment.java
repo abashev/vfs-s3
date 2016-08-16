@@ -68,4 +68,13 @@ public class TestEnvironment {
     public String binaryFile() {
         return "src/test/resources/backup.zip";
     }
+
+    /**
+     * Returns path to big file for doing upload test.
+     *
+     * @return
+     */
+    public String bigFile() {
+        return "http://archive.ubuntu.com/ubuntu/dists/xenial-updates/main/installer-i386/current/images/netboot/mini.iso";
+    }
 }

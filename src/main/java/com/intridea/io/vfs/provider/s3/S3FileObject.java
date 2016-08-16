@@ -141,7 +141,8 @@ public class S3FileObject extends AbstractFileObject {
     @Override
     protected void doDetach() throws Exception {
         if (attached) {
-            logger.info("Detach from S3 Object: " + objectKey);
+            logger.info("Detach from S3 Object [" + objectKey + "]");
+
             objectMetadata = null;
             if (cacheFile != null) {
                 if (!cacheFile.delete()) {
