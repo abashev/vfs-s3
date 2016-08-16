@@ -1,4 +1,4 @@
-package com.intridea.io.vfs.operations;
+package com.github.vfss3.operations;
 
 import java.util.*;
 

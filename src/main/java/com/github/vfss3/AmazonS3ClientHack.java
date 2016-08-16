@@ -1,4 +1,4 @@
-package com.intridea.io.vfs.provider.s3;
+package com.github.vfss3;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;

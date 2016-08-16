@@ -1,11 +1,7 @@
-package com.intridea.io.vfs.provider.s3.operations;
+package com.github.vfss3.operations;
 
-
+import com.github.vfss3.S3FileObject;
 import org.apache.commons.vfs2.FileSystemException;
-
-import com.intridea.io.vfs.operations.Acl;
-import com.intridea.io.vfs.operations.IAclSetter;
-import com.intridea.io.vfs.provider.s3.S3FileObject;
 
 class AclSetter implements IAclSetter {
 

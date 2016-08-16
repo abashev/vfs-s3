@@ -1,9 +1,9 @@
-package com.intridea.io.vfs.provider.s3.operations;
+package com.github.vfss3.operations;
 
 import org.apache.commons.vfs2.FileSystemException;
 
-import com.intridea.io.vfs.operations.IPublicUrlsGetter;
-import com.intridea.io.vfs.provider.s3.S3FileObject;
+import com.github.vfss3.operations.IPublicUrlsGetter;
+import com.github.vfss3.S3FileObject;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>

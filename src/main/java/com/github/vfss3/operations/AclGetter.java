@@ -1,13 +1,11 @@
-package com.intridea.io.vfs.provider.s3.operations;
+package com.github.vfss3.operations;
 
-import com.intridea.io.vfs.operations.Acl;
-import com.intridea.io.vfs.operations.Acl.Group;
-import com.intridea.io.vfs.operations.IAclGetter;
-import com.intridea.io.vfs.provider.s3.S3FileObject;
+import com.github.vfss3.S3FileObject;
+import com.github.vfss3.operations.Acl.Group;
 import org.apache.commons.vfs2.FileSystemException;
 
-import static com.intridea.io.vfs.operations.Acl.Permission.READ;
-import static com.intridea.io.vfs.operations.Acl.Permission.WRITE;
+import static com.github.vfss3.operations.Acl.Permission.READ;
+import static com.github.vfss3.operations.Acl.Permission.WRITE;
 
 class AclGetter implements IAclGetter {
     private S3FileObject file;

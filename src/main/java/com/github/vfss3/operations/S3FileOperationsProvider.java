@@ -1,4 +1,4 @@
-package com.intridea.io.vfs.provider.s3.operations;
+package com.github.vfss3.operations;
 
 import java.util.Collection;
 
@@ -7,11 +7,11 @@ import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.operations.FileOperation;
 import org.apache.commons.vfs2.operations.FileOperationProvider;
 
-import com.intridea.io.vfs.operations.IAclGetter;
-import com.intridea.io.vfs.operations.IAclSetter;
-import com.intridea.io.vfs.operations.IMD5HashGetter;
-import com.intridea.io.vfs.operations.IPublicUrlsGetter;
-import com.intridea.io.vfs.provider.s3.S3FileObject;
+import com.github.vfss3.operations.IAclGetter;
+import com.github.vfss3.operations.IAclSetter;
+import com.github.vfss3.operations.IMD5HashGetter;
+import com.github.vfss3.operations.IPublicUrlsGetter;
+import com.github.vfss3.S3FileObject;
 
 public class S3FileOperationsProvider implements FileOperationProvider {
 

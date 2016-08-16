@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.intridea.io.vfs.provider.s3;
+package com.github.vfss3;
 
 import org.apache.commons.vfs2.FileSelectInfo;
 import org.apache.commons.vfs2.FileSelector;

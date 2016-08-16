@@ -1,4 +1,4 @@
-package com.intridea.io.vfs.provider.s3;
+package com.github.vfss3;
 
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileSystemException;

@@ -1,4 +1,4 @@
-package com.intridea.io.vfs.provider.s3;
+package com.github.vfss3;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
@@ -10,8 +10,8 @@ import com.amazonaws.services.s3.model.*;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.amazonaws.services.s3.transfer.Upload;
-import com.intridea.io.vfs.operations.Acl;
-import com.intridea.io.vfs.operations.IAclGetter;
+import com.github.vfss3.operations.Acl;
+import com.github.vfss3.operations.IAclGetter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.*;
@@ -31,9 +31,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
-import static com.intridea.io.vfs.operations.Acl.Permission.READ;
-import static com.intridea.io.vfs.operations.Acl.Permission.WRITE;
-import static com.intridea.io.vfs.provider.s3.AmazonS3ClientHack.extractCredentials;
+import static com.github.vfss3.operations.Acl.Permission.READ;
+import static com.github.vfss3.operations.Acl.Permission.WRITE;
+import static com.github.vfss3.AmazonS3ClientHack.extractCredentials;
 import static java.nio.channels.Channels.newInputStream;
 import static java.util.Calendar.SECOND;
 import static org.apache.commons.vfs2.FileName.SEPARATOR;

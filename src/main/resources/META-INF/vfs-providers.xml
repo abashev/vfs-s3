@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <providers>
-    <provider class-name="com.intridea.io.vfs.provider.s3.S3FileProvider">
+    <provider class-name="com.github.vfss3.S3FileProvider">
         <scheme name="s3"/>
     </provider>
-  <operationProvider class-name="com.intridea.io.vfs.provider.s3.operations.S3FileOperationsProvider">
-    <scheme name="s3" />
-  </operationProvider>
+    <operationProvider class-name="com.github.vfss3.operations.S3FileOperationsProvider">
+        <scheme name="s3" />
+    </operationProvider>
 </providers>
