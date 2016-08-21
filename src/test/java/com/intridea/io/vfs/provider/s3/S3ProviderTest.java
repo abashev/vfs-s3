@@ -1,6 +1,8 @@
 package com.intridea.io.vfs.provider.s3;
 
 import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
+import com.github.vfss3.S3FileObject;
+import com.github.vfss3.S3FileSystemOptions;
 import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 import com.intridea.io.vfs.support.AbstractS3FileSystemTest;
@@ -47,22 +49,6 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         file = env.resolveFile("/test-place/%s", fileName);
         file.createFile();
         assertTrue(file.exists());
-    }
-
-    @Test(dependsOnMethods = {"createFileOk"})
-    public void setRegion() throws FileSystemException {
-        final S3FileSystemOptions regionOpts = new S3FileSystemOptions();
-
-        regionOpts.setRegion(US_West_2);
-
-        FileObject regFile = env.resolveFile(regionOpts, "/test-place/%s", fileName);
-
-        assertEquals(((S3FileSystem) regFile.getFileSystem()).getRegion().get(), US_West_2);
-    }
-
-    @Test(dependsOnMethods = {"createFileOk"})
-    public void defaultRegion() {
-        assertFalse(((S3FileSystem)file.getFileSystem()).getRegion().isPresent());
     }
 
     @Test(dependsOnMethods = {"createFileOk"})

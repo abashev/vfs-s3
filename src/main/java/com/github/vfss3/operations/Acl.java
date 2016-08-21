@@ -60,7 +60,7 @@ public class Acl {
     /**
      * Create new empty ACL.
      */
-    public Acl () {
+    public Acl() {
         this(null);
     }
 
@@ -68,7 +68,7 @@ public class Acl {
      * Create ACL and load rules.
      * @param rules A set of predefined rules.
      */
-    public Acl (Map<Group, Permission[]> rules) {
+    public Acl(Map<Group, Permission[]> rules) {
         rulesTable = new byte[groupsCount][rulesCount];
         if (rules != null) {
             setRules(rules);

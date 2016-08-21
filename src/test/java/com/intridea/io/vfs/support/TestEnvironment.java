@@ -1,11 +1,9 @@
 package com.intridea.io.vfs.support;
 
-import com.intridea.io.vfs.provider.s3.S3FileSystemOptions;
+import com.github.vfss3.S3FileSystemOptions;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileSystemManager;
-
-import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 

@@ -1,4 +1,4 @@
-package com.intridea.io.vfs.provider.s3;
+package com.github.vfss3;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -8,7 +8,7 @@ import com.amazonaws.services.s3.AmazonS3EncryptionClient;
 import com.amazonaws.services.s3.model.KMSEncryptionMaterials;
 import org.testng.annotations.Test;
 
-import static com.intridea.io.vfs.provider.s3.AmazonS3ClientHack.extractCredentials;
+import static com.github.vfss3.AmazonS3ClientHack.extractCredentials;
 import static org.testng.Assert.*;
 
 /**

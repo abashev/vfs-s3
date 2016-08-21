@@ -8,7 +8,7 @@ import com.intridea.io.vfs.operations.Acl;
 public class AclTest {
     @Test
     public void testOperations () {
-        Acl acl = new Acl(null);
+        Acl acl = new Acl();
         acl.denyAll();
 
         // Allow single right

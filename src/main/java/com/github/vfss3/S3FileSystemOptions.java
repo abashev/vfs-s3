@@ -1,24 +1,17 @@
 package com.github.vfss3;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Region;
-import org.apache.commons.vfs2.*;
-import org.apache.commons.vfs2.util.UserAuthenticatorUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.vfs2.FileSystem;
+import org.apache.commons.vfs2.FileSystemConfigBuilder;
+import org.apache.commons.vfs2.FileSystemOptions;
 
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
-import static org.apache.commons.vfs2.UserAuthenticationData.PASSWORD;
-import static org.apache.commons.vfs2.UserAuthenticationData.USERNAME;
-import static org.apache.commons.vfs2.util.UserAuthenticatorUtils.getData;
 
 /**
  * Wrapper aroung FileSystemOptions for storing and retrieving various options. It can't be immutable because it use
@@ -31,21 +24,12 @@ public class S3FileSystemOptions {
     private static final String REGION                 = "region";
     private static final String CLIENT_CONFIGURATION   = "clientConfiguration";
     private static final String MAX_UPLOAD_THREADS     = "maxUploadThreads";
-    private static final String AWS_CREDENTIALS        = "awsCredentions";
     private static final String S3_CLIENT              = "S3Client";
 
     private static final int DEFAULT_MAX_UPLOAD_THREADS = 2;
     private static final int DEFAULT_MAX_ERROR_RETRY = 8;
 
-    /**
-     * Auth data types necessary for AWS authentification.
-     */
-    private final static UserAuthenticationData.Type[] AUTHENTICATOR_TYPES = new UserAuthenticationData.Type[] {
-            USERNAME, PASSWORD
-    };
-
     private final FileSystemOptions options;
-    private final Logger log = LoggerFactory.getLogger(S3FileSystemOptions.class);
 
     public S3FileSystemOptions() {
         this(null);
@@ -57,8 +41,18 @@ public class S3FileSystemOptions {
      * @param options
      */
     public S3FileSystemOptions(FileSystemOptions options) {
+        this(options, true);
+    }
+
+    /**
+     * Create new options object based on existed options. cloneOptions useful for old config builder.
+     *
+     * @param options
+     * @param cloneOptions
+     */
+    public S3FileSystemOptions(FileSystemOptions options, boolean cloneOptions) {
         if (options != null) {
-            this.options = (FileSystemOptions) options.clone();
+            this.options = cloneOptions ? (FileSystemOptions) options.clone() : options;
         } else {
             this.options = new FileSystemOptions();
         }
@@ -86,7 +80,8 @@ public class S3FileSystemOptions {
     }
 
     /**
-     * @param opts The FileSystemOptions.
+     * Set default region for S3 client
+     *
      * @param region The S3 region to connect to (if null, then US Standard)
      */
     public void setRegion(Region region) {
@@ -152,7 +147,7 @@ public class S3FileSystemOptions {
 
     /**
      * Get maximum number of threads to use for a single large (16MB or more) upload
-     * @param opts The FileSystemOptions
+     *
      * @return maximum number of threads to use for a single large (16MB or more) upload
      */
     public int getMaxUploadThreads() {
@@ -165,7 +160,6 @@ public class S3FileSystemOptions {
      * In case of many S3FileProviders (useful in multi-threaded environment to eliminate commons-vfs internal locks)
      * you could specify one amazon client for all providers.
      *
-     * @param opts
      * @param client
      */
     public void setS3Client(AmazonS3Client client) {
@@ -177,7 +171,6 @@ public class S3FileSystemOptions {
     /**
      * Get preinitialized AmazonS3 client.
      *
-     * @param opts
      * @return
      */
     public Optional<AmazonS3Client> getS3Client() {
@@ -227,16 +220,6 @@ public class S3FileSystemOptions {
         int getIntegerOption(FileSystemOptions opts, String name, int defaultValue) {
             return getInteger(opts, name, defaultValue);
         }
-    }
-
-    /**
-     * Check for empty string FIXME find the same at Amazon SDK
-     *
-     * @param s string
-     * @return true if string is null or zero length
-     */
-    private boolean isEmpty(String s) {
-        return ((s == null) || (s.length() == 0));
     }
 
     @Override
