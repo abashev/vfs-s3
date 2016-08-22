@@ -26,6 +26,14 @@ Add this section to your repository configuration
         </repository>
     </repositories>
 
+And use it as dependency
+
+    <dependency>
+        <groupId>com.github</groupId>
+        <artifactId>vfs-s3</artifactId>
+        <version>2.4.0</version>
+    </dependency>
+
 
 Direct downloads from Bintray
 ----------------
@@ -40,29 +48,8 @@ vfs-s3 | [![Download](https://api.bintray.com/packages/abashev/vfs-s3/vfs-s3/ima
 
 TODO for branch-2.4.x development
 ---
-1. Total refactoring for package names - move everything into com.github
 1. Merge changes back to `commons-vfs` project
 
-
-
-Bootstraping with Spring
-------------------------
-
-The class `com.scoyo.commons.vfs.S3Util` can be used to easily bootstrap
-the vfs-s3 provider with the Spring Framework:
-
-	<bean id="S3Initializer" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean" lazy-init="false">
-		<property name="targetClass" value="com.scoyo.commons.vfs.S3Util" />
-		<property name="targetMethod" value="initS3Provider" />
-		<property name="arguments">
-			<list>
-				<value>${aws.key-id}</value>
-				<value>${aws.key}</value>
-			</list>
-		</property>
-	</bean>
-
-After that you can use VFS as with any other file system.
 
 
 Sample Java Code
@@ -87,14 +74,9 @@ For running tests you need active credentials for AWS. You can specify them as
 
         export AWS_ACCESS_KEY=AAAAAAA
         export AWS_SECRET_KEY=SSSSSSS
-    And run maven build with profile travis-ci `mvn test -Ptravis-ci`
 
-1. Or you can update your settings.xml file with default or profile's properties
+2. Or any standard ways how to do it in AWS SDK (iam role and so on)
 
-        <properties>
-            <aws.accessKey>AAAAAAAAAAA</aws.accessKey>
-            <aws.secretKey>SSSSSSSSSSS</aws.secretKey>
-        </properties>
 
 **Make sure that you never commit your credentials!**
 

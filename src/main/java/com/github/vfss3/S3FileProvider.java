@@ -57,12 +57,16 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
         final S3FileSystemOptions options = new S3FileSystemOptions(fileSystemOptions);
 
         AmazonS3Client service = options.getS3Client().orElseGet(() -> {
-            ClientConfiguration clientConfiguration = options.getClientConfiguration();
-            AmazonS3Client s3 = new AmazonS3Client(new DefaultAWSCredentialsProviderChain(), clientConfiguration);
+            if (DEFAULT_CLIENT != null) {
+                return DEFAULT_CLIENT;
+            } else {
+                ClientConfiguration clientConfiguration = options.getClientConfiguration();
+                AmazonS3Client s3 = new AmazonS3Client(new DefaultAWSCredentialsProviderChain(), clientConfiguration);
 
-            options.getRegion().ifPresent(r -> s3.setRegion(r.toAWSRegion()));
+                options.getRegion().ifPresent(r -> s3.setRegion(r.toAWSRegion()));
 
-            return s3;
+                return s3;
+            }
         });
 
         S3FileSystem fileSystem = new S3FileSystem((S3FileName) fileName, service, options);
@@ -82,5 +86,16 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     @Override
     public Collection<Capability> getCapabilities() {
         return capabilities;
+    }
+
+    private static AmazonS3Client DEFAULT_CLIENT = null;
+
+    /**
+     * commons-vfs doen't support default options so we have to do something with default S3 client.
+     *
+     * @param client it will be used in case of no client was specified.
+     */
+    public static void setDefaultClient(AmazonS3Client client) {
+        DEFAULT_CLIENT = client;
     }
 }
