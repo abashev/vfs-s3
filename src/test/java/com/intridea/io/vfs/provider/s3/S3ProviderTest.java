@@ -2,15 +2,13 @@ package com.intridea.io.vfs.provider.s3;
 
 import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.github.vfss3.S3FileObject;
+import com.github.vfss3.S3FileProvider;
 import com.github.vfss3.S3FileSystemOptions;
 import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 import com.intridea.io.vfs.support.AbstractS3FileSystemTest;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileType;
-import org.apache.commons.vfs2.Selectors;
+import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.provider.AbstractFileSystem;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -18,14 +16,16 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Random;
+import java.util.regex.Pattern;
 
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
-import static com.amazonaws.services.s3.model.Region.US_West_2;
 import static com.intridea.io.vfs.FileAssert.assertHasChildren;
 import static org.apache.commons.vfs2.Selectors.SELECT_ALL;
 import static org.testng.Assert.*;
@@ -413,6 +413,34 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         assertTrue(sub2.getType().equals(FileType.FOLDER));
     }
 
+    @Test(dependsOnMethods = {"createFileOk"})
+    public void setEndpoint() throws FileSystemException, MalformedURLException {
+        final S3FileSystemOptions options = new S3FileSystemOptions();
+
+        FileObject endpointFile = env.resolveFile("/test-place/");
+
+        // extract bucket endpoint from signed url
+        IPublicUrlsGetter urlsGetter = (IPublicUrlsGetter) endpointFile.getFileOperations().getOperation(IPublicUrlsGetter.class);
+        final String signedUrl = urlsGetter.getSignedUrl(60);
+        // remove bucket name prefix from host to get endpoint
+        String endpoint = new URL(signedUrl).getHost().replaceFirst(".*?\\.", "");
+        // if default S3 endpoint, use alternate endpoint for that region just to make it interesting
+        if (endpoint.equals("s3.amazonaws.com")) {
+            endpoint = "s3-external-1.amazonaws.com";
+        }
+
+        options.setEndpoint(endpoint);
+
+        endpointFile = env.resolveFile(options, "/test-place/");
+
+        assertEquals(
+                new S3FileSystemOptions(endpointFile.getFileSystem().getFileSystemOptions()).getEndpoint().orElse(""),
+                endpoint
+        );
+
+        assertTrue(endpointFile.exists());
+    }
+
     @Test(dependsOnMethods={"upload"})
     public void getContentType() throws FileSystemException {
         FileObject backup = env.resolveFile("/test-place/backup.zip");
@@ -440,7 +468,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         final String signedUrl = urlsGetter.getSignedUrl(60);
 
         assertTrue(
-            signedUrl.startsWith("https://" + env.bucketName() + ".s3-eu-west-1.amazonaws.com/test-place/backup.zip?"),
+            signedUrl.matches("https://" + Pattern.quote(env.bucketName()) + "\\.s3.*?\\.amazonaws\\.com/test-place/backup\\.zip\\?.+"),
             signedUrl);
         assertTrue(signedUrl.contains("Signature="));
         assertTrue(signedUrl.contains("Expires="));
