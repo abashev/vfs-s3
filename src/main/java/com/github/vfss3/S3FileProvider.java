@@ -63,6 +63,7 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
                 ClientConfiguration clientConfiguration = options.getClientConfiguration();
                 AmazonS3Client s3 = new AmazonS3Client(new DefaultAWSCredentialsProviderChain(), clientConfiguration);
 
+                options.getEndpoint().ifPresent(s3::setEndpoint);
                 options.getRegion().ifPresent(r -> s3.setRegion(r.toAWSRegion()));
 
                 return s3;

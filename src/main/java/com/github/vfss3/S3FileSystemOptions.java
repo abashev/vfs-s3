@@ -25,6 +25,7 @@ public class S3FileSystemOptions {
     private static final String CLIENT_CONFIGURATION   = "clientConfiguration";
     private static final String MAX_UPLOAD_THREADS     = "maxUploadThreads";
     private static final String S3_CLIENT              = "S3Client";
+    private static final String ENDPOINT               = "endpoint";
 
     private static final int DEFAULT_MAX_UPLOAD_THREADS = 2;
     private static final int DEFAULT_MAX_ERROR_RETRY = 8;
@@ -87,6 +88,9 @@ public class S3FileSystemOptions {
     public void setRegion(Region region) {
         final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
 
+        if (getEndpoint().isPresent()) {
+            throw new IllegalArgumentException("Cannot set both Region and Endpoint");
+        }
         builder.setOption(options, REGION, requireNonNull(region).toString());
     }
 
@@ -99,6 +103,31 @@ public class S3FileSystemOptions {
         String r = builder.getStringOption(options, REGION, null);
 
         return (r == null) ? empty() : Optional.of(Region.fromValue(r));
+    }
+
+    /**
+     * Set default region for S3 client
+     *
+     * @param endpoint The S3 endpoint to connect to (if null, then use Region)
+     */
+    public void setEndpoint(String endpoint) {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        if (getRegion().isPresent()) {
+            throw new IllegalArgumentException("Cannot set both Region and Endpoint");
+        }
+        builder.setOption(options, ENDPOINT, requireNonNull(endpoint));
+    }
+
+    /**
+     * @return The S3 endpoint to connect to (if null, then use Region)
+     */
+    public Optional<String> getEndpoint() {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        String endpoint = builder.getStringOption(options, ENDPOINT, null);
+
+        return Optional.ofNullable(endpoint);
     }
 
     /**
