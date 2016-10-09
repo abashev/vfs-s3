@@ -4,6 +4,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.HeadBucketRequest;
 import com.amazonaws.services.s3.model.Region;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -15,6 +16,8 @@ import org.apache.commons.vfs2.provider.AbstractFileSystem;
 
 import java.util.Collection;
 import java.util.Optional;
+
+import static com.amazonaws.services.s3.internal.Constants.*;
 
 /**
  * An S3 file system.
@@ -42,7 +45,7 @@ public class S3FileSystem extends AbstractFileSystem {
         this.service = service;
 
         try {
-            if (service.doesBucketExist(bucketId)) {
+            if (doesBucketExist(bucketId)) {
                 bucket = new Bucket(bucketId);
             } else {
                 bucket = service.createBucket(bucketId);
@@ -93,5 +96,37 @@ public class S3FileSystem extends AbstractFileSystem {
 
     public void setShutdownServiceOnClose(boolean shutdownServiceOnClose) {
         this.shutdownServiceOnClose = shutdownServiceOnClose;
+    }
+
+    /**
+     * Implementation from AWS SDK but with exception on AccessForbidden status.
+     *
+     * @param bucketName
+     * @return
+     * @throws FileSystemException
+     */
+    private boolean doesBucketExist(String bucketName) throws FileSystemException {
+        try {
+            service.headBucket(new HeadBucketRequest(bucketName));
+
+            return true;
+        } catch (AmazonServiceException e) {
+            if (e.getStatusCode() == BUCKET_ACCESS_FORBIDDEN_STATUS_CODE) {
+                throw new FileSystemException("vfs.provider.s3/connection-forbidden.error", bucketName, e);
+            }
+
+            // A redirect error or a forbidden error means the bucket exists. So
+            // returning true.
+            if ((e.getStatusCode() == BUCKET_REDIRECT_STATUS_CODE)) {
+                return true;
+            }
+
+            if (e.getStatusCode() == NO_SUCH_BUCKET_STATUS_CODE) {
+                return false;
+            }
+
+            // Unknown exception
+            throw new FileSystemException(e);
+        }
     }
 }
