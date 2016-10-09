@@ -7,8 +7,6 @@ Branch | Description | Build Status
 branch-2.4.x | **Current** See below | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.4.x)](http://travis-ci.org/abashev/vfs-s3)
 branch-2.3.x | **Out-dated** | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.3.x)](http://travis-ci.org/abashev/vfs-s3)
 branch-2.2.x | **Out-dated** | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.2.x)](http://travis-ci.org/abashev/vfs-s3)
-branch-2.1.x | **Out-dated** Switch to Amazon SDK for better integration and stability | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.1.x)](http://travis-ci.org/abashev/vfs-s3)
-branch-2.0.x | **Out-dated** It uses Jets3t as back-end for interracting with Amazon S3 | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.0.x)](http://travis-ci.org/abashev/vfs-s3)
 
 Using with Maven
 ----------------
@@ -31,7 +29,7 @@ And use it as dependency
     <dependency>
         <groupId>com.github</groupId>
         <artifactId>vfs-s3</artifactId>
-        <version>2.4.0</version>
+        <version>2.4.1</version>
     </dependency>
 
 
