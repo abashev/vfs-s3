@@ -124,6 +124,32 @@ public class S3FileObject extends AbstractFileObject {
                 // No, we don't
             }
 
+            try {
+                // Do, we have subordinate objects
+                String candidateKey = getS3Key() + FileName.SEPARATOR;
+                final ListObjectsRequest loReq = new ListObjectsRequest();
+                loReq.setBucketName(getBucket().getName());
+                loReq.setPrefix(candidateKey);
+                loReq.setMaxKeys(1);
+
+                ObjectListing listing = getService().listObjects(loReq);
+                if (!listing.getObjectSummaries().isEmpty()) {
+                    // subordinate objects so we need to pretend there is a directory
+                    objectMetadata = new ObjectMetadata();
+                    objectMetadata.setContentLength(0);
+                    objectMetadata.setContentType(
+                            Mimetypes.getInstance().getMimetype(getName().getBaseName()));
+                    objectMetadata.setLastModified(new Date());
+                    objectKey = candidateKey;
+                    logger.info("Attach folder to virtual S3 Folder [" + objectKey + "]");
+
+                    attached = true;
+                    return;
+                }
+
+            } catch (AmazonServiceException e) {
+            }
+
             // Create a new
             if (objectMetadata == null) {
                 objectMetadata = new ObjectMetadata();
@@ -313,6 +339,15 @@ public class S3FileObject extends AbstractFileObject {
             FileObject childObject = resolveFile(stripPath, (stripPath.equals("/")) ? FILE_SYSTEM : CHILD);
 
             if ((childObject instanceof S3FileObject) && !stripPath.equals("/")) {
+                S3FileObject s3FileObject = (S3FileObject) childObject;
+                ObjectMetadata childMetadata = new ObjectMetadata();
+                childMetadata.setContentLength(0);
+                childMetadata.setContentType(
+                        Mimetypes.getInstance().getMimetype(s3FileObject.getName().getBaseName()));
+                childMetadata.setLastModified(new Date());
+                s3FileObject.objectMetadata = childMetadata;
+                s3FileObject.objectKey = commonPrefix;
+                s3FileObject.attached = true;
                 resolvedChildren.add(childObject);
             }
         }
