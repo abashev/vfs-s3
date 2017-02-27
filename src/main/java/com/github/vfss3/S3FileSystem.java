@@ -30,10 +30,14 @@ public class S3FileSystem extends AbstractFileSystem {
 
     private static final Log logger = LogFactory.getLog(S3FileSystem.class);
 
+    public static final Capability PER_FILE_THREAD_LOCKING_CAPABILITY = discoverPerFileThreadLockingCapability();
+
     private final AmazonS3Client service;
     private final Bucket bucket;
 
     private boolean shutdownServiceOnClose = false;
+
+    private final boolean perFileLocking;
 
     public S3FileSystem(
             S3FileName fileName, AmazonS3Client service, S3FileSystemOptions options
@@ -41,6 +45,19 @@ public class S3FileSystem extends AbstractFileSystem {
         super(fileName, null, options.toFileSystemOptions());
 
         String bucketId = fileName.getBucketId();
+
+        boolean perFileLocking =  false;
+        Optional<Boolean> perFileLockingOption = options.getPerFileLocking();
+
+        if (PER_FILE_THREAD_LOCKING_CAPABILITY != null) {
+            // if available and option not specified, then default to on
+            perFileLocking = perFileLockingOption.orElse(true);
+        } else if (perFileLockingOption.isPresent() && perFileLockingOption.get()) {
+            // if not available and option requested spit out a warning
+            logger.warn("per-file locking requested, but requires custom build of commons-vfs2. Falling back to per-filesystem locking");
+        }
+
+        this.perFileLocking = perFileLocking;
 
         this.service = service;
 
@@ -68,6 +85,9 @@ public class S3FileSystem extends AbstractFileSystem {
     @Override
     protected void addCapabilities(Collection<Capability> caps) {
         caps.addAll(S3FileProvider.capabilities);
+        if (perFileLocking) {
+            caps.add(PER_FILE_THREAD_LOCKING_CAPABILITY);
+        }
     }
 
     protected Bucket getBucket() {
@@ -84,7 +104,8 @@ public class S3FileSystem extends AbstractFileSystem {
 
     @Override
     protected FileObject createFile(AbstractFileName fileName) throws Exception {
-        return new S3FileObject(fileName, this);
+        S3FileObject s3FileObject = new S3FileObject(fileName, this);
+        return s3FileObject;
     }
 
     @Override
@@ -96,6 +117,10 @@ public class S3FileSystem extends AbstractFileSystem {
 
     public void setShutdownServiceOnClose(boolean shutdownServiceOnClose) {
         this.shutdownServiceOnClose = shutdownServiceOnClose;
+    }
+
+    public boolean isPerFileLocking() {
+        return perFileLocking;
     }
 
     /**
@@ -129,4 +154,18 @@ public class S3FileSystem extends AbstractFileSystem {
             throw new FileSystemException(e);
         }
     }
+
+    /**
+     * Discovers if Capability.PER_FILE_THREAD_LOCKING is available
+     * @return Capability.PER_FILE_THREAD_LOCKING if it is available, null otherwise
+     */
+    public static Capability discoverPerFileThreadLockingCapability() {
+        try {
+            return Capability.valueOf("PER_FILE_THREAD_LOCKING");
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+
 }
