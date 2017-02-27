@@ -34,10 +34,24 @@ And use it as dependency
     </dependency>
 
 
+By default, vfs-s3 depends on a patched build of commons-vfs2 2.1 to allow greatly improved performance when multiple
+threads are using the same VFS FileSystemManager concurrently from multiple threads, however as of version 3.0.0 it will
+also work with the standard release of commons-vfs2 2.1.
+
+    <dependency>
+        <groupId>com.github</groupId>
+        <artifactId>vfs-s3</artifactId>
+        <version>2.4.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-vfs2</artifactId>
+                </exclusion>
+            </exclusions>
+    </dependency>
+
 Direct downloads from Bintray
 ----------------
-
-We need this patched version of _commons-vfs_ because some concurrency issues could be solved only internally
 
 Branch | Build Status 
 ------------ |  ------------ 
