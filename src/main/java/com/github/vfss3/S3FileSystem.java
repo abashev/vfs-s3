@@ -3,14 +3,10 @@ package com.github.vfss3;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.HeadBucketRequest;
-import com.amazonaws.services.s3.model.Region;
+import com.amazonaws.services.s3.model.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs2.Capability;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileSystem;
 
@@ -129,4 +125,35 @@ public class S3FileSystem extends AbstractFileSystem {
             throw new FileSystemException(e);
         }
     }
+
+    /**
+     * Custom resolveFile that can be safely used by S3FileObject.doListChildrenResolved() to avoid
+     * possible deadlock with AbstractFileObject.getParent().
+     * @param name The name of the file to locate.
+     * @param key The s3 object key.
+     * @param metadata The object metadata.
+     * @return The FileObject.
+     * @throws FileSystemException if an error occurs.
+     */
+    S3FileObject resolveChild(final AbstractFileName name, final String key, final ObjectMetadata metadata) throws FileSystemException
+    {
+        S3FileObject file;
+
+        synchronized (this) {
+            if (!getRootName().getRootURI().equals(name.getRootURI())) {
+                throw new FileSystemException("vfs.provider/mismatched-fs-for-name.error",
+                        name, getRootName(), name.getRootURI());
+            }
+
+            try {
+                file = new S3FileObject(name, this);
+                file.attachMetadata(key, metadata);
+                putFileToCache(decorateFileObject(file));
+            } catch (final Exception e) {
+                throw new FileSystemException("vfs.provider/resolve-file.error", name, e);
+            }
+        }
+        return file;
+    }
+
 }
