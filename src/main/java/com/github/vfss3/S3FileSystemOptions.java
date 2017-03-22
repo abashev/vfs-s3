@@ -3,15 +3,9 @@ package com.github.vfss3;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Region;
-import org.apache.commons.vfs2.FileSystem;
-import org.apache.commons.vfs2.FileSystemConfigBuilder;
 import org.apache.commons.vfs2.FileSystemOptions;
 
 import java.util.Optional;
-
-import static java.util.Objects.requireNonNull;
-import static java.util.Optional.empty;
-import static java.util.Optional.ofNullable;
 
 /**
  * Wrapper aroung FileSystemOptions for storing and retrieving various options. It can't be immutable because it use
@@ -20,15 +14,6 @@ import static java.util.Optional.ofNullable;
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
 public class S3FileSystemOptions {
-    private static final String SERVER_SIDE_ENCRYPTION = "serverSideEncryption";
-    private static final String REGION                 = "region";
-    private static final String CLIENT_CONFIGURATION   = "clientConfiguration";
-    private static final String MAX_UPLOAD_THREADS     = "maxUploadThreads";
-    private static final String S3_CLIENT              = "S3Client";
-    private static final String ENDPOINT               = "endpoint";
-
-    private static final int DEFAULT_MAX_UPLOAD_THREADS = 2;
-    private static final int DEFAULT_MAX_ERROR_RETRY = 8;
 
     private final FileSystemOptions options;
 
@@ -65,9 +50,7 @@ public class S3FileSystemOptions {
      * @param serverSideEncryption true if server-side encryption should be used.
      */
     public void setServerSideEncryption(boolean serverSideEncryption) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        builder.setOption(options, SERVER_SIDE_ENCRYPTION, serverSideEncryption);
+        S3FileSystemConfigBuilder.getInstance().setServerSideEncryption(options, serverSideEncryption);
     }
 
     /**
@@ -75,9 +58,7 @@ public class S3FileSystemOptions {
      * @see #setServerSideEncryption(boolean)
      */
     public boolean getServerSideEncryption() {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        return builder.getBooleanOption(options, SERVER_SIDE_ENCRYPTION, false);
+        return S3FileSystemConfigBuilder.getInstance().getServerSideEncryption(options);
     }
 
     /**
@@ -86,23 +67,14 @@ public class S3FileSystemOptions {
      * @param region The S3 region to connect to (if null, then US Standard)
      */
     public void setRegion(Region region) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        if (getEndpoint().isPresent()) {
-            throw new IllegalArgumentException("Cannot set both Region and Endpoint");
-        }
-        builder.setOption(options, REGION, requireNonNull(region).toString());
+        S3FileSystemConfigBuilder.getInstance().setRegion(options, region);
     }
 
     /**
      * @return The S3 region to connect to (if null, then US Standard)
      */
     public Optional<Region> getRegion() {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        String r = builder.getStringOption(options, REGION, null);
-
-        return (r == null) ? empty() : Optional.of(Region.fromValue(r));
+        return S3FileSystemConfigBuilder.getInstance().getRegion(options);
     }
 
     /**
@@ -111,23 +83,14 @@ public class S3FileSystemOptions {
      * @param endpoint The S3 endpoint to connect to (if null, then use Region)
      */
     public void setEndpoint(String endpoint) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        if (getRegion().isPresent()) {
-            throw new IllegalArgumentException("Cannot set both Region and Endpoint");
-        }
-        builder.setOption(options, ENDPOINT, requireNonNull(endpoint));
+        S3FileSystemConfigBuilder.getInstance().setEndpoint(options, endpoint);
     }
 
     /**
      * @return The S3 endpoint to connect to (if null, then use Region)
      */
     public Optional<String> getEndpoint() {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        String endpoint = builder.getStringOption(options, ENDPOINT, null);
-
-        return Optional.ofNullable(endpoint);
+        return S3FileSystemConfigBuilder.getInstance().getEndpoint(options);
     }
 
     /**
@@ -135,9 +98,7 @@ public class S3FileSystemOptions {
      *                            use when creating the connection.
      */
     public void setClientConfiguration(ClientConfiguration clientConfiguration) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        builder.setOption(options, CLIENT_CONFIGURATION, requireNonNull(clientConfiguration));
+        S3FileSystemConfigBuilder.getInstance().setClientConfiguration(options, clientConfiguration);
     }
 
     /**
@@ -150,17 +111,7 @@ public class S3FileSystemOptions {
      *      failed operations.
      */
     public ClientConfiguration getClientConfiguration() {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        ClientConfiguration clientConfiguration = (ClientConfiguration) builder.getOption(options, CLIENT_CONFIGURATION);
-
-        if (clientConfiguration == null) {
-            clientConfiguration = new ClientConfiguration();
-
-            clientConfiguration.setMaxErrorRetry(DEFAULT_MAX_ERROR_RETRY);
-        }
-
-        return clientConfiguration;
+        return S3FileSystemConfigBuilder.getInstance().getClientConfiguration(options);
     }
 
     /**
@@ -169,9 +120,7 @@ public class S3FileSystemOptions {
      * @param maxUploadThreads maximum number of threads to use for a single large (16MB or more) upload
      */
     public void setMaxUploadThreads(int maxUploadThreads) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        builder.setOption(options, MAX_UPLOAD_THREADS, maxUploadThreads);
+        S3FileSystemConfigBuilder.getInstance().setMaxUploadThreads(options, maxUploadThreads);
     }
 
     /**
@@ -180,9 +129,7 @@ public class S3FileSystemOptions {
      * @return maximum number of threads to use for a single large (16MB or more) upload
      */
     public int getMaxUploadThreads() {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        return builder.getIntegerOption(options, MAX_UPLOAD_THREADS, DEFAULT_MAX_UPLOAD_THREADS);
+        return S3FileSystemConfigBuilder.getInstance().getMaxUploadThreads(options);
     }
 
     /**
@@ -192,9 +139,7 @@ public class S3FileSystemOptions {
      * @param client
      */
     public void setS3Client(AmazonS3Client client) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        builder.setOption(options, S3_CLIENT, requireNonNull(client));
+        S3FileSystemConfigBuilder.getInstance().setS3Client(options, client);
     }
 
     /**
@@ -203,9 +148,7 @@ public class S3FileSystemOptions {
      * @return
      */
     public Optional<AmazonS3Client> getS3Client() {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        return ofNullable((AmazonS3Client) builder.getOption(options, S3_CLIENT));
+        return S3FileSystemConfigBuilder.getInstance().getS3Client(options);
     }
 
     /**
@@ -215,40 +158,6 @@ public class S3FileSystemOptions {
      */
     public FileSystemOptions toFileSystemOptions() {
         return (FileSystemOptions) options.clone();
-    }
-
-    /**
-     * Utility class for exposing some config builder methods.
-     */
-    private class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
-        private S3FileSystemConfigBuilder() {
-            super("s3.");
-        }
-
-        @Override
-        protected Class<? extends FileSystem> getConfigClass() {
-            return S3FileSystem.class;
-        }
-
-        void setOption(FileSystemOptions opts, String name, Object value) {
-            setParam(opts, name, value);
-        }
-
-        Object getOption(FileSystemOptions opts, String name) {
-            return getParam(opts, name);
-        }
-
-        boolean getBooleanOption(FileSystemOptions opts, String name, boolean defaultValue) {
-            return getBoolean(opts, name, defaultValue);
-        }
-
-        String getStringOption(FileSystemOptions opts, String name, String defaultValue) {
-            return getString(opts, name, defaultValue);
-        }
-
-        int getIntegerOption(FileSystemOptions opts, String name, int defaultValue) {
-            return getInteger(opts, name, defaultValue);
-        }
     }
 
     @Override

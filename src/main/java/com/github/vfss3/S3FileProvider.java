@@ -99,4 +99,15 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     public static void setDefaultClient(AmazonS3Client client) {
         DEFAULT_CLIENT = client;
     }
+
+    /**
+     * Return config builder.
+     *
+     * @return A config builder for S3FileSystem.
+     * @see org.apache.commons.vfs2.provider.AbstractFileProvider#getConfigBuilder()
+     */
+    @Override
+    public FileSystemConfigBuilder getConfigBuilder() {
+        return S3FileSystemConfigBuilder.getInstance();
+    }
 }
