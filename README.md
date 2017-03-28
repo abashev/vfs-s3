@@ -29,7 +29,7 @@ And use it as dependency
     <dependency>
         <groupId>com.github</groupId>
         <artifactId>vfs-s3</artifactId>
-        <version>2.4.1</version>
+        <version>2.4.2</version>
     </dependency>
 
 
@@ -77,8 +77,3 @@ For running tests you need active credentials for AWS. You can specify them as
 
 
 **Make sure that you never commit your credentials!**
-
-***
-
-This code is based on <http://code.google.com/p/vfs-s3/> which [is no longer supported.](http://code.google.com/p/vfs-s3/issues/detail?id=4)
-
