@@ -31,14 +31,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
+import static com.github.vfss3.AmazonS3ClientHack.extractCredentials;
 import static com.github.vfss3.operations.Acl.Permission.READ;
 import static com.github.vfss3.operations.Acl.Permission.WRITE;
-import static com.github.vfss3.AmazonS3ClientHack.extractCredentials;
 import static java.nio.channels.Channels.newInputStream;
 import static java.util.Calendar.SECOND;
 import static org.apache.commons.vfs2.FileName.SEPARATOR;
 import static org.apache.commons.vfs2.NameScope.CHILD;
-import static org.apache.commons.vfs2.NameScope.FILE_SYSTEM;
 
 /**
  * Implementation of the virtual S3 file system object using the AWS-SDK.<p/>
@@ -179,6 +178,12 @@ public class S3FileObject extends AbstractFileObject {
             downloaded = false;
             attached = false;
         }
+    }
+
+    void attachMetadata(String key, ObjectMetadata metadata) {
+        this.objectKey = key;
+        this.objectMetadata = metadata;
+        attached = true;
     }
 
     @Override
@@ -332,23 +337,21 @@ public class S3FileObject extends AbstractFileObject {
 
         List<FileObject> resolvedChildren = new ArrayList<FileObject>(summaries.size() + commonPrefixes.size());
 
+        S3FileSystem fs = (S3FileSystem) getFileSystem();
+        FileSystemManager manager = fs.getFileSystemManager();
+
         // add the prefixes (non-empty subdirs) first
         for (String commonPrefix : commonPrefixes) {
             // strip path from name (leave only base name)
             String stripPath = commonPrefix.substring(path.length());
-            FileObject childObject = resolveFile(stripPath, (stripPath.equals("/")) ? FILE_SYSTEM : CHILD);
-
-            if ((childObject instanceof S3FileObject) && !stripPath.equals("/")) {
-                S3FileObject s3FileObject = (S3FileObject) childObject;
+            if (!stripPath.equals("/")) {
+                AbstractFileName childName = (AbstractFileName) manager.resolveName(getName(), stripPath, CHILD);
                 ObjectMetadata childMetadata = new ObjectMetadata();
                 childMetadata.setContentLength(0);
                 childMetadata.setContentType(
-                        Mimetypes.getInstance().getMimetype(s3FileObject.getName().getBaseName()));
+                        Mimetypes.getInstance().getMimetype(childName.getBaseName()));
                 childMetadata.setLastModified(new Date());
-                s3FileObject.objectMetadata = childMetadata;
-                s3FileObject.objectKey = commonPrefix;
-                s3FileObject.attached = true;
-                resolvedChildren.add(childObject);
+                resolvedChildren.add(fs.resolveChild(childName, commonPrefix, childMetadata));
             }
         }
 
@@ -356,20 +359,14 @@ public class S3FileObject extends AbstractFileObject {
             if (!summary.getKey().equals(path)) {
                 // strip path from name (leave only base name)
                 final String stripPath = summary.getKey().substring(path.length());
-                FileObject childObject = resolveFile(stripPath, CHILD);
-                if (childObject instanceof S3FileObject) {
-                    S3FileObject s3FileObject = (S3FileObject) childObject;
-                    ObjectMetadata childMetadata = new ObjectMetadata();
-                    childMetadata.setContentLength(summary.getSize());
-                    childMetadata.setContentType(
-                        Mimetypes.getInstance().getMimetype(s3FileObject.getName().getBaseName()));
-                    childMetadata.setLastModified(summary.getLastModified());
-                    childMetadata.setHeader(Headers.ETAG, summary.getETag());
-                    s3FileObject.objectMetadata = childMetadata;
-                    s3FileObject.objectKey = summary.getKey();
-                    s3FileObject.attached = true;
-                    resolvedChildren.add(s3FileObject);
-                }
+                AbstractFileName childName = (AbstractFileName) manager.resolveName(getName(), stripPath, CHILD);
+                ObjectMetadata childMetadata = new ObjectMetadata();
+                childMetadata.setContentLength(summary.getSize());
+                childMetadata.setContentType(
+                    Mimetypes.getInstance().getMimetype(childName.getBaseName()));
+                childMetadata.setLastModified(summary.getLastModified());
+                childMetadata.setHeader(Headers.ETAG, summary.getETag());
+                resolvedChildren.add(fs.resolveChild(childName, summary.getKey(), childMetadata));
             }
         }
 
