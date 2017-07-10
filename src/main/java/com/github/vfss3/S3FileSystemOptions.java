@@ -143,6 +143,24 @@ public class S3FileSystemOptions {
     }
 
     /**
+     * Sets no bucket test
+     *
+     * @param noBucketTest true if bucket existence and access shouldn't be tested
+     */
+    public void setNoBucketTest(boolean noBucketTest) {
+        S3FileSystemConfigBuilder.getInstance().setNoBucketTest(options, noBucketTest);
+    }
+
+    /**
+     * Gets no bucket test
+     *
+     * @return true if bucket existence and access shouldn't be tested
+     */
+    public Optional<Boolean> getNoBucketTest() {
+        return S3FileSystemConfigBuilder.getInstance().getNoBucketTest(options);
+    }
+
+    /**
      * Get preinitialized AmazonS3 client.
      *
      * @return

@@ -25,6 +25,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final String MAX_UPLOAD_THREADS     = "maxUploadThreads";
     private static final String S3_CLIENT              = "S3Client";
     private static final String ENDPOINT               = "endpoint";
+    private static final String NO_BUCKET_TEST         = "noBucketTest";
 
     private static final int DEFAULT_MAX_UPLOAD_THREADS = 2;
     private static final int DEFAULT_MAX_ERROR_RETRY = 8;
@@ -183,4 +184,28 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         String endpoint = getStringOption(opts, ENDPOINT, null);
         return Optional.ofNullable(endpoint);
     }
+
+    /**
+     * Sets no bucket test
+     *
+     * @param noBucketTest true if bucket existence and access shouldn't be tested
+     */
+    public void setNoBucketTest(final FileSystemOptions opts, boolean noBucketTest) {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+
+        builder.setOption(opts, NO_BUCKET_TEST, noBucketTest);
+    }
+
+    /**
+     * Gets no bucket test
+     *
+     * @return true if bucket existence and access shouldn't be tested
+     */
+    public Optional<Boolean> getNoBucketTest(final FileSystemOptions opts) {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        return ofNullable((Boolean)builder.getOption(opts, NO_BUCKET_TEST));
+    }
+
 }
