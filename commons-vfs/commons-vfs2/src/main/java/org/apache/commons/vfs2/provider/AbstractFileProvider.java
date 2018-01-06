@@ -16,9 +16,6 @@
  */
 package org.apache.commons.vfs2.provider;
 
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystem;
@@ -27,18 +24,21 @@ import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.provider.local.GenericFileNameParser;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 /**
  * A partial {@link FileProvider} implementation. Takes care of managing the file systems created by the provider.
  */
 public abstract class AbstractFileProvider extends AbstractVfsContainer implements FileProvider {
-    private static final AbstractFileSystem[] EMPTY_ABSTRACTFILESYSTEMS = new AbstractFileSystem[0];
-
     /**
      * The cached file systems.
      * <p>
      * This is a mapping from {@link FileSystemKey} (root URI and options) to {@link FileSystem}.
      */
-    private final Map<FileSystemKey, FileSystem> fileSystems = new TreeMap<>(); // @GuardedBy("self")
+    private final ConcurrentMap<FileSystemKey, FileSystem> fileSystems = new ConcurrentHashMap<>();
 
     private FileNameParser parser;
 
@@ -59,9 +59,7 @@ public abstract class AbstractFileProvider extends AbstractVfsContainer implemen
      */
     @Override
     public void close() {
-        synchronized (fileSystems) {
-            fileSystems.clear();
-        }
+        fileSystems.clear();
 
         super.close();
     }
@@ -98,9 +96,7 @@ public abstract class AbstractFileProvider extends AbstractVfsContainer implemen
         final FileSystemKey treeKey = new FileSystemKey(key, fs.getFileSystemOptions());
         ((AbstractFileSystem) fs).setCacheKey(treeKey);
 
-        synchronized (fileSystems) {
-            fileSystems.put(treeKey, fs);
-        }
+        fileSystems.put(treeKey, fs);
     }
 
     /**
@@ -113,9 +109,7 @@ public abstract class AbstractFileProvider extends AbstractVfsContainer implemen
     protected FileSystem findFileSystem(final Comparable<?> key, final FileSystemOptions fileSystemProps) {
         final FileSystemKey treeKey = new FileSystemKey(key, fileSystemProps);
 
-        synchronized (fileSystems) {
-            return fileSystems.get(treeKey);
-        }
+        return fileSystems.get(treeKey);
     }
 
     /**
@@ -132,14 +126,19 @@ public abstract class AbstractFileProvider extends AbstractVfsContainer implemen
      * Free unused resources.
      */
     public void freeUnusedResources() {
-        AbstractFileSystem[] abstractFileSystems;
-        synchronized (fileSystems) {
-            // create snapshot under lock
-            abstractFileSystems = fileSystems.values().toArray(EMPTY_ABSTRACTFILESYSTEMS);
+        List<AbstractFileSystem> copy = new LinkedList<>();
+
+        // FIXME not really clean solution but easy to do
+        for (FileSystem fs : fileSystems.values()) {
+            try {
+                copy.add((AbstractFileSystem) fs);
+            } catch (ClassCastException e) {
+                // Skip not AbstractFileSystem
+            }
         }
 
         // process snapshot outside lock
-        for (final AbstractFileSystem fs : abstractFileSystems) {
+        for (final AbstractFileSystem fs : copy) {
             if (fs.isReleaseable()) {
                 fs.closeCommunicationLink();
             }
@@ -156,9 +155,7 @@ public abstract class AbstractFileProvider extends AbstractVfsContainer implemen
 
         final FileSystemKey key = fs.getCacheKey();
         if (key != null) {
-            synchronized (fileSystems) {
-                fileSystems.remove(key);
-            }
+            fileSystems.remove(key);
         }
 
         removeComponent(fs);

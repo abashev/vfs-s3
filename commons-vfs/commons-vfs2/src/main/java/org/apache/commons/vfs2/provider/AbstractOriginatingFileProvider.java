@@ -22,11 +22,16 @@ import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileSystemOptions;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * A {@link FileProvider} that handles physical files, such as the files in a local fs, or on an FTP server. An
  * originating file system cannot be layered on top of another file system.
  */
 public abstract class AbstractOriginatingFileProvider extends AbstractFileProvider {
+    private final Lock createFileSystemLock = new ReentrantLock(true);
+
     public AbstractOriginatingFileProvider() {
         super();
     }
@@ -84,14 +89,30 @@ public abstract class AbstractOriginatingFileProvider extends AbstractFileProvid
      * @throws FileSystemException if an error occurs.
      * @since 2.0
      */
-    protected synchronized FileSystem getFileSystem(final FileName rootName, final FileSystemOptions fileSystemOptions)
-            throws FileSystemException {
+    protected FileSystem getFileSystem(FileName rootName, FileSystemOptions fileSystemOptions) throws FileSystemException {
         FileSystem fs = findFileSystem(rootName, fileSystemOptions);
         if (fs == null) {
             // Need to create the file system, and cache it
-            fs = doCreateFileSystem(rootName, fileSystemOptions);
-            addFileSystem(rootName, fs);
+            createFileSystemLock.lock();
+
+            try {
+                // Maybe somebody created FS
+                fs = findFileSystem(rootName, fileSystemOptions);
+
+                if (fs == null) {
+                    if (getLogger().isInfoEnabled()) {
+                        getLogger().info("Create new file system [root=" + rootName + ",opts=" + fileSystemOptions + "]");
+                    }
+
+                    fs = doCreateFileSystem(rootName, fileSystemOptions);
+
+                    addFileSystem(rootName, fs);
+                }
+            } finally {
+                createFileSystemLock.unlock();
+            }
         }
+
         return fs;
     }
 

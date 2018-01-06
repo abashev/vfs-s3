@@ -16,16 +16,6 @@
  */
 package org.apache.commons.vfs2.provider;
 
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.CacheStrategy;
@@ -48,6 +38,16 @@ import org.apache.commons.vfs2.events.CreateEvent;
 import org.apache.commons.vfs2.events.DeleteEvent;
 import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.apache.commons.vfs2.util.Messages;
+
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A partial {@link org.apache.commons.vfs2.FileSystem} implementation.
@@ -300,42 +300,45 @@ public abstract class AbstractFileSystem extends AbstractVfsComponent implements
         return resolveFile(name, true);
     }
 
-    private synchronized FileObject resolveFile(final FileName name, final boolean useCache)
-            throws FileSystemException {
-        if (!rootName.getRootURI().equals(name.getRootURI())) {
-            throw new FileSystemException("vfs.provider/mismatched-fs-for-name.error", name, rootName,
-                    name.getRootURI());
-        }
-
-        // imario@apache.org ==> use getFileFromCache
+    private FileObject resolveFile(FileName name, boolean useCache) throws FileSystemException {
         FileObject file;
-        if (useCache) {
-            file = getFileFromCache(name);
-        } else {
-            file = null;
-        }
 
-        if (file == null) {
-            try {
-                file = createFile((AbstractFileName) name);
-            } catch (final Exception e) {
-                throw new FileSystemException("vfs.provider/resolve-file.error", name, e);
+        synchronized (this) {
+            if (!rootName.getRootURI().equals(name.getRootURI())) {
+                throw new FileSystemException("vfs.provider/mismatched-fs-for-name.error", name, rootName,
+                        name.getRootURI());
             }
 
-            file = decorateFileObject(file);
-
-            // imario@apache.org ==> use putFileToCache
+            // imario@apache.org ==> use getFileFromCache
             if (useCache) {
-                putFileToCache(file);
+                file = getFileFromCache(name);
+            } else {
+                file = null;
+            }
+
+            if (file == null) {
+                try {
+                    file = createFile((AbstractFileName) name);
+                } catch (final Exception e) {
+                    throw new FileSystemException("vfs.provider/resolve-file.error", name, e);
+                }
+
+                file = decorateFileObject(file);
+
+                // imario@apache.org ==> use putFileToCache
+                if (useCache) {
+                    putFileToCache(file);
+                }
             }
         }
 
         /**
          * resync the file information if requested
          */
-        if (getFileSystemManager().getCacheStrategy().equals(CacheStrategy.ON_RESOLVE)) {
+        if ((file != null) && getFileSystemManager().getCacheStrategy().equals(CacheStrategy.ON_RESOLVE)) {
             file.refresh();
         }
+
         return file;
     }
 
