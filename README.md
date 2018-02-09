@@ -4,7 +4,8 @@ Amazon S3 driver for VFS (Apache Commons Virtual File System)
 
 Branch | Description | Build Status
 ------------ | ------------- | ------------
-branch-2.4.x | **Current** See below | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.4.x)](http://travis-ci.org/abashev/vfs-s3)
+branch-3.0.x | **Current** | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-3.0.x)](http://travis-ci.org/abashev/vfs-s3)
+branch-2.4.x | **Out-dated** | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.4.x)](http://travis-ci.org/abashev/vfs-s3)
 branch-2.3.x | **Out-dated** | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.3.x)](http://travis-ci.org/abashev/vfs-s3)
 branch-2.2.x | **Out-dated** | [![Build Status](https://secure.travis-ci.org/abashev/vfs-s3.png?branch=branch-2.2.x)](http://travis-ci.org/abashev/vfs-s3)
 
@@ -27,9 +28,9 @@ Add this section to your repository configuration
 And use it as dependency
 
     <dependency>
-        <groupId>com.github</groupId>
+        <groupId>com.github.abashev</groupId>
         <artifactId>vfs-s3</artifactId>
-        <version>2.4.2</version>
+        <version>3.0.0</version>
     </dependency>
 
 
@@ -44,7 +45,7 @@ commons-vfs2 | [![Download](https://api.bintray.com/packages/abashev/vfs-s3/comm
 vfs-s3 | [![Download](https://api.bintray.com/packages/abashev/vfs-s3/vfs-s3/images/download.svg) ](https://bintray.com/abashev/vfs-s3/vfs-s3/_latestVersion)
 
 
-TODO for branch-2.4.x development
+TODO for branch-3.0.x development
 ---
 1. Merge changes back to `commons-vfs` project
 

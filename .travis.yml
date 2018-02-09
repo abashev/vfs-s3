@@ -2,9 +2,16 @@ language: java
 sudo: false
 install: true
 script:
-  - cd commons-vfs && mvn install && cd .. && mvn package
+  - cd commons-vfs && mvn install && cd .. && mvn cobertura:cobertura verify
+
 jdk:
+  - openjdk7
   - oraclejdk8
+
 env:
   global:
   - AWS_TEST_BUCKET=s3-tests
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+  

@@ -266,6 +266,18 @@
           </excludes>
         </configuration>
       </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>2.2.1</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>jar</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
     </plugins>
   </build>
 
@@ -555,6 +567,12 @@
       <name>Apache Commons Site</name>
       <url>scm:svn:${commons.scmPubUrl}</url>
     </site>
+
+    <repository>
+      <id>bintray-abashev-vfs-s3-vfs-s3</id>
+      <name>abashev-vfs-s3-vfs-s3</name>
+      <url>https://api.bintray.com/maven/abashev/vfs-s3/commons-vfs2/</url>
+    </repository>
   </distributionManagement>
 
   <!-- Releasing VFS as a multi-module build with binary artifacts is somewhat painful. This profile hooks into the commons-parent
