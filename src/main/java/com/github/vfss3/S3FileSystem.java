@@ -62,7 +62,8 @@ public class S3FileSystem extends AbstractFileSystem {
         this.service = service;
 
         try {
-            if (doesBucketExist(bucketId)) {
+            boolean noBucketTest = options.getNoBucketTest().orElse(false);
+            if (noBucketTest || doesBucketExist(bucketId)) {
                 bucket = new Bucket(bucketId);
             } else {
                 bucket = service.createBucket(bucketId);
