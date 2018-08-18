@@ -26,6 +26,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final String S3_CLIENT              = "S3Client";
     private static final String ENDPOINT               = "endpoint";
     private static final String NO_BUCKET_TEST         = "noBucketTest";
+    private static final String PER_FILE_LOCKING       = "perFileLocking";
 
     private static final int DEFAULT_MAX_UPLOAD_THREADS = 2;
     private static final int DEFAULT_MAX_ERROR_RETRY = 8;
@@ -166,7 +167,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     }
 
     /**
-     * Set default region for S3 client
+     * Sets default endpoint for S3 client
      *
      * @param endpoint The S3 endpoint to connect to (if null, then use Region)
      */
@@ -178,6 +179,8 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     }
 
     /**
+     * Sets default endpoint for S3 client
+     *
      * @return The S3 endpoint to connect to (if null, then use Region)
      */
     public Optional<String> getEndpoint(final FileSystemOptions opts) {
@@ -206,6 +209,28 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
 
         return ofNullable((Boolean)builder.getOption(opts, NO_BUCKET_TEST));
+    }
+  
+    /**
+     * Sets per-file locking.
+     *
+     * @param perFileLocking true if per-file locking should be used.
+     */
+    public void setPerFileLocking(final FileSystemOptions opts, boolean perFileLocking) {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        builder.setOption(opts, PER_FILE_LOCKING, perFileLocking);
+    }
+
+    /**
+     * Gets per-file locking.
+     *
+     * @return true if per-file locking should be used.
+     */
+    public Optional<Boolean> getPerFileLocking(final FileSystemOptions opts) {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        return Optional.ofNullable((Boolean)builder.getOption(opts, S3FileSystemConfigBuilder.PER_FILE_LOCKING));
     }
 
 }

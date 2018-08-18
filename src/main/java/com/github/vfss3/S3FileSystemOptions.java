@@ -170,6 +170,25 @@ public class S3FileSystemOptions {
     }
 
     /**
+     * Sets per-file locking.
+     *
+     * @param perFileLocking true if per-file locking should be used.
+     */
+    public void setPerFileLocking(boolean perFileLocking) {
+        S3FileSystemConfigBuilder.getInstance().setPerFileLocking(options, perFileLocking);
+    }
+
+    /**
+     * Gets per-file locking.
+     *
+     * @return true if per-file locking should be used.
+     */
+    public Optional<Boolean> getPerFileLocking() {
+        return S3FileSystemConfigBuilder.getInstance().getPerFileLocking(options);
+    }
+
+
+    /**
      * Returns clone of options object for some legacy things.
      *
      * @return

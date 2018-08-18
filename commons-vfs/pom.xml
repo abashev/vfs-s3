@@ -172,6 +172,12 @@
     <!-- Avoid warnings about being unable to find jars during site building -->
     <dependency.locations.enabled>false</dependency.locations.enabled>
     <hadoop.version>2.6.0</hadoop.version>
+
+    <!-- allow runtime customization of repository -->
+    <vfs-s3-repo-id>bintray-abashev-vfs-s3-vfs-s3</vfs-s3-repo-id>
+    <vfs-s3-repo-name>abashev-vfs-s3-vfs-s3</vfs-s3-repo-name>
+    <vfs-s3-repo-url>https://api.bintray.com/maven/abashev/vfs-s3/commons-vfs2/</vfs-s3-repo-url>
+
   </properties>
 
   <build>
@@ -241,7 +247,7 @@
             <!--  version 7.0 requires Java 8 -->
             <version>6.19</version>
           </dependency>
-        </dependencies>        
+        </dependencies>
         <!-- Keep build/reporting in sync -->
         <configuration>
           <!--<propertiesLocation>${vfs.parent.dir}/checkstyle.properties</propertiesLocation> -->
@@ -567,11 +573,10 @@
       <name>Apache Commons Site</name>
       <url>scm:svn:${commons.scmPubUrl}</url>
     </site>
-
     <repository>
-      <id>bintray-abashev-vfs-s3-vfs-s3</id>
-      <name>abashev-vfs-s3-vfs-s3</name>
-      <url>https://api.bintray.com/maven/abashev/vfs-s3/commons-vfs2/</url>
+      <id>${vfs-s3-repo-id}</id>
+      <name>${vfs-s3-repo-name}</name>
+      <url>${vfs-s3-repo-url}</url>
     </repository>
   </distributionManagement>
 

@@ -120,14 +120,14 @@ public class FtpProviderTestCase extends AbstractProviderTestConfig {
     /**
      * Creates the test suite for the ftp file system.
      */
-    public static Test suite() throws Exception {
-        return suite(new FtpProviderTestCase());
+    public static Test suite() throws Exception{
+    return suite(new FtpProviderTestCase());
     }
 
     /**
      * Creates the test suite for subclasses of the ftp file system.
      */
-    protected static Test suite(final FtpProviderTestCase testCase) throws Exception {
+    protected static Test suite(final FtpProviderTestCase testCase) throws Exception{
         return new ProviderTestSuite(testCase) {
             @Override
             protected void setUp() throws Exception {
