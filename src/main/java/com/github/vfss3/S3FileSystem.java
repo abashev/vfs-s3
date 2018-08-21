@@ -5,7 +5,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.HeadBucketRequest;
-import com.amazonaws.services.s3.model.Region;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.Capability;
@@ -17,7 +16,10 @@ import org.apache.commons.vfs2.provider.AbstractFileSystem;
 import java.util.Collection;
 import java.util.Optional;
 
-import static com.amazonaws.services.s3.internal.Constants.*;
+import static com.amazonaws.services.s3.internal.Constants.BUCKET_ACCESS_FORBIDDEN_STATUS_CODE;
+import static com.amazonaws.services.s3.internal.Constants.BUCKET_REDIRECT_STATUS_CODE;
+import static com.amazonaws.services.s3.internal.Constants.NO_SUCH_BUCKET_STATUS_CODE;
+import static java.util.Optional.empty;
 
 /**
  * An S3 file system.
@@ -30,7 +32,7 @@ public class S3FileSystem extends AbstractFileSystem {
 
     private static final Log logger = LogFactory.getLog(S3FileSystem.class);
 
-    public static final Capability PER_FILE_THREAD_LOCKING_CAPABILITY = discoverPerFileThreadLockingCapability();
+    private static final Optional<Capability> PER_FILE_THREAD_LOCKING_CAPABILITY = discoverPerFileThreadLockingCapability();
 
     private final AmazonS3Client service;
     private final Bucket bucket;
@@ -47,12 +49,11 @@ public class S3FileSystem extends AbstractFileSystem {
         String bucketId = fileName.getBucketId();
 
         boolean perFileLocking =  false;
-        Optional<Boolean> perFileLockingOption = options.getPerFileLocking();
 
-        if (PER_FILE_THREAD_LOCKING_CAPABILITY != null) {
+        if (PER_FILE_THREAD_LOCKING_CAPABILITY.isPresent()) {
             // if available and option not specified, then default to on
-            perFileLocking = perFileLockingOption.orElse(true);
-        } else if (perFileLockingOption.isPresent() && perFileLockingOption.get()) {
+            perFileLocking = options.isPerFileLocking();
+        } else if (options.isPerFileLocking()) {
             // if not available and option requested spit out a warning
             logger.warn("per-file locking requested, but requires custom build of commons-vfs2. Falling back to per-filesystem locking");
         }
@@ -62,8 +63,7 @@ public class S3FileSystem extends AbstractFileSystem {
         this.service = service;
 
         try {
-            boolean noBucketTest = options.getNoBucketTest().orElse(false);
-            if (noBucketTest || doesBucketExist(bucketId)) {
+            if (options.isDisableBucketTest() || doesBucketExist(bucketId)) {
                 bucket = new Bucket(bucketId);
             } else {
                 bucket = service.createBucket(bucketId);
@@ -86,17 +86,14 @@ public class S3FileSystem extends AbstractFileSystem {
     @Override
     protected void addCapabilities(Collection<Capability> caps) {
         caps.addAll(S3FileProvider.capabilities);
+
         if (perFileLocking) {
-            caps.add(PER_FILE_THREAD_LOCKING_CAPABILITY);
+            caps.add(PER_FILE_THREAD_LOCKING_CAPABILITY.get());
         }
     }
 
     protected Bucket getBucket() {
         return bucket;
-    }
-
-    protected Optional<Region> getRegion() {
-        return (new S3FileSystemOptions(getFileSystemOptions())).getRegion();
     }
 
     protected AmazonS3 getService() {
@@ -160,13 +157,11 @@ public class S3FileSystem extends AbstractFileSystem {
      * Discovers if Capability.PER_FILE_THREAD_LOCKING is available
      * @return Capability.PER_FILE_THREAD_LOCKING if it is available, null otherwise
      */
-    public static Capability discoverPerFileThreadLockingCapability() {
+    private static Optional<Capability> discoverPerFileThreadLockingCapability() {
         try {
-            return Capability.valueOf("PER_FILE_THREAD_LOCKING");
+            return Optional.of(Capability.valueOf("PER_FILE_THREAD_LOCKING"));
         } catch (IllegalArgumentException e) {
-            return null;
+            return empty();
         }
     }
-
-
 }

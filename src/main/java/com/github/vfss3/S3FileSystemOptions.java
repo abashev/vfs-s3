@@ -1,8 +1,8 @@
 package com.github.vfss3;
 
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.Region;
 import org.apache.commons.vfs2.FileSystemOptions;
 
 import java.util.Optional;
@@ -66,14 +66,14 @@ public class S3FileSystemOptions {
      *
      * @param region The S3 region to connect to (if null, then US Standard)
      */
-    public void setRegion(Region region) {
+    public void setRegion(Regions region) {
         S3FileSystemConfigBuilder.getInstance().setRegion(options, region);
     }
 
     /**
      * @return The S3 region to connect to (if null, then US Standard)
      */
-    public Optional<Region> getRegion() {
+    public Optional<Regions> getRegion() {
         return S3FileSystemConfigBuilder.getInstance().getRegion(options);
     }
 
@@ -145,10 +145,10 @@ public class S3FileSystemOptions {
     /**
      * Sets no bucket test
      *
-     * @param noBucketTest true if bucket existence and access shouldn't be tested
+     * @param disableBucketTest true if bucket existence and access shouldn't be tested
      */
-    public void setNoBucketTest(boolean noBucketTest) {
-        S3FileSystemConfigBuilder.getInstance().setNoBucketTest(options, noBucketTest);
+    public void setDisableBucketTest(boolean disableBucketTest) {
+        S3FileSystemConfigBuilder.getInstance().setDisableBucketTest(options, disableBucketTest);
     }
 
     /**
@@ -156,8 +156,8 @@ public class S3FileSystemOptions {
      *
      * @return true if bucket existence and access shouldn't be tested
      */
-    public Optional<Boolean> getNoBucketTest() {
-        return S3FileSystemConfigBuilder.getInstance().getNoBucketTest(options);
+    public boolean isDisableBucketTest() {
+        return S3FileSystemConfigBuilder.getInstance().getDisableBucketTest(options);
     }
 
     /**
@@ -183,10 +183,27 @@ public class S3FileSystemOptions {
      *
      * @return true if per-file locking should be used.
      */
-    public Optional<Boolean> getPerFileLocking() {
+    public boolean isPerFileLocking() {
         return S3FileSystemConfigBuilder.getInstance().getPerFileLocking(options);
     }
 
+    /**
+     * Set option to disable chunked encoding
+     *
+     * @param disableChunkedEncoding
+     */
+    public void setDisableChunkedEncoding(boolean disableChunkedEncoding) {
+        S3FileSystemConfigBuilder.getInstance().setDisableChunkedEncoding(options, disableChunkedEncoding);
+    }
+
+    /**
+     * Get
+     *
+     * @return true if per-file locking should be used.
+     */
+    public boolean isDisableChunkedEncoding() {
+        return S3FileSystemConfigBuilder.getInstance().getDisableChunkedEncoding(options);
+    }
 
     /**
      * Returns clone of options object for some legacy things.

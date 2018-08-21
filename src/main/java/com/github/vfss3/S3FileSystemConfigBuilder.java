@@ -1,9 +1,8 @@
 package com.github.vfss3;
 
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.Region;
-
 import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemConfigBuilder;
 import org.apache.commons.vfs2.FileSystemOptions;
@@ -19,14 +18,15 @@ import static java.util.Optional.ofNullable;
  */
 public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
 
-    private static final String SERVER_SIDE_ENCRYPTION = "serverSideEncryption";
-    private static final String REGION                 = "region";
-    private static final String CLIENT_CONFIGURATION   = "clientConfiguration";
-    private static final String MAX_UPLOAD_THREADS     = "maxUploadThreads";
-    private static final String S3_CLIENT              = "S3Client";
-    private static final String ENDPOINT               = "endpoint";
-    private static final String NO_BUCKET_TEST         = "noBucketTest";
-    private static final String PER_FILE_LOCKING       = "perFileLocking";
+    private static final String SERVER_SIDE_ENCRYPTION   = "serverSideEncryption";
+    private static final String REGION                   = "region";
+    private static final String CLIENT_CONFIGURATION     = "clientConfiguration";
+    private static final String MAX_UPLOAD_THREADS       = "maxUploadThreads";
+    private static final String S3_CLIENT                = "S3Client";
+    private static final String ENDPOINT                 = "endpoint";
+    private static final String DISABLE_BUCKET_TEST      = "disableBucketTest";
+    private static final String PER_FILE_LOCKING         = "perFileLocking";
+    private static final String DISABLE_CHUNKED_ENCODING = "disableChunkedEncoding"; // Useful for localstack
 
     private static final int DEFAULT_MAX_UPLOAD_THREADS = 2;
     private static final int DEFAULT_MAX_ERROR_RETRY = 8;
@@ -71,11 +71,11 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         return getInteger(opts, name, defaultValue);
     }
 
-    public Boolean getServerSideEncryption(final FileSystemOptions opts) {
+    public boolean getServerSideEncryption(final FileSystemOptions opts) {
         return getBooleanOption(opts, SERVER_SIDE_ENCRYPTION, false);
     }
 
-    public void setServerSideEncryption(final FileSystemOptions opts, final Boolean serverSideEncryption) {
+    public void setServerSideEncryption(final FileSystemOptions opts, final boolean serverSideEncryption) {
         setOption(opts, SERVER_SIDE_ENCRYPTION, serverSideEncryption);
     }
 
@@ -84,7 +84,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      *
      * @param region The S3 region to connect to (if null, then US Standard)
      */
-    public void setRegion(final FileSystemOptions opts, Region region) {
+    public void setRegion(final FileSystemOptions opts, Regions region) {
         if (getEndpoint(opts).isPresent()) {
             throw new IllegalArgumentException("Cannot set both Region and Endpoint");
         }
@@ -94,10 +94,10 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     /**
      * @return The S3 region to connect to (if null, then US Standard)
      */
-    public Optional<Region> getRegion(final FileSystemOptions opts) {
+    public Optional<Regions> getRegion(final FileSystemOptions opts) {
         String r = getStringOption(opts, REGION, null);
 
-        return (r == null) ? empty() : Optional.of(Region.fromValue(r));
+        return (r == null) ? empty() : Optional.of(Regions.fromName(r));
     }
 
     /**
@@ -193,11 +193,11 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      *
      * @param noBucketTest true if bucket existence and access shouldn't be tested
      */
-    public void setNoBucketTest(final FileSystemOptions opts, boolean noBucketTest) {
+    public void setDisableBucketTest(final FileSystemOptions opts, boolean noBucketTest) {
         final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
 
 
-        builder.setOption(opts, NO_BUCKET_TEST, noBucketTest);
+        builder.setOption(opts, DISABLE_BUCKET_TEST, noBucketTest);
     }
 
     /**
@@ -205,10 +205,10 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      *
      * @return true if bucket existence and access shouldn't be tested
      */
-    public Optional<Boolean> getNoBucketTest(final FileSystemOptions opts) {
+    public boolean getDisableBucketTest(final FileSystemOptions opts) {
         final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
 
-        return ofNullable((Boolean)builder.getOption(opts, NO_BUCKET_TEST));
+        return builder.getBooleanOption(opts, DISABLE_BUCKET_TEST, false);
     }
   
     /**
@@ -227,10 +227,31 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      *
      * @return true if per-file locking should be used.
      */
-    public Optional<Boolean> getPerFileLocking(final FileSystemOptions opts) {
+    public boolean getPerFileLocking(final FileSystemOptions opts) {
         final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
 
-        return Optional.ofNullable((Boolean)builder.getOption(opts, S3FileSystemConfigBuilder.PER_FILE_LOCKING));
+        return builder.getBooleanOption(opts, S3FileSystemConfigBuilder.PER_FILE_LOCKING, true);
     }
 
+    /**
+     * Don't use chunked encoding for AWS calls - useful for localstack because it doesn't support it.
+     *
+     * @param disableChunkedEncoding true if bucket existence and access shouldn't be tested
+     */
+    public void setDisableChunkedEncoding(final FileSystemOptions opts, boolean disableChunkedEncoding) {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        builder.setOption(opts, DISABLE_CHUNKED_ENCODING, disableChunkedEncoding);
+    }
+
+    /**
+     * Don't use chunked encoding for AWS calls - useful for localstack because it doesn't support it.
+     *
+     * @return true if bucket existence and access shouldn't be tested
+     */
+    public boolean getDisableChunkedEncoding(final FileSystemOptions opts) {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        return builder.getBooleanOption(opts, DISABLE_CHUNKED_ENCODING, false);
+    }
 }

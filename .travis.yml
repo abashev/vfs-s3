@@ -5,7 +5,7 @@ script:
   - cd commons-vfs && mvn install && cd .. && mvn cobertura:cobertura verify
 
 jdk:
-  - openjdk7
+  - openjdk8
   - oraclejdk8
 
 env:

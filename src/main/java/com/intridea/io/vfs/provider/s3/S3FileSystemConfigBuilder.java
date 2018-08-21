@@ -2,6 +2,7 @@ package com.intridea.io.vfs.provider.s3;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Region;
 import com.github.vfss3.S3FileSystemOptions;
@@ -55,7 +56,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      * @param opts The FileSystemOptions.
      * @param region The S3 region to connect to (if null, then US Standard)
      */
-    public void setRegion(FileSystemOptions opts, Region region) {
+    public void setRegion(FileSystemOptions opts, Regions region) {
         new S3FileSystemOptions(opts, false).setRegion(region);
     }
 
@@ -63,7 +64,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      * @param opts The FileSystemOptions.
      * @return The S3 region to connect to (if null, then US Standard)
      */
-    public Region getRegion(FileSystemOptions opts) {
+    public Regions getRegion(FileSystemOptions opts) {
         return new S3FileSystemOptions(opts, false).getRegion().orElse(null);
     }
 

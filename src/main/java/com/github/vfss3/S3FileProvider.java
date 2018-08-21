@@ -1,20 +1,23 @@
 package com.github.vfss3;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.Region;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs2.*;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import org.apache.commons.vfs2.Capability;
+import org.apache.commons.vfs2.FileName;
+import org.apache.commons.vfs2.FileSystem;
+import org.apache.commons.vfs2.FileSystemConfigBuilder;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.provider.AbstractOriginatingFileProvider;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Optional;
+
+import static com.amazonaws.regions.Regions.DEFAULT_REGION;
 
 /**
  * An S3 file provider. Create an S3 file system out of an S3 file name. Also
@@ -61,12 +64,20 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
                 return DEFAULT_CLIENT;
             } else {
                 ClientConfiguration clientConfiguration = options.getClientConfiguration();
-                AmazonS3Client s3 = new AmazonS3Client(new DefaultAWSCredentialsProviderChain(), clientConfiguration);
 
-                options.getEndpoint().ifPresent(s3::setEndpoint);
-                options.getRegion().ifPresent(r -> s3.setRegion(r.toAWSRegion()));
+                final AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().
+                        enablePathStyleAccess().
+                        withClientConfiguration(clientConfiguration).
+                        withCredentials(new DefaultAWSCredentialsProviderChain());
 
-                return s3;
+                if (options.isDisableChunkedEncoding()) {
+                    clientBuilder.disableChunkedEncoding();
+                }
+
+                options.getEndpoint().ifPresent(endpoint -> clientBuilder.withEndpointConfiguration(new EndpointConfiguration(endpoint, DEFAULT_REGION.getName())));
+                options.getRegion().ifPresent(clientBuilder::withRegion);
+
+                return (AmazonS3Client) clientBuilder.build();
             }
         });
 
