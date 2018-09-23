@@ -64,17 +64,23 @@ public class S3FileSystemOptions {
     /**
      * Set default region for S3 client
      *
-     * @param region The S3 region to connect to (if null, then US Standard)
+     * @param region The S3 region to connect to
      */
     public void setRegion(Regions region) {
-        S3FileSystemConfigBuilder.getInstance().setRegion(options, region);
+        if (region == null) {
+            throw new IllegalArgumentException("AWS Region cannot be null");
+        }
+
+        S3FileSystemConfigBuilder.getInstance().setRegion(options, region.getName());
     }
 
     /**
-     * @return The S3 region to connect to (if null, then US Standard)
+     * @return The S3 region to connect to
      */
     public Optional<Regions> getRegion() {
-        return S3FileSystemConfigBuilder.getInstance().getRegion(options);
+        Optional<String> r = S3FileSystemConfigBuilder.getInstance().getRegion(options);
+
+        return r.map(Regions::fromName);
     }
 
     /**
