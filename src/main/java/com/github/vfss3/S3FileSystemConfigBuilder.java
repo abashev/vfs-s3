@@ -10,7 +10,6 @@ import org.apache.commons.vfs2.FileSystemOptions;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -177,7 +176,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         if (getRegion(opts).isPresent()) {
             throw new IllegalArgumentException("Cannot set both Region and Endpoint");
         }
-        setOption(opts, ENDPOINT, requireNonNull(endpoint) );
+        setOption(opts, ENDPOINT, requireNonNull(endpoint));
     }
 
     /**

@@ -28,6 +28,11 @@ import static com.amazonaws.regions.Regions.DEFAULT_REGION;
  * @author Moritz Siuts
  */
 public class S3FileProvider extends AbstractOriginatingFileProvider {
+    /**
+     * Supported schema
+     */
+    public static final String SCHEMA = "s3";
+
     public final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
         Capability.CREATE,
         Capability.DELETE,

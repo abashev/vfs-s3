@@ -26,7 +26,7 @@ public class VfsS3Test {
         FileSystemManager manager = VFS.getManager();
         FileSystemOptions options = new FileSystemOptions();
         DelegatingFileSystemOptionsBuilder builder = new DelegatingFileSystemOptionsBuilder(manager);
-        builder.setConfigString(options, "s3", "region", Regions.US_EAST_1.getName());
+        builder.setConfigString(options, S3FileProvider.SCHEMA, "region", Regions.US_EAST_1.getName());
         String bucket = "s3://osm-pds";
         FileObject file = manager.resolveFile(bucket, options);
 
