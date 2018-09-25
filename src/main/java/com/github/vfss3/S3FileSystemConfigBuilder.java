@@ -10,7 +10,6 @@ import org.apache.commons.vfs2.FileSystemOptions;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -43,7 +42,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     }
 
     private S3FileSystemConfigBuilder() {
-        super("s3.");
+        super(S3FileProvider.PREFIX + ".");
     }
 
     @Override
@@ -80,24 +79,26 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     }
 
     /**
-     * Set default region for S3 client
+     * Set default region for S3 client. Region is a string which can be recognized by the method
+     * {@link Regions#fromName(java.lang.String)}. The class {@link Regions} cannot be used as a parameter of this setter
+     * because the current version of commons-vfs uses only {@link Enum#valueOf(java.lang.Class, java.lang.String)} to parse enum.
      *
-     * @param region The S3 region to connect to (if null, then US Standard)
+     * @param region The S3 region to connect to
      */
-    public void setRegion(final FileSystemOptions opts, Regions region) {
+    public void setRegion(final FileSystemOptions opts, String region) {
         if (getEndpoint(opts).isPresent()) {
             throw new IllegalArgumentException("Cannot set both Region and Endpoint");
         }
-        setOption(opts, REGION, requireNonNull(region).toString());
+        setOption(opts, REGION, requireNonNull(region));
     }
 
     /**
-     * @return The S3 region to connect to (if null, then US Standard)
+     * @return The S3 region to connect to
      */
-    public Optional<Regions> getRegion(final FileSystemOptions opts) {
+    public Optional<String> getRegion(final FileSystemOptions opts) {
         String r = getStringOption(opts, REGION, null);
 
-        return (r == null) ? empty() : Optional.of(Regions.fromName(r));
+        return ofNullable(r);
     }
 
     /**

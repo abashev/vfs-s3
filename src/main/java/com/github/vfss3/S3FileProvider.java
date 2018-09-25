@@ -28,6 +28,11 @@ import static com.amazonaws.regions.Regions.DEFAULT_REGION;
  * @author Moritz Siuts
  */
 public class S3FileProvider extends AbstractOriginatingFileProvider {
+    /**
+     * Protocol prefix
+     */
+    public static final String PREFIX = "s3";
+
     public final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
         Capability.CREATE,
         Capability.DELETE,
