@@ -42,7 +42,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     }
 
     private S3FileSystemConfigBuilder() {
-        super("s3.");
+        super(S3FileProvider.PREFIX + ".");
     }
 
     @Override

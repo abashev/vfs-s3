@@ -29,9 +29,9 @@ import static com.amazonaws.regions.Regions.DEFAULT_REGION;
  */
 public class S3FileProvider extends AbstractOriginatingFileProvider {
     /**
-     * Supported schema
+     * Protocol prefix
      */
-    public static final String SCHEMA = "s3";
+    public static final String PREFIX = "s3";
 
     public final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
         Capability.CREATE,

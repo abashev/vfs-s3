@@ -4,7 +4,7 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.Region;
+import com.github.vfss3.S3FileProvider;
 import com.github.vfss3.S3FileSystemOptions;
 import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemConfigBuilder;
@@ -18,9 +18,8 @@ import org.apache.commons.vfs2.FileSystemOptions;
 public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final S3FileSystemConfigBuilder BUILDER = new S3FileSystemConfigBuilder();
 
-    private S3FileSystemConfigBuilder()
-    {
-        super("s3.");
+    private S3FileSystemConfigBuilder() {
+        super(S3FileProvider.PREFIX + ".");
     }
 
     public static S3FileSystemConfigBuilder getInstance()
