@@ -9,6 +9,7 @@ import org.apache.commons.vfs2.FileSystemOptions;
 
 import java.util.Optional;
 
+import static com.github.vfss3.S3FileSystemOptions.PREFIX;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
@@ -42,7 +43,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     }
 
     private S3FileSystemConfigBuilder() {
-        super(S3FileProvider.PREFIX + ".");
+        super(PREFIX + ".");
     }
 
     @Override

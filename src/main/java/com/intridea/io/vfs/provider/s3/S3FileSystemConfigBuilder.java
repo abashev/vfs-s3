@@ -11,6 +11,8 @@ import org.apache.commons.vfs2.FileSystemConfigBuilder;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileSystemOptions;
 
+import static com.github.vfss3.S3FileSystemOptions.PREFIX;
+
 /**
  * @deprecated Use {@link com.github.vfss3.S3FileSystemOptions}
  */
@@ -19,7 +21,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final S3FileSystemConfigBuilder BUILDER = new S3FileSystemConfigBuilder();
 
     private S3FileSystemConfigBuilder() {
-        super(S3FileProvider.PREFIX + ".");
+        super(PREFIX + ".");
     }
 
     public static S3FileSystemConfigBuilder getInstance()

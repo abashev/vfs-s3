@@ -14,6 +14,10 @@ import java.util.Optional;
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
 public class S3FileSystemOptions {
+    /**
+     * Configuration prefix
+     */
+    public static final String PREFIX = "s3";
 
     private final FileSystemOptions options;
 

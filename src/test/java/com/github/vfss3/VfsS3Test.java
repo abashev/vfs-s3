@@ -5,6 +5,7 @@ import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.util.DelegatingFileSystemOptionsBuilder;
 import org.testng.annotations.Test;
 
+import static com.github.vfss3.S3FileSystemOptions.PREFIX;
 import static org.testng.Assert.assertNotNull;
 
 /**
@@ -17,7 +18,7 @@ public class VfsS3Test {
         FileSystemManager manager = VFS.getManager();
         FileSystemOptions options = new FileSystemOptions();
         DelegatingFileSystemOptionsBuilder builder = new DelegatingFileSystemOptionsBuilder(manager);
-        builder.setConfigString(options, S3FileProvider.PREFIX, "serverSideEncryption", "true");
+        builder.setConfigString(options, PREFIX, "serverSideEncryption", "true");
         options.clone();
     }
 
@@ -26,7 +27,9 @@ public class VfsS3Test {
         FileSystemManager manager = VFS.getManager();
         FileSystemOptions options = new FileSystemOptions();
         DelegatingFileSystemOptionsBuilder builder = new DelegatingFileSystemOptionsBuilder(manager);
-        builder.setConfigString(options, S3FileProvider.PREFIX, "region", Regions.US_EAST_1.getName());
+
+        builder.setConfigString(options, PREFIX, "region", Regions.US_EAST_1.getName());
+
         String bucket = "s3://osm-pds";
         FileObject file = manager.resolveFile(bucket, options);
 
