@@ -4,7 +4,6 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.github.vfss3.S3FileProvider;
 import com.github.vfss3.S3FileSystemOptions;
 import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemConfigBuilder;
@@ -58,7 +57,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      * @param region The S3 region to connect to (if null, then US Standard)
      */
     public void setRegion(FileSystemOptions opts, Regions region) {
-        new S3FileSystemOptions(opts, false).setRegion(region);
+        throw new UnsupportedOperationException("For setting up region use path-style or host-style paths");
     }
 
     /**
@@ -66,7 +65,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      * @return The S3 region to connect to (if null, then US Standard)
      */
     public Regions getRegion(FileSystemOptions opts) {
-        return new S3FileSystemOptions(opts, false).getRegion().orElse(null);
+        throw new UnsupportedOperationException("For setting up region use path-style or host-style paths");
     }
 
     /**
@@ -95,7 +94,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     /**
      * Set maximum number of threads to use for a single large (16MB or more) upload
      * @param opts The FileSystemOptions
-     * @param maxRetries maximum number of threads to use for a single large (16MB or more) upload
+     * @param maxThread maximum number of threads to use for a single large (16MB or more) upload
      */
     public void setMaxUploadThreads(FileSystemOptions opts, int maxThread) {
         new S3FileSystemOptions(opts, false).setMaxUploadThreads(maxThread);
@@ -138,7 +137,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      * @param client
      */
     public void setAmazonS3Client(FileSystemOptions opts, AmazonS3Client client) {
-        new S3FileSystemOptions(opts, false).setS3Client(client);
+        throw new UnsupportedOperationException("Setting AWS client is not supported from version 3.0.0");
     }
 
     /**
@@ -148,6 +147,6 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
      * @return
      */
     public AmazonS3Client getAmazonS3Client(FileSystemOptions opts) {
-        return new S3FileSystemOptions(opts, false).getS3Client().orElse(null);
+        throw new UnsupportedOperationException("Setting AWS client is not supported from version 3.0.0");
     }
 }

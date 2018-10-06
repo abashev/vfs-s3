@@ -2,16 +2,15 @@ package com.github.vfss3;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.HeadBucketRequest;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.Capability;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -29,24 +28,19 @@ import static java.util.Optional.empty;
  * @author Moritz Siuts
  */
 public class S3FileSystem extends AbstractFileSystem {
-
-    private static final Log logger = LogFactory.getLog(S3FileSystem.class);
+    private final Logger log = LoggerFactory.getLogger(S3FileSystem.class);
 
     private static final Optional<Capability> PER_FILE_THREAD_LOCKING_CAPABILITY = discoverPerFileThreadLockingCapability();
 
-    private final AmazonS3Client service;
+    private final AmazonS3 service;
     private final Bucket bucket;
-
-    private boolean shutdownServiceOnClose = false;
 
     private final boolean perFileLocking;
 
     public S3FileSystem(
-            S3FileName fileName, AmazonS3Client service, S3FileSystemOptions options
+            String bucketId, S3FileName fileName, AmazonS3 service, S3FileSystemOptions options
     ) throws FileSystemException {
         super(fileName, null, options.toFileSystemOptions());
-
-        String bucketId = fileName.getBucketId();
 
         boolean perFileLocking =  false;
 
@@ -55,7 +49,7 @@ public class S3FileSystem extends AbstractFileSystem {
             perFileLocking = options.isPerFileLocking();
         } else if (options.isPerFileLocking()) {
             // if not available and option requested spit out a warning
-            logger.warn("per-file locking requested, but requires custom build of commons-vfs2. Falling back to per-filesystem locking");
+            log.warn("per-file locking requested, but requires custom build of commons-vfs2. Falling back to per-filesystem locking");
         }
 
         this.perFileLocking = perFileLocking;
@@ -68,10 +62,10 @@ public class S3FileSystem extends AbstractFileSystem {
             } else {
                 bucket = service.createBucket(bucketId);
 
-                logger.debug("Created new bucket.");
+                log.debug("Created new bucket [{}].", bucketId);
             }
 
-            logger.info("Created new S3 FileSystem [name=" + bucketId + ",opts=" + options + "]");
+            log.info("Init new S3 FileSystem [name={},opts={}]", bucketId, options);
         } catch (AmazonServiceException e) {
             String s3message = e.getMessage();
 
@@ -87,7 +81,7 @@ public class S3FileSystem extends AbstractFileSystem {
     protected void addCapabilities(Collection<Capability> caps) {
         caps.addAll(S3FileProvider.capabilities);
 
-        if (perFileLocking) {
+        if (perFileLocking && PER_FILE_THREAD_LOCKING_CAPABILITY.isPresent()) {
             caps.add(PER_FILE_THREAD_LOCKING_CAPABILITY.get());
         }
     }
@@ -103,18 +97,13 @@ public class S3FileSystem extends AbstractFileSystem {
     @Override
     protected FileObject createFile(AbstractFileName fileName) throws Exception {
         S3FileObject s3FileObject = new S3FileObject(fileName, this);
+
         return s3FileObject;
     }
 
     @Override
     protected void doCloseCommunicationLink() {
-        if (shutdownServiceOnClose) {
-            service.shutdown();
-        }
-    }
-
-    public void setShutdownServiceOnClose(boolean shutdownServiceOnClose) {
-        this.shutdownServiceOnClose = shutdownServiceOnClose;
+        service.shutdown();
     }
 
     public boolean isPerFileLocking() {

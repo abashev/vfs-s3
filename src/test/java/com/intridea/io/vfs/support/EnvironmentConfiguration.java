@@ -8,9 +8,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,10 +74,11 @@ class EnvironmentConfiguration {
 
     /**
      * Get only value for specified key
+     *
      * @param key
      * @return
      */
-    public String get(String key) {
+    public Optional<String> get(String key) {
         String value = toMap().get(key);
 
         if (value == null) {
@@ -85,14 +86,10 @@ class EnvironmentConfiguration {
             value = System.getenv(key);
         }
 
-        return value;
+        return Optional.ofNullable(value);
     }
 
     public void computeIfPresent(String key, Consumer<String> valueConsumer) {
-        String value = get(key);
-
-        if (value != null) {
-            valueConsumer.accept(value);
-        }
+        get(key).ifPresent(valueConsumer);
     }
 }

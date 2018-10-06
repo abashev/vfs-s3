@@ -10,9 +10,10 @@ import org.apache.commons.vfs2.VFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-
-import static com.amazonaws.SDKGlobalConfiguration.*;
+import static com.amazonaws.SDKGlobalConfiguration.ACCESS_KEY_ENV_VAR;
+import static com.amazonaws.SDKGlobalConfiguration.ACCESS_KEY_SYSTEM_PROPERTY;
+import static com.amazonaws.SDKGlobalConfiguration.SECRET_KEY_ENV_VAR;
+import static com.amazonaws.SDKGlobalConfiguration.SECRET_KEY_SYSTEM_PROPERTY;
 import static java.lang.System.setProperty;
 
 /**
@@ -41,10 +42,10 @@ class InitializeEnvironmentModule implements Module {
         // Try to load access and secret key from environment
         try {
             if ((new EnvironmentVariableCredentialsProvider()).getCredentials() != null) {
-                log.info("Will use AWS credentials from enviroment variables");
+                log.info("Will use AWS credentials from environment variables");
             }
         } catch (AmazonClientException e) {
-            log.info("Not able to load credentials from enviroment - try .envrc file");
+            log.info("Not able to load credentials from environment - try .envrc file");
         }
 
         EnvironmentConfiguration configuration = new EnvironmentConfiguration();

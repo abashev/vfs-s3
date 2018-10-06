@@ -3,7 +3,8 @@ package com.github.vfss3;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.regions.AwsRegionProviderChain;
+import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.apache.commons.vfs2.Capability;
 import org.apache.commons.vfs2.FileName;
@@ -17,8 +18,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-import static com.amazonaws.regions.Regions.DEFAULT_REGION;
-
 /**
  * An S3 file provider. Create an S3 file system out of an S3 file name. Also
  * defines the capabilities of the file system.
@@ -28,7 +27,7 @@ import static com.amazonaws.regions.Regions.DEFAULT_REGION;
  * @author Moritz Siuts
  */
 public class S3FileProvider extends AbstractOriginatingFileProvider {
-    public final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
+    final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
         Capability.CREATE,
         Capability.DELETE,
         Capability.GET_TYPE,
@@ -41,8 +40,10 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
         Capability.WRITE_CONTENT
     ));
 
+    private final S3FileNameParser parser = new S3FileNameParser();
+
     public S3FileProvider() {
-        setFileNameParser(S3FileNameParser.getInstance());
+        setFileNameParser(parser);
     }
 
     /**
@@ -57,37 +58,43 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     protected FileSystem doCreateFileSystem(
             FileName fileName, FileSystemOptions fileSystemOptions
     ) throws FileSystemException {
+        final S3FileName file = (S3FileName) fileName;
         final S3FileSystemOptions options = new S3FileSystemOptions(fileSystemOptions);
 
-        AmazonS3Client service = options.getS3Client().orElseGet(() -> {
-            if (DEFAULT_CLIENT != null) {
-                return DEFAULT_CLIENT;
-            } else {
-                ClientConfiguration clientConfiguration = options.getClientConfiguration();
+        ClientConfiguration clientConfiguration = options.getClientConfiguration();
 
-                final AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().
-                        enablePathStyleAccess().
-                        withClientConfiguration(clientConfiguration).
-                        withCredentials(new DefaultAWSCredentialsProviderChain());
+        final AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().
+                withClientConfiguration(clientConfiguration).
+                withCredentials(new DefaultAWSCredentialsProviderChain());
 
-                if (options.isDisableChunkedEncoding()) {
-                    clientBuilder.disableChunkedEncoding();
-                }
-
-                options.getEndpoint().ifPresent(endpoint -> clientBuilder.withEndpointConfiguration(new EndpointConfiguration(endpoint, DEFAULT_REGION.getName())));
-                options.getRegion().ifPresent(clientBuilder::withRegion);
-
-                return (AmazonS3Client) clientBuilder.build();
-            }
-        });
-
-        S3FileSystem fileSystem = new S3FileSystem((S3FileName) fileName, service, options);
-
-        if (options.getS3Client().isPresent()) {
-            fileSystem.setShutdownServiceOnClose(true);
+        if (options.isDisableChunkedEncoding()) {
+            clientBuilder.disableChunkedEncoding();
         }
 
-        return fileSystem;
+        if (file.isPathPrefixNotEmpty()) {
+            clientBuilder.enablePathStyleAccess();
+        }
+
+        StringBuilder endpoint = new StringBuilder();
+
+        if (options.isUseHttps()) {
+            endpoint.append("https://");
+        } else {
+            endpoint.append("http://");
+        }
+
+        endpoint.append(file.getHostAndPort());
+
+        AwsRegionProviderChain regionProvider = new DefaultAwsRegionProviderChain();
+
+        clientBuilder.withEndpointConfiguration(new EndpointConfiguration(
+                endpoint.toString(),
+                parser.regionFromHost(file.getHostAndPort(), regionProvider.getRegion())
+        ));
+
+        final String bucket = parser.bucketFromFileName(file);
+
+        return (new S3FileSystem(bucket, file, clientBuilder.build(), options));
     }
 
     /**
@@ -98,17 +105,6 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
     @Override
     public Collection<Capability> getCapabilities() {
         return capabilities;
-    }
-
-    private static AmazonS3Client DEFAULT_CLIENT = null;
-
-    /**
-     * commons-vfs doen't support default options so we have to do something with default S3 client.
-     *
-     * @param client it will be used in case of no client was specified.
-     */
-    public static void setDefaultClient(AmazonS3Client client) {
-        DEFAULT_CLIENT = client;
     }
 
     /**

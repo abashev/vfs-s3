@@ -1,14 +1,10 @@
 package com.github.vfss3;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3Client;
 import org.apache.commons.vfs2.FileSystemOptions;
 
-import java.util.Optional;
-
 /**
- * Wrapper aroung FileSystemOptions for storing and retrieving various options. It can't be immutable because it use
+ * Wrapper around FileSystemOptions for storing and retrieving various options. It can't be immutable because it use
  * system properties as default values.
  *
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
@@ -66,44 +62,6 @@ public class S3FileSystemOptions {
     }
 
     /**
-     * Set default region for S3 client
-     *
-     * @param region The S3 region to connect to
-     */
-    public void setRegion(Regions region) {
-        if (region == null) {
-            throw new IllegalArgumentException("AWS Region cannot be null");
-        }
-
-        S3FileSystemConfigBuilder.getInstance().setRegion(options, region.getName());
-    }
-
-    /**
-     * @return The S3 region to connect to
-     */
-    public Optional<Regions> getRegion() {
-        Optional<String> r = S3FileSystemConfigBuilder.getInstance().getRegion(options);
-
-        return r.map(Regions::fromName);
-    }
-
-    /**
-     * Set default region for S3 client
-     *
-     * @param endpoint The S3 endpoint to connect to (if null, then use Region)
-     */
-    public void setEndpoint(String endpoint) {
-        S3FileSystemConfigBuilder.getInstance().setEndpoint(options, endpoint);
-    }
-
-    /**
-     * @return The S3 endpoint to connect to (if null, then use Region)
-     */
-    public Optional<String> getEndpoint() {
-        return S3FileSystemConfigBuilder.getInstance().getEndpoint(options);
-    }
-
-    /**
      * @param clientConfiguration The AWS ClientConfiguration object to
      *                            use when creating the connection.
      */
@@ -143,16 +101,6 @@ public class S3FileSystemOptions {
     }
 
     /**
-     * In case of many S3FileProviders (useful in multi-threaded environment to eliminate commons-vfs internal locks)
-     * you could specify one amazon client for all providers.
-     *
-     * @param client
-     */
-    public void setS3Client(AmazonS3Client client) {
-        S3FileSystemConfigBuilder.getInstance().setS3Client(options, client);
-    }
-
-    /**
      * Sets no bucket test
      *
      * @param disableBucketTest true if bucket existence and access shouldn't be tested
@@ -168,15 +116,6 @@ public class S3FileSystemOptions {
      */
     public boolean isDisableBucketTest() {
         return S3FileSystemConfigBuilder.getInstance().getDisableBucketTest(options);
-    }
-
-    /**
-     * Get preinitialized AmazonS3 client.
-     *
-     * @return
-     */
-    public Optional<AmazonS3Client> getS3Client() {
-        return S3FileSystemConfigBuilder.getInstance().getS3Client(options);
     }
 
     /**
@@ -213,6 +152,24 @@ public class S3FileSystemOptions {
      */
     public boolean isDisableChunkedEncoding() {
         return S3FileSystemConfigBuilder.getInstance().getDisableChunkedEncoding(options);
+    }
+
+    /**
+     * Use https for endpoint calls. true by default
+     *
+     * @return true if use https for all communications
+     */
+    public boolean isUseHttps() {
+        return S3FileSystemConfigBuilder.getInstance().isUseHttps(options);
+    }
+
+    /**
+     * Use https for endpoint calls. true by default
+     *
+     * @param useHttps
+     */
+    public void setUseHttps(boolean useHttps) {
+        S3FileSystemConfigBuilder.getInstance().setUseHttps(options, useHttps);
     }
 
     /**
