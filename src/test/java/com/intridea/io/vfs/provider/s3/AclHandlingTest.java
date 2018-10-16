@@ -15,7 +15,9 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 
-import static com.intridea.io.vfs.operations.Acl.Group.*;
+import static com.intridea.io.vfs.operations.Acl.Group.AUTHORIZED;
+import static com.intridea.io.vfs.operations.Acl.Group.EVERYONE;
+import static com.intridea.io.vfs.operations.Acl.Group.OWNER;
 import static com.intridea.io.vfs.operations.Acl.Permission.READ;
 import static com.intridea.io.vfs.operations.Acl.Permission.WRITE;
 import static org.testng.Assert.assertTrue;
@@ -26,10 +28,10 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
     
     @BeforeClass
     public void setUp() throws IOException {
-        file = env.resolveFile("/acl/check_acl.zip");
+        file = resolveFile("/acl/check_acl.zip");
 
         if (!file.exists()) {
-            final File backupFile = new File(env.binaryFile());
+            final File backupFile = binaryFile();
 
             assertTrue(backupFile.exists(), "Backup file should exists");
 

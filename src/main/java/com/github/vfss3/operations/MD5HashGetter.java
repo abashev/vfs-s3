@@ -1,9 +1,7 @@
 package com.github.vfss3.operations;
 
-import org.apache.commons.vfs2.FileSystemException;
-
-import com.github.vfss3.operations.IMD5HashGetter;
 import com.github.vfss3.S3FileObject;
+import org.apache.commons.vfs2.FileSystemException;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
@@ -24,7 +22,7 @@ public class MD5HashGetter implements IMD5HashGetter {
      */
     @Override
     public String getMD5Hash() throws FileSystemException {
-        return file.getMD5Hash();
+        return file.getMD5Hash().orElse(null);
     }
 
     /* (non-Javadoc)

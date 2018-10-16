@@ -151,14 +151,14 @@ public abstract class AbstractFileObject<AFS extends AbstractFileSystem> impleme
      */
     private void attach() throws FileSystemException {
         synchronized (monitorLock) {
-            if (attached) {
+            if (isAttached()) {
                 return;
             }
 
             try {
                 // Attach and determine the file type
                 doAttach();
-                attached = true;
+                setAttached(true);
                 // now the type could already be injected by doAttach (e.g from parent to child)
 
                 /*
@@ -480,12 +480,12 @@ public abstract class AbstractFileObject<AFS extends AbstractFileSystem> impleme
      */
     private void detach() throws Exception {
         synchronized (monitorLock) {
-            if (attached) {
+            if (isAttached()) {
                 try {
                     doDetach();
                 } finally {
-                    attached = false;
-                    setFileType(null);
+                    setAttached(false);
+                    injectType(null);
                     parent = null;
 
                     // fs.fileDetached(this);
@@ -1295,10 +1295,10 @@ public abstract class AbstractFileObject<AFS extends AbstractFileSystem> impleme
             // VFS-210: get the type only if requested for
             try {
                 if (type == null) {
-                    setFileType(doGetType());
+                    injectType(doGetType());
                 }
                 if (type == null) {
-                    setFileType(FileType.IMAGINARY);
+                    injectType(FileType.IMAGINARY);
                 }
             } catch (final Exception e) {
                 throw new FileSystemException("vfs.provider/get-type.error", e, fileName);
@@ -1351,7 +1351,7 @@ public abstract class AbstractFileObject<AFS extends AbstractFileSystem> impleme
      */
     protected void handleCreate(final FileType newType) throws Exception {
         synchronized (monitorLock) {
-            if (attached) {
+            if (isAttached()) {
                 // Fix up state
                 injectType(newType);
 
@@ -1376,7 +1376,7 @@ public abstract class AbstractFileObject<AFS extends AbstractFileSystem> impleme
      */
     protected void handleDelete() throws Exception {
         synchronized (monitorLock) {
-            if (attached) {
+            if (isAttached()) {
                 // Fix up state
                 injectType(FileType.IMAGINARY);
                 removeChildrenCache();
@@ -1408,7 +1408,15 @@ public abstract class AbstractFileObject<AFS extends AbstractFileSystem> impleme
     }
 
     protected void injectType(final FileType fileType) {
-        setFileType(fileType);
+        if (fileType != null && fileType != FileType.IMAGINARY) {
+            try {
+                fileName.setType(fileType);
+            } catch (final FileSystemException e) {
+                throw new RuntimeException(e.getMessage());
+            }
+        }
+
+        this.type = fileType;
     }
 
     /**
@@ -1419,6 +1427,14 @@ public abstract class AbstractFileObject<AFS extends AbstractFileSystem> impleme
     @Override
     public boolean isAttached() {
         return attached;
+    }
+
+    /**
+     * Change state of 'attached'.
+     * @param attached
+     */
+    protected void setAttached(boolean attached) {
+        this.attached = attached;
     }
 
     /**
@@ -1757,17 +1773,6 @@ public abstract class AbstractFileObject<AFS extends AbstractFileSystem> impleme
         }
     }
 
-    private void setFileType(final FileType type) {
-        if (type != null && type != FileType.IMAGINARY) {
-            try {
-                fileName.setType(type);
-            } catch (final FileSystemException e) {
-                throw new RuntimeException(e.getMessage());
-            }
-        }
-        this.type = type;
-    }
-
     @Override
     public boolean setReadable(final boolean readable, final boolean ownerOnly) throws FileSystemException {
         try {
@@ -1788,7 +1793,7 @@ public abstract class AbstractFileObject<AFS extends AbstractFileSystem> impleme
         }
     }
 
-    public Object getMonitorLock() {
+    protected Object monitorLock() {
         return monitorLock;
     }
 

@@ -13,9 +13,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- default to depend on patched commons-vfs2 -->
-        <!-- enable stock-vfs profile to depend on standard version -->
-        <commons-vfs2.version>2.1.idauto1</commons-vfs2.version>
         <test.fork.count>1</test.fork.count>
 
         <!-- allow runtime customization of repository -->

@@ -17,17 +17,17 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
 public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
-    static final Random random = new Random();
-
     @BeforeClass
     public void setUp() throws IOException {
-        env.resolveFile("/concurrent/").createFolder();
+        resolveFile("/concurrent/").createFolder();
     }
 
     @Test(invocationCount = 200, threadPoolSize = 10)
@@ -35,10 +35,9 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
         // was running into too many random collisions with random numbers in the range of 0-999
         // so added thread id into the mix
         String fileName = "folder-" + Thread.currentThread().getId() + "-" + (new Random()).nextInt(1000) + "/";
-        ;
 
-        FileObject parent = env.resolveFile("/concurrent/");
-        FileObject file = vfs.resolveFile(parent, fileName);
+        FileObject parent = resolveFile("/concurrent/");
+        FileObject file = parent.resolveFile(fileName);
 
         file.createFolder();
         assertTrue(file.exists());
@@ -54,10 +53,9 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
         assertFalse(file.exists());
     }
 
-    @SuppressWarnings("deprecation")
-    @Test()
+    @Test
     public void testGetChildrenGetParentDeadlock() throws FileSystemException, InterruptedException {
-        final FileObject parent = env.resolveFile("/concurrent/");
+        final FileObject parent = resolveFile("/concurrent/");
         parent.delete(Selectors.EXCLUDE_SELF);
 
         final int childCount = Integer.parseUnsignedInt(System.getProperty("ConcurrentAccessTest.deadlockTestChildCount", "10"));
@@ -67,7 +65,7 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
         // create a bunch of files
         for (int i = 0; i < childCount; i++) {
             String fileName = "deadlock-" + i;
-            FileObject file = vfs.resolveFile(parent, fileName);
+            FileObject file = parent.resolveFile(fileName);
             file.createFile();
             assertTrue(file.exists());
         }
@@ -85,7 +83,7 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
                     for (int i = 0; i < childCount; i++) {
                         String fileName = "deadlock-" + i;
                         try {
-                            FileObject file = vfs.resolveFile(parent, fileName);
+                            FileObject file = parent.resolveFile(fileName);
                             file.getParent();
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -104,7 +102,7 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
                 public void run() {
                     while (!stopFlag.get()) {
                         try {
-                            final FileObject parent = env.resolveFile("/concurrent/");
+                            final FileObject parent = resolveFile("/concurrent/");
                             int count = parent.getChildren().length;
                             assertEquals(count, childCount, "parent.getChildren().length");
                         } catch (Throwable e) {
@@ -147,6 +145,7 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
             }
         } finally {
             stopFlag.set(true);
+
             for (Thread t : threads) {
                 try {
                     t.join(1000);
@@ -154,12 +153,13 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
                 }
 
             }
-            env.resolveFile("/concurrent/").delete(Selectors.SELECT_CHILDREN);
+
+            resolveFile("/concurrent/").delete(Selectors.SELECT_CHILDREN);
         }
     }
 
     @AfterClass
     public void tearDown() throws FileSystemException {
-        env.resolveFile("/concurrent/").deleteAll();
+        resolveFile("/concurrent/").deleteAll();
     }
 }

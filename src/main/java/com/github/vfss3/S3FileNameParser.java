@@ -17,6 +17,9 @@ import java.util.regex.Pattern;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.compile;
+import static org.apache.commons.vfs2.FileName.ROOT_PATH;
+import static org.apache.commons.vfs2.FileType.FOLDER;
+import static org.apache.commons.vfs2.FileType.IMAGINARY;
 
 /**
  * @author Matthias L. Jugel
@@ -25,12 +28,9 @@ import static java.util.regex.Pattern.compile;
 public class S3FileNameParser extends AbstractFileNameParser {
     private final Logger log = LoggerFactory.getLogger(S3FileNameParser.class);
 
-    private static final Pattern PATH_STYLE = compile("s3-?([a-zA-Z0-9\\-]*)\\.amazonaws\\.com");
-    private static final Pattern HOST_STYLE = compile("([a-zA-Z0-9\\-]+)\\.s3-?([a-zA-Z0-9\\-]*)\\.amazonaws\\.com");
+    private static final Pattern HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3-?(?<region>[a-z0-9\\-]*)\\.amazonaws\\.com");
 
-    private static final Pattern EXTRACT_REGION = compile("s3-?([a-zA-Z0-9\\-]*)\\.amazonaws\\.com$");
-
-    private static final Pattern PATH = compile("^/([^/]+)/?(.*)");
+    private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
 
     public S3FileNameParser() {
     }
@@ -60,51 +60,48 @@ public class S3FileNameParser extends AbstractFileNameParser {
             throw new FileSystemException("Not able to find host in url [" + filename + "]");
         }
 
-        if (uri.getHost().endsWith(".amazonaws.com")) {
+        final Matcher hostNameMatcher = HOST_PATTERN.matcher(uri.getHost());
+
+        if (hostNameMatcher.matches()) {
             // Standard AWS endpoint
-            final Matcher pathStyleMatcher = PATH_STYLE.matcher(uri.getHost());
+            String region = hostNameMatcher.group("region");
 
-            if (pathStyleMatcher.matches()) {
-                checkRegion(pathStyleMatcher.group(1));
+            checkRegion(region);
 
+            String bucket = hostNameMatcher.group("bucket");
+            String host = uri.getHost();
+            String key = uri.getPath();
+
+            if ((bucket != null) && (bucket.trim().length() > 0)) {
+                // Has bucket inside URL
+                if ((region != null) && (region.trim().length() > 0)) {
+                    host = "s3-" + region + ".amazonaws.com";
+                } else {
+                    host = "s3.amazonaws.com";
+                }
+            } else {
                 final Matcher pathMatcher = PATH.matcher(uri.getPath());
 
                 if (pathMatcher.matches()) {
-                    StringBuilder sb = new StringBuilder(pathMatcher.group(2));
+                    String pathBucket = pathMatcher.group("bucket");
 
-                    UriParser.fixSeparators(sb);
+                    if ((pathBucket != null) && (pathBucket.trim().length() > 0)) {
+                        bucket = pathMatcher.group("bucket");
+                    }
 
-                    FileType fileType = UriParser.normalisePath(sb);
-
-                    S3FileName file = new S3FileName(uri.getHost(), pathMatcher.group(1), sb.toString(), fileType);
-
-                    log.debug("From uri {} got {}", filename, file);
-
-                    return file;
-                } else {
-                    throw new FileSystemException("Not able to find bucket inside [" + filename + "]");
+                    key = pathMatcher.group("key");
                 }
             }
 
-            final Matcher hostStyleMatcher = HOST_STYLE.matcher(uri.getHost());
-
-            if (hostStyleMatcher.matches()) {
-                checkRegion(hostStyleMatcher.group(2));
-
-                StringBuilder sb = new StringBuilder(uri.getPath());
-
-                UriParser.fixSeparators(sb);
-
-                FileType fileType = UriParser.normalisePath(sb);
-
-                S3FileName file = new S3FileName(uri.getHost(), sb.toString(), fileType);
-
-                log.debug("From uri {} got {}", filename, file);
-
-                return file;
+            if ((bucket == null) || (bucket.trim().length() == 0)) {
+                throw new FileSystemException("Not able to find bucket inside [" + filename + "]");
             }
 
-            throw new FileSystemException("Not able to parse url [" + filename + "]");
+            S3FileName file = buildS3FileName(host, bucket, key);
+
+            log.debug("From uri {} got {}", filename, file);
+
+            return file;
         } else {
             // Custom endpoint like localstack
             StringBuilder host = new StringBuilder(uri.getHost());
@@ -116,13 +113,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
             final Matcher pathMatcher = PATH.matcher(uri.getPath());
 
             if (pathMatcher.matches()) {
-                StringBuilder sb = new StringBuilder(pathMatcher.group(2));
-
-                UriParser.fixSeparators(sb);
-
-                FileType fileType = UriParser.normalisePath(sb);
-
-                S3FileName file = new S3FileName(host, pathMatcher.group(1), sb.toString(), fileType);
+                S3FileName file = buildS3FileName(host, pathMatcher);
 
                 log.debug("From uri {} got {}", filename, file);
 
@@ -141,49 +132,27 @@ public class S3FileNameParser extends AbstractFileNameParser {
      * @return
      */
     public String regionFromHost(String host, String defaultRegion) {
-        if (host.endsWith(".amazonaws.com")) {
-            // Standard AWS endpoint
-            final Matcher extractRegion = EXTRACT_REGION.matcher(host);
+        final Matcher hostNameMatcher = HOST_PATTERN.matcher(host);
 
-            if (extractRegion.find()) {
-                String candidate = extractRegion.group(1);
-                Regions region = null;
+        if (hostNameMatcher.matches()) {
+            String candidate = hostNameMatcher.group("region");
+            Regions region = null;
 
-                if ((candidate != null) && (candidate.trim().length() > 0)) {
-                    try {
-                        region = Regions.fromName(candidate);
-                    } catch (IllegalArgumentException e) {
-                    }
+            if ((candidate != null) && (candidate.trim().length() > 0)) {
+                try {
+                    region = Regions.fromName(candidate);
+                } catch (IllegalArgumentException e) {
                 }
+            }
 
-                if (region != null) {
-                    return region.getName();
-                }
+            if (region != null) {
+                return region.getName();
             }
         }
 
         return defaultRegion;
     }
 
-    /**
-     * Extract bucket id from S3 file name. Use path prefix or host
-     *
-     * @param fileName
-     * @return
-     */
-    public String bucketFromFileName(S3FileName fileName) throws FileSystemException {
-        if (fileName.isPathPrefixNotEmpty()) {
-            return fileName.getPathPrefix();
-        }
-
-        final Matcher hostStyleMatcher = HOST_STYLE.matcher(fileName.getHostAndPort());
-
-        if (hostStyleMatcher.matches()) {
-            return hostStyleMatcher.group(1);
-        }
-
-        throw new FileSystemException("Not able to find bucket inside " + fileName);
-    }
 
     /**
      * Check region for correct name.
@@ -199,5 +168,23 @@ public class S3FileNameParser extends AbstractFileNameParser {
                 throw new FileSystemException("Not able to parse region [" + regionName + "]");
             }
         }
+    }
+
+    private S3FileName buildS3FileName(String host, String bucket, String key) {
+        if ((key != null) && (key.trim().length() > 0) && (!key.equals(ROOT_PATH))) {
+            StringBuilder sb = new StringBuilder(key);
+
+            UriParser.fixSeparators(sb);
+
+            key = sb.toString();
+        }
+
+        FileType type = (ROOT_PATH.equals(key)) ? FOLDER : IMAGINARY;
+
+        return (new S3FileName(host, bucket, key, type));
+    }
+
+    private S3FileName buildS3FileName(StringBuilder host, Matcher pathMatcher) throws FileSystemException {
+        return buildS3FileName(host.toString(), pathMatcher.group("bucket"), pathMatcher.group("key"));
     }
 }

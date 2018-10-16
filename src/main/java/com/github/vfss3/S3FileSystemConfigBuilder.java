@@ -20,6 +20,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final String PER_FILE_LOCKING         = "perFileLocking";
     private static final String DISABLE_CHUNKED_ENCODING = "disableChunkedEncoding"; // Useful for localstack
     private static final String USE_HTTPS                = "useHttps"; // Useful for localstack
+    private static final String CREATE_BUCKET            = "createBucket";
 
     private static final int DEFAULT_MAX_UPLOAD_THREADS = 2;
     private static final int DEFAULT_MAX_ERROR_RETRY = 8;
@@ -120,28 +121,6 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     }
 
     /**
-     * Sets no bucket test
-     *
-     * @param noBucketTest true if bucket existence and access shouldn't be tested
-     */
-    public void setDisableBucketTest(FileSystemOptions opts, boolean noBucketTest) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        builder.setOption(opts, DISABLE_BUCKET_TEST, noBucketTest);
-    }
-
-    /**
-     * Gets no bucket test
-     *
-     * @return true if bucket existence and access shouldn't be tested
-     */
-    public boolean getDisableBucketTest(FileSystemOptions opts) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        return builder.getBooleanOption(opts, DISABLE_BUCKET_TEST, false);
-    }
-  
-    /**
      * Sets per-file locking.
      *
      * @param perFileLocking true if per-file locking should be used.
@@ -206,5 +185,28 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
 
         builder.setOption(opts, USE_HTTPS, useHttps);
+    }
+
+    /**
+     * Should we do 'create bucket' call in case of missed bucket.
+     *
+     * @return
+     */
+    public boolean isCreateBucket(FileSystemOptions opts) {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        return builder.getBooleanOption(opts, CREATE_BUCKET, false);
+    }
+
+    /**
+     * Should we do 'create bucket' call in case of missed bucket.
+     *
+     * @param opts
+     * @param createBucket
+     */
+    public void setCreateBucket(FileSystemOptions opts, boolean createBucket) {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        builder.setOption(opts, CREATE_BUCKET, createBucket);
     }
 }

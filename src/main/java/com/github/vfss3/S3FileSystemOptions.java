@@ -101,24 +101,6 @@ public class S3FileSystemOptions {
     }
 
     /**
-     * Sets no bucket test
-     *
-     * @param disableBucketTest true if bucket existence and access shouldn't be tested
-     */
-    public void setDisableBucketTest(boolean disableBucketTest) {
-        S3FileSystemConfigBuilder.getInstance().setDisableBucketTest(options, disableBucketTest);
-    }
-
-    /**
-     * Gets no bucket test
-     *
-     * @return true if bucket existence and access shouldn't be tested
-     */
-    public boolean isDisableBucketTest() {
-        return S3FileSystemConfigBuilder.getInstance().getDisableBucketTest(options);
-    }
-
-    /**
      * Sets per-file locking.
      *
      * @param perFileLocking true if per-file locking should be used.
@@ -165,11 +147,23 @@ public class S3FileSystemOptions {
 
     /**
      * Use https for endpoint calls. true by default
-     *
-     * @param useHttps
      */
     public void setUseHttps(boolean useHttps) {
         S3FileSystemConfigBuilder.getInstance().setUseHttps(options, useHttps);
+    }
+
+    /**
+     * Create bucket in case of missed one.
+     */
+    public boolean isCreateBucket() {
+        return S3FileSystemConfigBuilder.getInstance().isCreateBucket(options);
+    }
+
+    /**
+     * Create bucket in case of missed one.
+     */
+    public void setCreateBucket(boolean createBucket) {
+        S3FileSystemConfigBuilder.getInstance().setCreateBucket(options, createBucket);
     }
 
     /**

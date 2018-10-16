@@ -3,8 +3,6 @@ package com.github.vfss3;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
-import com.amazonaws.regions.AwsRegionProviderChain;
-import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.apache.commons.vfs2.Capability;
 import org.apache.commons.vfs2.FileName;
@@ -71,9 +69,7 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
             clientBuilder.disableChunkedEncoding();
         }
 
-        if (file.isPathPrefixNotEmpty()) {
-            clientBuilder.enablePathStyleAccess();
-        }
+        clientBuilder.enablePathStyleAccess();
 
         StringBuilder endpoint = new StringBuilder();
 
@@ -85,14 +81,13 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
 
         endpoint.append(file.getHostAndPort());
 
-        AwsRegionProviderChain regionProvider = new DefaultAwsRegionProviderChain();
 
         clientBuilder.withEndpointConfiguration(new EndpointConfiguration(
                 endpoint.toString(),
-                parser.regionFromHost(file.getHostAndPort(), regionProvider.getRegion())
+                parser.regionFromHost(file.getHostAndPort(), "us-east-1")
         ));
 
-        final String bucket = parser.bucketFromFileName(file);
+        final String bucket = file.getPathPrefix();
 
         return (new S3FileSystem(bucket, file, clientBuilder.build(), options));
     }

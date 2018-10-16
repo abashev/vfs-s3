@@ -29,7 +29,7 @@ public abstract class AbstractFileName implements FileName {
 
     private final String scheme;
     private final String absPath;
-    private FileType type;
+    protected FileType type;
 
     // Cached stuff
     private String uri;

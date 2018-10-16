@@ -16,10 +16,16 @@
 package com.github.vfss3;
 
 import org.apache.commons.vfs2.FileName;
+import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 
+import java.util.Optional;
+
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.empty;
+import static org.apache.commons.vfs2.FileType.FILE;
+import static org.apache.commons.vfs2.FileType.FOLDER;
 
 public class S3FileName extends AbstractFileName {
     /**
@@ -28,11 +34,11 @@ public class S3FileName extends AbstractFileName {
     private final String hostAndPort;
 
     /**
-     * First segment of path - for path-style file name it bucket, for virtual-host it is empty
+     * First segment of path as a bucket
      */
     private final String pathPrefix;
 
-    protected S3FileName(String hostAndPort, String pathPrefix, String path, FileType type) {
+    S3FileName(String hostAndPort, String pathPrefix, String path, FileType type) {
         super("s3", path, type);
 
         this.hostAndPort = requireNonNull(hostAndPort);
@@ -41,15 +47,7 @@ public class S3FileName extends AbstractFileName {
             throw new IllegalArgumentException("Path prefix [" + pathPrefix + "] shouldn't contain / and has to be valid bucket name");
         }
 
-        this.pathPrefix = pathPrefix;
-    }
-
-    protected S3FileName(String hostAndPort, String path, FileType type) {
-        this(hostAndPort, null, path, type);
-    }
-
-    protected S3FileName(StringBuilder hostAndPort, String pathPrefix, String path, FileType type) {
-        this(hostAndPort.toString(), pathPrefix, path, type);
+        this.pathPrefix = requireNonNull(pathPrefix);
     }
 
     @Override
@@ -76,8 +74,46 @@ public class S3FileName extends AbstractFileName {
         return pathPrefix;
     }
 
-    public boolean isPathPrefixNotEmpty() {
-        return (pathPrefix != null);
+    /**
+     * Returns S3 key from name or empty for a bucket.
+     *
+     * @return
+     * @throws FileSystemException
+     */
+    public Optional<String> getS3Key() throws FileSystemException {
+        if ((type != FILE) && (type != FOLDER)) {
+            throw new FileSystemException("Not able to get key from imaginary file");
+        }
+
+        if (getPathDecoded().equals(ROOT_PATH)) {
+            return empty();
+        }
+
+        StringBuilder path = new StringBuilder(getPathDecoded());
+
+        if ((path.indexOf(SEPARATOR) == 0) && (path.length() > 1)) {
+            path.deleteCharAt(0);
+        }
+
+        if (type == FOLDER) {
+            path.append(SEPARATOR_CHAR);
+        }
+
+        return Optional.of(path.toString());
+    }
+
+    public String getS3KeyAs(FileType fileType) throws FileSystemException {
+        StringBuilder path = new StringBuilder(getPathDecoded());
+
+        if ((path.indexOf(SEPARATOR) == 0) && (path.length() > 1)) {
+            path.deleteCharAt(0);
+        }
+
+        if (fileType == FOLDER) {
+            path.append(SEPARATOR_CHAR);
+        }
+
+        return path.toString();
     }
 
     @Override

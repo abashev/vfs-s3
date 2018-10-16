@@ -3,7 +3,6 @@ package com.github.vfss3;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.HeadBucketRequest;
 import org.apache.commons.vfs2.Capability;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
@@ -53,19 +52,21 @@ public class S3FileSystem extends AbstractFileSystem {
         }
 
         this.perFileLocking = perFileLocking;
-
         this.service = service;
 
+        log.info(
+                "Init new S3 FileSystem [bucket={},fileName={},opts={}]",
+                bucketId, fileName, options
+        );
+
         try {
-            if (options.isDisableBucketTest() || doesBucketExist(bucketId)) {
-                bucket = new Bucket(bucketId);
-            } else {
+            if (options.isCreateBucket() && !doesBucketExist(bucketId)) {
                 bucket = service.createBucket(bucketId);
 
-                log.debug("Created new bucket [{}].", bucketId);
+                log.info("Created new bucket [{}].", bucket);
+            } else {
+                bucket = new Bucket(bucketId);
             }
-
-            log.info("Init new S3 FileSystem [name={},opts={}]", bucketId, options);
         } catch (AmazonServiceException e) {
             String s3message = e.getMessage();
 
@@ -96,7 +97,7 @@ public class S3FileSystem extends AbstractFileSystem {
 
     @Override
     protected FileObject createFile(AbstractFileName fileName) throws Exception {
-        S3FileObject s3FileObject = new S3FileObject(fileName, this);
+        S3FileObject s3FileObject = new S3FileObject((S3FileName) fileName, this);
 
         return s3FileObject;
     }
@@ -119,9 +120,7 @@ public class S3FileSystem extends AbstractFileSystem {
      */
     private boolean doesBucketExist(String bucketName) throws FileSystemException {
         try {
-            service.headBucket(new HeadBucketRequest(bucketName));
-
-            return true;
+            return service.doesBucketExistV2(bucketName);
         } catch (AmazonServiceException e) {
             if (e.getStatusCode() == BUCKET_ACCESS_FORBIDDEN_STATUS_CODE) {
                 throw new FileSystemException("vfs.provider.s3/connection-forbidden.error", bucketName, e);

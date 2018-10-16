@@ -6,8 +6,7 @@ import org.apache.commons.vfs2.FileType;
 import org.assertj.core.api.AssertDelegateTarget;
 import org.testng.annotations.Test;
 
-import static org.apache.commons.vfs2.FileType.FILE;
-import static org.apache.commons.vfs2.FileType.FOLDER;
+import static org.apache.commons.vfs2.FileType.IMAGINARY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -17,14 +16,17 @@ public class S3FileNameParserTest {
     @Test
     public void checkHostedStyleUrl() throws FileSystemException {
         assertThat(parse("s3://bucket.s3.amazonaws.com")).
-                hasHostAndPort("bucket.s3.amazonaws.com").
-                hasType(FOLDER);
+                hasHostAndPort("s3.amazonaws.com").
+                hasPathPrefix("bucket").
+                hasType(IMAGINARY);
         assertThat(parse("s3://bucket.s3-eu-west-1.amazonaws.com")).
-                hasHostAndPort("bucket.s3-eu-west-1.amazonaws.com").
-                hasType(FOLDER);
+                hasHostAndPort("s3-eu-west-1.amazonaws.com").
+                hasPathPrefix("bucket").
+                hasType(IMAGINARY);
         assertThat(parse("s3://bucket.s3-eu-west-1.amazonaws.com/some_file")).
-                hasHostAndPort("bucket.s3-eu-west-1.amazonaws.com").
-                hasType(FILE);
+                hasHostAndPort("s3-eu-west-1.amazonaws.com").
+                hasPathPrefix("bucket").
+                hasType(IMAGINARY);
     }
 
     @Test
@@ -36,12 +38,19 @@ public class S3FileNameParserTest {
         assertThat(parse("s3://s3-eu-west-1.amazonaws.com/bucket")).
                 hasHostAndPort("s3-eu-west-1.amazonaws.com").
                 hasPathPrefix("bucket").
-                hasType(FOLDER);
+                hasType(IMAGINARY);
 
         assertThat(parse("s3://s3-eu-west-1.amazonaws.com/bucket/gggg")).
                 hasHostAndPort("s3-eu-west-1.amazonaws.com").
                 hasPathPrefix("bucket").
-                hasType(FILE);
+                hasType(IMAGINARY).
+                hasPath("/gggg");
+
+        assertThat(parse("s3://s3-eu-west-1.amazonaws.com/bucket/concurrent/")).
+                hasHostAndPort("s3-eu-west-1.amazonaws.com").
+                hasPathPrefix("bucket").
+                hasType(IMAGINARY).
+                hasPath("/concurrent");
     }
 
     @Test
@@ -57,6 +66,19 @@ public class S3FileNameParserTest {
         assertThat(new S3FileNameParser().regionFromHost("s3.amazonaws.com", "us-west-1")).isEqualTo("us-west-1");
         assertThat(new S3FileNameParser().regionFromHost("bucket.s3-eu-west-1.amazonaws.com", "us-west-1")).isEqualTo("eu-west-1");
         assertThat(new S3FileNameParser().regionFromHost("s3-eu-west-1.amazonaws.commmmm", "us-west-1")).isEqualTo("us-west-1");
+    }
+
+    @Test
+    public void checkBrokenUrls() throws FileSystemException {
+        assertThat(parse("s3://s3-eu-west-1.amazonaws.com/s3-tests//big_file.iso")).
+                hasHostAndPort("s3-eu-west-1.amazonaws.com").
+                hasPathPrefix("s3-tests").
+                hasPath("/big_file.iso");
+
+        assertThat(parse("s3://s3-eu-west-1.amazonaws.com///////s3-tests///////big_file.iso")).
+                hasHostAndPort("s3-eu-west-1.amazonaws.com").
+                hasPathPrefix("s3-tests").
+                hasPath("/big_file.iso");
     }
 
     private S3FileNameAssert parse(String url) throws FileSystemException {
@@ -87,5 +109,12 @@ public class S3FileNameParserTest {
 
             return this;
         }
+
+        S3FileNameAssert hasPath(String value) {
+            assertThat(file.getPath()).isEqualTo(value);
+
+            return this;
+        }
+
     }
 }
