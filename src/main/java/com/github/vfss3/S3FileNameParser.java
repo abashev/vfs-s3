@@ -42,7 +42,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
     public FileName parseUri(
             VfsComponentContext context, FileName base, String filename
     ) throws FileSystemException {
-        log.debug("Parse uri [context={},base={},filename={}", context, base, filename);
+        log.trace("Parse uri [context={},base={},filename={}", context, base, filename);
 
         URI uri;
 
@@ -99,7 +99,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
             S3FileName file = buildS3FileName(host, bucket, key);
 
-            log.debug("From uri {} got {}", filename, file);
+            log.trace("From uri {} got {}", filename, file);
 
             return file;
         } else {
@@ -115,7 +115,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
             if (pathMatcher.matches()) {
                 S3FileName file = buildS3FileName(host, pathMatcher);
 
-                log.debug("From uri {} got {}", filename, file);
+                log.trace("From uri {} got {}", filename, file);
 
                 return file;
             } else {
