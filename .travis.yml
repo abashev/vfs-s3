@@ -10,7 +10,7 @@ jdk:
 
 env:
   global:
-  - AWS_TEST_BUCKET=s3-tests
+  - AWS_TEST_BUCKET=s3-tests.s3-eu-west-1.amazonaws.com
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
