@@ -13,5 +13,5 @@
         <appender-ref ref="console" />
     </root>
 
-    <logger name="com.github.vfss3" level="debug" />
+    <!--<logger name="com.github.vfss3" level="debug" />-->
 </configuration>

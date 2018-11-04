@@ -4,7 +4,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.abashev</groupId>
+    <groupId>com.github.vfss3</groupId>
     <artifactId>vfs-s3</artifactId>
     <packaging>jar</packaging>
     <version>3.0.0-SNAPSHOT</version>

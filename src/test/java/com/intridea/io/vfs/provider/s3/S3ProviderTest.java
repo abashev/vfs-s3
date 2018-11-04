@@ -510,7 +510,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
             Arrays.deepToString(files) + " vs. " + Arrays.deepToString(filesCopy));
 	}
 
-    @Test(dependsOnMethods={"findFiles"})
+    @Test(dependsOnMethods={"createDirOk", "findFiles"})
     public void copyAllToEncryptedInsideBucket() throws FileSystemException {
         final S3FileSystemOptions options = new S3FileSystemOptions();
 
@@ -518,16 +518,16 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
         FileObject testsDir = dir.resolveFile("find-tests");
 
-
         FileObject testsDirCopy =
                 resolveFile(options, "/test-place/%s", dirName).
                 resolveFile("find-tests-encrypted-copy");
 
+        assertTrue(testsDir.exists());
+        assertFalse(testsDirCopy.exists());
+
         testsDirCopy.copyFrom(testsDir, SELECT_ALL);
 
         // Should have same number of files
-        testsDir.refresh();
-        testsDirCopy.refresh();
         FileObject[] files = testsDir.findFiles(SELECT_ALL);
         FileObject[] filesCopy = testsDirCopy.findFiles(SELECT_ALL);
 
@@ -535,6 +535,10 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
         for (int i = 0; i < files.length; i++) {
             if (files[i].getType() == FileType.FILE) {
+                // FIXME Should work without it!!!!
+                files[i].refresh();
+                filesCopy[i].refresh();
+
                 assertEquals(((S3FileObject) files[i]).getSSEAlgorithm(), empty());
                 assertEquals(((S3FileObject) filesCopy[i]).getSSEAlgorithm(), of(AES_256_SERVER_SIDE_ENCRYPTION));
             }

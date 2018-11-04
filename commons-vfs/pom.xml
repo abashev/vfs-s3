@@ -25,7 +25,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.github.abashev</groupId>
+  <groupId>com.github.vfss3</groupId>
   <artifactId>commons-vfs2-project</artifactId>
   <name>Apache Commons VFS Project</name>
   <description>Apache Commons VFS is a Virtual File System library.</description>
