@@ -104,7 +104,7 @@ public class S3FileSystem extends AbstractFileSystem {
 
     @Override
     protected void doCloseCommunicationLink() {
-        service.shutdown();
+//        service.shutdown();
     }
 
     public boolean isPerFileLocking() {
