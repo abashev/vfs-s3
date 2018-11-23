@@ -28,6 +28,8 @@ import static org.apache.commons.vfs2.FileType.FILE;
 import static org.apache.commons.vfs2.FileType.FOLDER;
 
 public class S3FileName extends AbstractFileName {
+    public static final String SCHEME = "s3";
+
     /**
      * Host and port for S3 url - endpoint for the client
      */
@@ -39,7 +41,7 @@ public class S3FileName extends AbstractFileName {
     private final String pathPrefix;
 
     S3FileName(String hostAndPort, String pathPrefix, String path, FileType type) {
-        super("s3", path, type);
+        super(SCHEME, path, type);
 
         this.hostAndPort = requireNonNull(hostAndPort);
 

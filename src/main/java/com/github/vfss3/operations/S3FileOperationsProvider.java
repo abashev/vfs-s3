@@ -134,7 +134,7 @@ public class S3FileOperationsProvider implements FileOperationProvider {
 
         @Override
         public String getPrivateUrl() {
-            return getter.getPrivateUrl();
+            throw new UnsupportedOperationException("Not able to get private url");
         }
 
         @Override

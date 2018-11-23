@@ -1,9 +1,9 @@
 package com.github.vfss3.operations;
 
-import org.apache.commons.vfs2.FileSystemException;
-
-import com.github.vfss3.operations.IPublicUrlsGetter;
+import com.github.vfss3.S3FileName;
 import com.github.vfss3.S3FileObject;
+import com.github.vfss3.S3FileSystemOptions;
+import org.apache.commons.vfs2.FileSystemException;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
@@ -18,16 +18,9 @@ class PublicUrlsGetter implements IPublicUrlsGetter {
 
     @Override
     public String getHttpUrl() {
-        return file.getHttpUrl();
-    }
+        final S3FileSystemOptions options = new S3FileSystemOptions(file.getFileSystem().getFileSystemOptions());
 
-    @Override
-    public String getPrivateUrl() {
-        try {
-            return file.getPrivateUrl();
-        } catch (FileSystemException e) {
-            throw new IllegalStateException("Not able to get private url", e);
-        }
+        return file.getName().getURI().replaceFirst("^" + S3FileName.SCHEME + "://", options.isUseHttps() ? "https://" : "http://");
     }
 
     @Override

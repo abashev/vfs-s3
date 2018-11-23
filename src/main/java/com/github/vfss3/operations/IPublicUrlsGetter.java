@@ -18,13 +18,6 @@ public interface IPublicUrlsGetter extends FileOperation {
     String getHttpUrl();
 
     /**
-     * Get private url in format s3://awsKey:awsSecretKey/bucket-name/object-name
-     *
-     * @return
-     */
-    String getPrivateUrl();
-
-    /**
      *
      * @param expireInSeconds
      * @return

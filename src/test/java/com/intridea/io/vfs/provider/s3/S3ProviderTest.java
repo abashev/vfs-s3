@@ -3,8 +3,8 @@ package com.intridea.io.vfs.provider.s3;
 import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.github.vfss3.S3FileObject;
 import com.github.vfss3.S3FileSystemOptions;
+import com.github.vfss3.operations.IPublicUrlsGetter;
 import com.intridea.io.vfs.operations.IMD5HashGetter;
-import com.intridea.io.vfs.operations.IPublicUrlsGetter;
 import com.intridea.io.vfs.support.AbstractS3FileSystemTest;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.vfs2.FileObject;
@@ -39,8 +39,10 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.apache.commons.vfs2.Selectors.SELECT_ALL;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.internal.junit.ArrayAsserts.assertArrayEquals;
 
@@ -445,31 +447,35 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         assertEquals(backup.getContent().getSize(), 996166);
     }
 
-    @Test(dependsOnMethods={"upload"})
+    @Test(dependsOnMethods = {"createFileOk", "upload"})
     public void getUrls() throws FileSystemException {
         FileObject backup = resolveFile("/test-place/backup.zip");
 
         assertTrue(backup.getFileOperations().hasOperation(IPublicUrlsGetter.class));
+        assertNotNull(backup.getFileOperations().getOperation(IPublicUrlsGetter.class));
 
         IPublicUrlsGetter urlsGetter = (IPublicUrlsGetter) backup.getFileOperations().getOperation(IPublicUrlsGetter.class);
 
-// FIXME
-//        assertEquals(urlsGetter.getHttpUrl(), "http://" + env.bucketName() + ".s3.amazonaws.com/test-place/backup.zip");
-//        assertTrue(urlsGetter.getPrivateUrl().endsWith("@" + env.bucketName() + "/test-place/backup.zip"));
+        assertThat(urlsGetter.getHttpUrl()).contains(
+                "https",
+                "amazonaws.com",
+                "/test-place/backup.zip"
+        );
 
         final String signedUrl = urlsGetter.getSignedUrl(60);
 
-// FIXME
-//        assertTrue(
-//            signedUrl.matches("https://" + Pattern.quote(env.bucketName()) + "\\.s3.*?\\.amazonaws\\.com/test-place/backup\\.zip\\?.+"),
-//            signedUrl);
-        assertTrue(signedUrl.contains("Signature="));
-        assertTrue(signedUrl.contains("Expires="));
-        assertTrue(signedUrl.contains("X-Amz-Credential="));
-        assertTrue(signedUrl.contains("X-Amz-Signature="));
+        assertThat(signedUrl).contains(
+                "https",
+                "amazonaws.com",
+                "/test-place/backup.zip",
+                "Signature=",
+                "Expires=",
+                "X-Amz-Credential=",
+                "X-Amz-Signature="
+        );
     }
 
-    @Test(dependsOnMethods={"upload"})
+    @Test(dependsOnMethods = {"createFileOk", "upload"})
     public void getMD5Hash() throws NoSuchAlgorithmException, IOException {
         FileObject backup = resolveFile("/test-place/backup.zip");
 

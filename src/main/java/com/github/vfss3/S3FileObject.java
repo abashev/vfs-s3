@@ -2,7 +2,6 @@ package com.github.vfss3;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AccessControlList;
 import com.amazonaws.services.s3.model.Bucket;
@@ -67,7 +66,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.amazonaws.services.s3.Headers.ETAG;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
-import static com.github.vfss3.AmazonS3ClientHack.extractCredentials;
 import static com.github.vfss3.operations.Acl.Permission.READ;
 import static com.github.vfss3.operations.Acl.Permission.WRITE;
 import static java.util.Calendar.SECOND;
@@ -769,50 +767,6 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         } catch (Exception e) {
             throw new FileSystemException(e);
         }
-    }
-
-    /**
-     * Get direct http url to S3 object.
-     *
-     * @return the direct http url to S3 object
-     */
-    public String getHttpUrl() {
-//        URI uri = new URI(getName().getURI());
-//
-//        uri.
-//        StringBuilder sb = new StringBuilder("http://" + getBucket().getName() + ".s3.amazonaws.com/");
-//        String key = getS3Key();
-//
-//        // Determine context. Object or Bucket
-//        if ("".equals(key)) {
-//            return sb.toString();
-//        } else {
-//            return sb.append(key).toString();
-//        }
-        return null;
-    }
-
-    /**
-     * Get private url with access key and secret key.
-     *
-     * @return the private url
-     */
-    public String getPrivateUrl() throws FileSystemException {
-        assertType(FILE, FOLDER);
-
-        AWSCredentials awsCredentials = extractCredentials(getService());
-
-        if (awsCredentials == null) {
-            throw new FileSystemException("Not able to build private URL - empty AWS credentials");
-        }
-
-        return String.format(
-                "s3://%s:%s@%s/%s",
-                awsCredentials.getAWSAccessKeyId(),
-                awsCredentials.getAWSSecretKey(),
-                getBucket().getName(),
-                getName().getS3Key().orElseThrow(() -> new FileSystemException("Not able get private url for a bucket"))
-        );
     }
 
     /**

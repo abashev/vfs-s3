@@ -31,7 +31,7 @@ public class S3FileSystem extends AbstractFileSystem {
 
     private static final Optional<Capability> PER_FILE_THREAD_LOCKING_CAPABILITY = discoverPerFileThreadLockingCapability();
 
-    private final AmazonS3 service;
+    private AmazonS3 service;
     private final Bucket bucket;
 
     private final boolean perFileLocking;
@@ -104,7 +104,11 @@ public class S3FileSystem extends AbstractFileSystem {
 
     @Override
     protected void doCloseCommunicationLink() {
-//        service.shutdown();
+        if (service != null) {
+            service.shutdown();
+
+            service = null;
+        }
     }
 
     public boolean isPerFileLocking() {

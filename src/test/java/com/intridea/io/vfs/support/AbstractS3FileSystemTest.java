@@ -9,6 +9,7 @@ import org.apache.commons.vfs2.FileSystemManager;
 import org.apache.commons.vfs2.VFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
 import java.io.File;
@@ -53,6 +54,16 @@ public abstract class AbstractS3FileSystemTest {
                 orElseThrow(() -> new IllegalStateException(BUCKET_PARAMETER + " should present in environment configuration"));
 
         this.bucket = vfs.resolveFile("s3://" + bucketId);
+    }
+
+    @AfterClass
+    public final void closeFS() throws IOException {
+        if ((vfs != null) && (bucket != null)) {
+            vfs.closeFileSystem(bucket.getFileSystem());
+
+            vfs = null;
+            bucket = null;
+        }
     }
 
     public FileObject resolveFile(String path, Object ... args) throws FileSystemException {
