@@ -25,7 +25,7 @@ class S3TempFile {
     private final Path tempFile;
     private int useCount = 1;
 
-    private String eTag;
+    private String md5;
 
     /**
      * Creates a temporary file
@@ -155,12 +155,12 @@ class S3TempFile {
         }
     }
 
-    public String getETag() {
-        return eTag;
+    public String getMD5Hash() {
+        return md5;
     }
 
-    public void setETag(String eTag) {
-        this.eTag = eTag;
+    public void setMD5Hash(String md5) {
+        this.md5 = md5;
     }
 
     @Override

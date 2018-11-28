@@ -12,6 +12,7 @@ import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.Selectors;
 import org.apache.commons.vfs2.provider.AbstractFileSystem;
+import org.assertj.core.api.AssertDelegateTarget;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -81,7 +82,18 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         assertEquals(((S3FileObject) file).getSSEAlgorithm(), of(AES_256_SERVER_SIDE_ENCRYPTION));
     }
 
-    @Test(expectedExceptions={FileSystemException.class})
+    @Test(dependsOnMethods = {"createFileOk"}, expectedExceptions = { FileSystemException.class })
+    public void checkLastModified() throws FileSystemException {
+        file = resolveFile("/test-place/%s", fileName);
+
+        assertTrue(file.exists());
+
+        assertTrue(file.getContent().getLastModifiedTime() > 0);
+
+        file.getContent().setLastModifiedTime(111L);
+    }
+
+    @Test(expectedExceptions = { FileSystemException.class })
     public void createFileFailed() throws FileSystemException {
         FileObject tmpFile = vfs.resolveFile("s3://../new-mpoint/vfs-bad-file");
         tmpFile.createFile();
@@ -541,12 +553,8 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
         for (int i = 0; i < files.length; i++) {
             if (files[i].getType() == FileType.FILE) {
-                // FIXME Should work without it!!!!
-                files[i].refresh();
-                filesCopy[i].refresh();
-
-                assertEquals(((S3FileObject) files[i]).getSSEAlgorithm(), empty());
-                assertEquals(((S3FileObject) filesCopy[i]).getSSEAlgorithm(), of(AES_256_SERVER_SIDE_ENCRYPTION));
+                assertThat(new FileObjectAssert(files[i])).noSSEAlgorithm();
+                assertThat(new FileObjectAssert(filesCopy[i])).hasAES256Algorithm();
             }
         }
     }
@@ -611,6 +619,22 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
             } catch (Exception e) {
                 System.err.println("Unable to close input stream of hash candidate: " + e);
             }
+        }
+    }
+
+    private static class FileObjectAssert implements AssertDelegateTarget {
+        private final S3FileObject file;
+
+        public FileObjectAssert(FileObject file) {
+            this.file = (S3FileObject) file;
+        }
+
+        public void noSSEAlgorithm() throws FileSystemException {
+            assertThat(file.getSSEAlgorithm()).isEqualTo(empty());
+        }
+
+        public void hasAES256Algorithm() throws FileSystemException {
+            assertThat(file.getSSEAlgorithm()).isEqualTo(of(AES_256_SERVER_SIDE_ENCRYPTION));
         }
     }
 }
