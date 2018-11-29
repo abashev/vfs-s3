@@ -299,11 +299,6 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     }
 
     @Override
-    protected boolean doSetLastModifiedTime(long modtime) throws Exception {
-        return false;
-    }
-
-    @Override
     protected InputStream doGetInputStream() throws Exception {
         return downloadOnce().getInputStream();
     }

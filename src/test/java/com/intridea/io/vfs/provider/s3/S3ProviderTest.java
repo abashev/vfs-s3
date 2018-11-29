@@ -45,6 +45,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 import static org.testng.internal.junit.ArrayAsserts.assertArrayEquals;
 
 public class S3ProviderTest extends AbstractS3FileSystemTest {
@@ -409,7 +410,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         try {
             sourceFile.moveTo(sourceFile);
 
-            assertTrue(false); // Should block copy into itself
+            fail("Should block copy into itself");
         } catch (FileSystemException ignored) {
         }
     }
