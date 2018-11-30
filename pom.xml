@@ -4,12 +4,21 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.vfss3</groupId>
+    <groupId>com.github.abashev</groupId>
     <artifactId>vfs-s3</artifactId>
     <packaging>jar</packaging>
     <version>3.0.0-SNAPSHOT</version>
 
-    <name>vfs-s3</name>
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>Amazon S3 driver for VFS (Apache Commons Virtual File System)</description>
+    <url>https://github.com/abashev/vfs-s3</url>
+
+    <developers>
+        <developer>
+            <name>Alexey Abashev</name>
+            <email>alexey@abashev.ru</email>
+        </developer>
+    </developers>
 
     <licenses>
         <license>
@@ -22,13 +31,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <test.fork.count>1</test.fork.count>
-
-        <!-- allow runtime customization of repository -->
-        <vfs-s3-repo-id>bintray-abashev-vfs-s3-vfs-s3</vfs-s3-repo-id>
-        <vfs-s3-repo-name>abashev-vfs-s3-vfs-s3</vfs-s3-repo-name>
-        <vfs-s3-repo-url>https://api.bintray.com/maven/abashev/vfs-s3/commons-vfs2/</vfs-s3-repo-url>
     </properties>
-
 
     <dependencies>
         <dependency>
@@ -119,33 +122,6 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>2.2.1</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.0</version>
-                <configuration>
-                    <failOnError>false</failOnError>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-scm-plugin</artifactId>
                 <version>1.9.4</version>
                 <configuration>
@@ -158,7 +134,7 @@
                 <version>2.5</version>
                 <configuration>
                     <includes>
-                        <include>com.github.abashev:commons-vfs2</include>
+                        <include>${project.groupId}:commons-vfs2</include>
                     </includes>
                 </configuration>
             </plugin>
@@ -186,39 +162,13 @@
         </plugins>
     </build>
 
-    <distributionManagement>
-        <repository>
-            <id>${vfs-s3-repo-id}</id>
-            <name>${vfs-s3-repo-name}</name>
-            <url>${vfs-s3-repo-url}</url>
-        </repository>
-    </distributionManagement>
-
-    <repositories>
-        <repository>
-            <id>${vfs-s3-repo-id}</id>
-            <name>${vfs-s3-repo-name}</name>
-            <url>${vfs-s3-repo-url}</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
     <scm>
-        <connection>scm:git:git@github.com:abashev/vfs-s3.git</connection>
+        <connection>scm:git:git://github.com/abashev/vfs-s3.git</connection>
+        <developerConnection>scm:git:ssh://github.com:abashev/vfs-s3.git</developerConnection>
+        <url>https://github.com/abashev/vfs-s3</url>
     </scm>
 
     <profiles>
-        <profile>
-            <id>stock-vfs</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <commons-vfs2.version>2.1</commons-vfs2.version>
-            </properties>
-        </profile>
         <profile>
             <id>surefire-debug</id>
             <activation>
@@ -227,6 +177,78 @@
             <properties>
                 <test.fork.count>0</test.fork.count>
             </properties>
+        </profile>
+        <profile>
+            <id>release</id>
+            <properties>
+                <vfs-s3-snapshot-repository>https://oss.sonatype.org/content/repositories/snapshots</vfs-s3-snapshot-repository>
+                <vfs-s3-release-repository>https://oss.sonatype.org/service/local/staging/deploy/maven2</vfs-s3-release-repository>
+            </properties>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>vfs-s3-repository</id>
+                    <url>${vfs-s3-snapshot-repository}</url>
+                </snapshotRepository>
+                <repository>
+                    <id>vfs-s3-repository</id>
+                    <url>${vfs-s3-release-repository}</url>
+                </repository>
+            </distributionManagement>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.2.1</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <configuration>
+                            <failOnError>false</failOnError>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.5</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.7</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>vfs-s3-repository</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

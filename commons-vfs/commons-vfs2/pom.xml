@@ -27,7 +27,7 @@
   <url>http://commons.apache.org/proper/commons-vfs/</url>
 
   <parent>
-    <groupId>com.github.vfss3</groupId>
+    <groupId>com.github.abashev</groupId>
     <artifactId>commons-vfs2-project</artifactId>
     <version>2.2-SNAPSHOT</version>
     <relativePath>../</relativePath>

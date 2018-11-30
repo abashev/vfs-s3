@@ -25,7 +25,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.github.vfss3</groupId>
+  <groupId>com.github.abashev</groupId>
   <artifactId>commons-vfs2-project</artifactId>
   <name>Apache Commons VFS Project</name>
   <description>Apache Commons VFS is a Virtual File System library.</description>
@@ -173,11 +173,6 @@
     <dependency.locations.enabled>false</dependency.locations.enabled>
     <hadoop.version>2.6.0</hadoop.version>
 
-    <!-- allow runtime customization of repository -->
-    <vfs-s3-repo-id>bintray-abashev-vfs-s3-vfs-s3</vfs-s3-repo-id>
-    <vfs-s3-repo-name>abashev-vfs-s3-vfs-s3</vfs-s3-repo-name>
-    <vfs-s3-repo-url>https://api.bintray.com/maven/abashev/vfs-s3/commons-vfs2/</vfs-s3-repo-url>
-
   </properties>
 
   <build>
@@ -272,18 +267,6 @@
           </excludes>
         </configuration>
       </plugin>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <version>2.2.1</version>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>jar</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
     </plugins>
   </build>
 
@@ -573,11 +556,6 @@
       <name>Apache Commons Site</name>
       <url>scm:svn:${commons.scmPubUrl}</url>
     </site>
-    <repository>
-      <id>${vfs-s3-repo-id}</id>
-      <name>${vfs-s3-repo-name}</name>
-      <url>${vfs-s3-repo-url}</url>
-    </repository>
   </distributionManagement>
 
   <!-- Releasing VFS as a multi-module build with binary artifacts is somewhat painful. This profile hooks into the commons-parent
@@ -591,6 +569,20 @@
     </profile>
     <profile>
       <id>release</id>
+      <properties>
+        <vfs-s3-snapshot-repository>https://oss.sonatype.org/content/repositories/snapshots</vfs-s3-snapshot-repository>
+        <vfs-s3-release-repository>https://oss.sonatype.org/service/local/staging/deploy/maven2</vfs-s3-release-repository>
+      </properties>
+      <distributionManagement>
+        <snapshotRepository>
+          <id>vfs-s3-repository</id>
+          <url>${vfs-s3-snapshot-repository}</url>
+        </snapshotRepository>
+        <repository>
+          <id>vfs-s3-repository</id>
+          <url>${vfs-s3-release-repository}</url>
+        </repository>
+      </distributionManagement>
       <build>
         <plugins>
           <plugin>
@@ -604,10 +596,60 @@
               </execution>
             </executions>
           </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>2.2.1</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.0.0</version>
+            <configuration>
+              <failOnError>false</failOnError>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.5</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <version>1.6.7</version>
+            <extensions>true</extensions>
+            <configuration>
+              <serverId>vfs-s3-repository</serverId>
+              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+            </configuration>
+          </plugin>
         </plugins>
       </build>
     </profile>
-
   </profiles>
 
 </project>
