@@ -1,7 +1,6 @@
 package com.github.vfss3;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.apache.commons.vfs2.Capability;
@@ -61,7 +60,7 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
 
         final AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().
                 withClientConfiguration(clientConfiguration).
-                withCredentials(new DefaultAWSCredentialsProviderChain());
+                withCredentials(options.getCredentialsProvider());
 
         if (options.isDisableChunkedEncoding()) {
             clientBuilder.disableChunkedEncoding();
@@ -78,7 +77,6 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
         }
 
         endpoint.append(file.getHostAndPort());
-
 
         clientBuilder.withEndpointConfiguration(new EndpointConfiguration(
                 endpoint.toString(),

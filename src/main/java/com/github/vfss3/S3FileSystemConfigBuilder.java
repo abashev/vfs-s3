@@ -1,6 +1,8 @@
 package com.github.vfss3;
 
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemConfigBuilder;
 import org.apache.commons.vfs2.FileSystemOptions;
@@ -16,11 +18,11 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final String SERVER_SIDE_ENCRYPTION   = "serverSideEncryption";
     private static final String CLIENT_CONFIGURATION     = "clientConfiguration";
     private static final String MAX_UPLOAD_THREADS       = "maxUploadThreads";
-    private static final String DISABLE_BUCKET_TEST      = "disableBucketTest";
     private static final String PER_FILE_LOCKING         = "perFileLocking";
     private static final String DISABLE_CHUNKED_ENCODING = "disableChunkedEncoding"; // Useful for localstack
-    private static final String USE_HTTPS                = "useHttps"; // Useful for localstack
+    private static final String USE_HTTPS                = "useHttps";               // Useful for localstack
     private static final String CREATE_BUCKET            = "createBucket";
+    private static final String CREDENTIALS_PROVIDER     = "credentialsProvider";
 
     private static final int DEFAULT_MAX_UPLOAD_THREADS = 2;
     private static final int DEFAULT_MAX_ERROR_RETRY = 8;
@@ -208,5 +210,29 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
 
         builder.setOption(opts, CREATE_BUCKET, createBucket);
+    }
+
+    /**
+     * Get credentials provider for a file system - DefaultAWSCredentialsProviderChain by default
+     *
+     * @return
+     */
+    public AWSCredentialsProvider getCredentialsProvider(FileSystemOptions opts) {
+        S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+        AWSCredentialsProvider provider = (AWSCredentialsProvider) builder.getOption(opts, CREDENTIALS_PROVIDER);
+
+        return (provider != null) ? provider : (new DefaultAWSCredentialsProviderChain());
+    }
+
+    /**
+     * Set credentials provider for a file system
+     *
+     * @param opts
+     * @param provider
+     */
+    public void setCredentialsProvider(FileSystemOptions opts, AWSCredentialsProvider provider) {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        builder.setOption(opts, CREDENTIALS_PROVIDER, provider);
     }
 }

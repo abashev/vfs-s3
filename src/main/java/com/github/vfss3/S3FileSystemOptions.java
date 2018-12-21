@@ -1,6 +1,7 @@
 package com.github.vfss3;
 
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import org.apache.commons.vfs2.FileSystemOptions;
 
 /**
@@ -164,6 +165,24 @@ public class S3FileSystemOptions {
      */
     public void setCreateBucket(boolean createBucket) {
         S3FileSystemConfigBuilder.getInstance().setCreateBucket(options, createBucket);
+    }
+
+    /**
+     * Get credentials provider for a file system - DefaultAWSCredentialsProviderChain by default
+     *
+     * @return
+     */
+    public AWSCredentialsProvider getCredentialsProvider() {
+        return S3FileSystemConfigBuilder.getInstance().getCredentialsProvider(options);
+    }
+
+    /**
+     * Set credentials provider for a file system
+     *
+     * @param provider
+     */
+    public void setCredentialsProvider(AWSCredentialsProvider provider) {
+        S3FileSystemConfigBuilder.getInstance().setCredentialsProvider(options, provider);
     }
 
     /**
