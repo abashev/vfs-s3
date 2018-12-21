@@ -19,6 +19,7 @@ import static com.amazonaws.SDKGlobalConfiguration.ACCESS_KEY_ENV_VAR;
 import static com.amazonaws.SDKGlobalConfiguration.ACCESS_KEY_SYSTEM_PROPERTY;
 import static com.amazonaws.SDKGlobalConfiguration.SECRET_KEY_ENV_VAR;
 import static com.amazonaws.SDKGlobalConfiguration.SECRET_KEY_SYSTEM_PROPERTY;
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.System.setProperty;
 
 /**
@@ -28,6 +29,9 @@ public abstract class AbstractS3FileSystemTest {
     private final Logger log = LoggerFactory.getLogger(AbstractS3FileSystemTest.class);
 
     private static final String BUCKET_PARAMETER = "AWS_TEST_BUCKET";
+    private static final String USE_HTTP = "USE_HTTPS";
+    private static final String CREATE_BUCKET = "CREATE_BUCKET";
+    private static final String DISABLE_CHUNKED_ENCODING = "DISABLE_CHUNKED_ENCODING";
 
     protected FileSystemManager vfs;
     protected FileObject bucket;
@@ -53,7 +57,13 @@ public abstract class AbstractS3FileSystemTest {
         String bucketId = configuration.get(BUCKET_PARAMETER).
                 orElseThrow(() -> new IllegalStateException(BUCKET_PARAMETER + " should present in environment configuration"));
 
-        this.bucket = vfs.resolveFile("s3://" + bucketId);
+        final S3FileSystemOptions options = new S3FileSystemOptions();
+
+        configuration.computeIfPresent(USE_HTTP, v -> options.setUseHttps(parseBoolean(v)));
+        configuration.computeIfPresent(CREATE_BUCKET, v -> options.setCreateBucket(parseBoolean(v)));
+        configuration.computeIfPresent(DISABLE_CHUNKED_ENCODING, v -> options.setDisableChunkedEncoding(parseBoolean(v)));
+
+        this.bucket = vfs.resolveFile("s3://" + bucketId, options.toFileSystemOptions());
     }
 
     @AfterClass
