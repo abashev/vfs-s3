@@ -1,6 +1,8 @@
 package com.intridea.io.vfs.support;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.github.vfss3.S3FileSystemOptions;
 import org.apache.commons.vfs2.FileObject;
@@ -16,11 +18,8 @@ import java.io.File;
 import java.io.IOException;
 
 import static com.amazonaws.SDKGlobalConfiguration.ACCESS_KEY_ENV_VAR;
-import static com.amazonaws.SDKGlobalConfiguration.ACCESS_KEY_SYSTEM_PROPERTY;
 import static com.amazonaws.SDKGlobalConfiguration.SECRET_KEY_ENV_VAR;
-import static com.amazonaws.SDKGlobalConfiguration.SECRET_KEY_SYSTEM_PROPERTY;
 import static java.lang.Boolean.parseBoolean;
-import static java.lang.System.setProperty;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
@@ -38,31 +37,31 @@ public abstract class AbstractS3FileSystemTest {
 
     @BeforeClass
     public final void initVFS() throws IOException {
+        final S3FileSystemOptions options = new S3FileSystemOptions();
+        EnvironmentConfiguration configuration = new EnvironmentConfiguration();
+
         // Try to load access and secret key from environment
         try {
             if ((new EnvironmentVariableCredentialsProvider()).getCredentials() != null) {
                 log.info("Will use AWS credentials from environment variables");
+            } else {
+                configuration.computeIfPresent(
+                        ACCESS_KEY_ENV_VAR,
+                        SECRET_KEY_ENV_VAR,
+                        (access, secret) -> options.setCredentialsProvider(new AWSStaticCredentialsProvider(new BasicAWSCredentials(access, secret))));
             }
         } catch (AmazonClientException e) {
             log.info("Not able to load credentials from environment - try .envrc file");
         }
 
-        EnvironmentConfiguration configuration = new EnvironmentConfiguration();
-
-        configuration.computeIfPresent(ACCESS_KEY_ENV_VAR, v -> setProperty(ACCESS_KEY_SYSTEM_PROPERTY, v));
-        configuration.computeIfPresent(SECRET_KEY_ENV_VAR, v -> setProperty(SECRET_KEY_SYSTEM_PROPERTY, v));
-
-        this.vfs = VFS.getManager();
-
         String bucketId = configuration.get(BUCKET_PARAMETER).
                 orElseThrow(() -> new IllegalStateException(BUCKET_PARAMETER + " should present in environment configuration"));
-
-        final S3FileSystemOptions options = new S3FileSystemOptions();
 
         configuration.computeIfPresent(USE_HTTP, v -> options.setUseHttps(parseBoolean(v)));
         configuration.computeIfPresent(CREATE_BUCKET, v -> options.setCreateBucket(parseBoolean(v)));
         configuration.computeIfPresent(DISABLE_CHUNKED_ENCODING, v -> options.setDisableChunkedEncoding(parseBoolean(v)));
 
+        this.vfs = VFS.getManager();
         this.bucket = vfs.resolveFile("s3://" + bucketId, options.toFileSystemOptions());
     }
 

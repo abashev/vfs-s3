@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -91,5 +92,14 @@ class EnvironmentConfiguration {
 
     public void computeIfPresent(String key, Consumer<String> valueConsumer) {
         get(key).ifPresent(valueConsumer);
+    }
+
+    public void computeIfPresent(String key1, String key2, BiConsumer<String, String> valueConsumer) {
+        Optional<String> val1 = get(key1);
+        Optional<String> val2 = get(key2);
+
+        if (val1.isPresent() && val2.isPresent()) {
+            valueConsumer.accept(val1.get(), val2.get());
+        }
     }
 }
