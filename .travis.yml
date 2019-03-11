@@ -10,8 +10,9 @@ jdk:
   - oraclejdk11
 
 env:
-  global:
   - AWS_TEST_BUCKET=s3-tests.s3-eu-west-1.amazonaws.com
+  - AWS_TEST_BUCKET=s3.eu-central-1.amazonaws.com/s3-tests-2
+  - AWS_TEST_BUCKET=s3.amazonaws.com/s3-tests-3
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

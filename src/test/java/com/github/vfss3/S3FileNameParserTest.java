@@ -40,6 +40,11 @@ public class S3FileNameParserTest {
                 hasPathPrefix("bucket").
                 hasType(IMAGINARY);
 
+        assertThat(parse("s3://s3.eu-west-1.amazonaws.com/bucket")).
+                hasHostAndPort("s3.eu-west-1.amazonaws.com").
+                hasPathPrefix("bucket").
+                hasType(IMAGINARY);
+
         assertThat(parse("s3://s3-eu-west-1.amazonaws.com/bucket/gggg")).
                 hasHostAndPort("s3-eu-west-1.amazonaws.com").
                 hasPathPrefix("bucket").
@@ -48,6 +53,12 @@ public class S3FileNameParserTest {
 
         assertThat(parse("s3://s3-eu-west-1.amazonaws.com/bucket/concurrent/")).
                 hasHostAndPort("s3-eu-west-1.amazonaws.com").
+                hasPathPrefix("bucket").
+                hasType(IMAGINARY).
+                hasPath("/concurrent");
+
+        assertThat(parse("s3://s3.eu-central-1.amazonaws.com/bucket/concurrent/")).
+                hasHostAndPort("s3.eu-central-1.amazonaws.com").
                 hasPathPrefix("bucket").
                 hasType(IMAGINARY).
                 hasPath("/concurrent");

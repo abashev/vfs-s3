@@ -28,7 +28,7 @@ import static org.apache.commons.vfs2.FileType.IMAGINARY;
 public class S3FileNameParser extends AbstractFileNameParser {
     private final Logger log = LoggerFactory.getLogger(S3FileNameParser.class);
 
-    private static final Pattern HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3-?(?<region>[a-z0-9\\-]*)\\.amazonaws\\.com");
+    private static final Pattern HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3[-.]((?<region>[a-z0-9\\-]+)\\.)?amazonaws\\.com");
 
     private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
 
