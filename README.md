@@ -59,6 +59,9 @@ For running tests you need active credentials for AWS. You can specify them as
 - [x] Submit artifacts to Maven central
 - [ ] Merge changes into `commons-vfs` project
 - [ ] Add ability to work with vanilla `commons-vfs`
+- [ ] Support commons-vfs as forked submodule 
+- [ ] Add support for Yandex cloud
+- [ ] Shadow all dependencies inside vfs-s3 artifact
 
 ### Old releases 
 
