@@ -13,7 +13,7 @@ Amazon S3 driver for VFS (Apache Commons Virtual File System)
     <dependency>
         <groupId>com.github.abashev</groupId>
         <artifactId>vfs-s3</artifactId>
-        <version>3.0.0.RC2</version>
+        <version>3.0.0</version>
     </dependency>
 
 _Please be aware that vfs-s3 is using custom build of commons-vfs2. It works in the same way as original commons-vfs2 but it was patched to fix some concurrency issues._
@@ -21,7 +21,7 @@ _Please be aware that vfs-s3 is using custom build of commons-vfs2. It works in 
 ### How to add as dependency into your Gradle build
     
     implementation 'com.github.abashev:commons-vfs2:2.2-20181130'
-    implementation 'com.github.abashev:vfs-s3:3.0.0.RC2'
+    implementation 'com.github.abashev:vfs-s3:3.0.0'
 
 ### Sample Java Code
 
