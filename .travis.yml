@@ -1,13 +1,19 @@
 language: java
 sudo: false
 install: true
-script:
-  - cd commons-vfs && mvn -B install -DskipTests && cd .. && mvn -B verify
 
 jdk:
   - openjdk8
-  - oraclejdk8
+  - openjdk11
+  - openjdk12
+  #  - openjdk13
+  - openjdk-ea
+  #  - oraclejdk8
   - oraclejdk11
+
+matrix:
+  allow_failures:
+    - jdk: openjdk-ea
 
 env:
   - AWS_TEST_BUCKET=s3-tests.s3-eu-west-1.amazonaws.com
@@ -15,5 +21,5 @@ env:
   - AWS_TEST_BUCKET=s3.amazonaws.com/s3-tests-3
 
 after_success:
+  - mvn -V -B -e jacoco:report
   - bash <(curl -s https://codecov.io/bash)
-  

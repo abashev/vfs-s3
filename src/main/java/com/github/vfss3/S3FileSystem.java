@@ -3,21 +3,21 @@ package com.github.vfss3;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.transfer.TransferManager;
 import org.apache.commons.vfs2.Capability;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileSystem;
+import org.apache.commons.vfs2.provider.LockByFileStrategyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.Optional;
 
 import static com.amazonaws.services.s3.internal.Constants.BUCKET_ACCESS_FORBIDDEN_STATUS_CODE;
 import static com.amazonaws.services.s3.internal.Constants.BUCKET_REDIRECT_STATUS_CODE;
 import static com.amazonaws.services.s3.internal.Constants.NO_SUCH_BUCKET_STATUS_CODE;
-import static java.util.Optional.empty;
 
 /**
  * An S3 file system.
@@ -29,30 +29,18 @@ import static java.util.Optional.empty;
 public class S3FileSystem extends AbstractFileSystem {
     private final Logger log = LoggerFactory.getLogger(S3FileSystem.class);
 
-    private static final Optional<Capability> PER_FILE_THREAD_LOCKING_CAPABILITY = discoverPerFileThreadLockingCapability();
-
     private AmazonS3 service;
+    private TransferManager transferManager;
     private final Bucket bucket;
 
-    private final boolean perFileLocking;
-
-    public S3FileSystem(
-            String bucketId, S3FileName fileName, AmazonS3 service, S3FileSystemOptions options
+    S3FileSystem(
+            String bucketId, S3FileName fileName, S3FileSystemOptions options,
+            TransferManager transferManager
     ) throws FileSystemException {
-        super(fileName, null, options.toFileSystemOptions());
+        super(fileName, null, options.toFileSystemOptions(), new LockByFileStrategyFactory());
 
-        boolean perFileLocking =  false;
-
-        if (PER_FILE_THREAD_LOCKING_CAPABILITY.isPresent()) {
-            // if available and option not specified, then default to on
-            perFileLocking = options.isPerFileLocking();
-        } else if (options.isPerFileLocking()) {
-            // if not available and option requested spit out a warning
-            log.warn("per-file locking requested, but requires custom build of commons-vfs2. Falling back to per-filesystem locking");
-        }
-
-        this.perFileLocking = perFileLocking;
-        this.service = service;
+        this.transferManager = transferManager;
+        this.service = transferManager.getAmazonS3Client();
 
         log.info(
                 "Init new S3 FileSystem [bucket={},fileName={},opts={}]",
@@ -81,18 +69,18 @@ public class S3FileSystem extends AbstractFileSystem {
     @Override
     protected void addCapabilities(Collection<Capability> caps) {
         caps.addAll(S3FileProvider.capabilities);
-
-        if (perFileLocking && PER_FILE_THREAD_LOCKING_CAPABILITY.isPresent()) {
-            caps.add(PER_FILE_THREAD_LOCKING_CAPABILITY.get());
-        }
     }
 
-    protected Bucket getBucket() {
+    Bucket getBucket() {
         return bucket;
     }
 
-    protected AmazonS3 getService() {
+    AmazonS3 getService() {
         return service;
+    }
+
+    TransferManager getTransferManager() {
+        return transferManager;
     }
 
     @Override
@@ -104,15 +92,12 @@ public class S3FileSystem extends AbstractFileSystem {
 
     @Override
     protected void doCloseCommunicationLink() {
-        if (service != null) {
-            service.shutdown();
+        if (transferManager != null) {
+            transferManager.shutdownNow(true);
 
             service = null;
+            transferManager = null;
         }
-    }
-
-    public boolean isPerFileLocking() {
-        return perFileLocking;
     }
 
     /**
@@ -142,18 +127,6 @@ public class S3FileSystem extends AbstractFileSystem {
 
             // Unknown exception
             throw new FileSystemException(e);
-        }
-    }
-
-    /**
-     * Discovers if Capability.PER_FILE_THREAD_LOCKING is available
-     * @return Capability.PER_FILE_THREAD_LOCKING if it is available, null otherwise
-     */
-    private static Optional<Capability> discoverPerFileThreadLockingCapability() {
-        try {
-            return Optional.of(Capability.valueOf("PER_FILE_THREAD_LOCKING"));
-        } catch (IllegalArgumentException e) {
-            return empty();
         }
     }
 }

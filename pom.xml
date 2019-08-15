@@ -37,7 +37,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>commons-vfs2</artifactId>
-            <version>2.2-SNAPSHOT</version>
+            <version>2.4.1.1</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -146,13 +146,6 @@
                     <execution>
                         <goals>
                             <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>report</goal>
                         </goals>
                     </execution>
                 </executions>

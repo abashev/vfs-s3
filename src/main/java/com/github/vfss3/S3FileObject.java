@@ -55,9 +55,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -226,34 +223,30 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     }
 
     protected void doAttach(FileType type, ObjectMetadataHolder metadata) throws FileSystemException {
-        synchronized(monitorLock()) {
-            if (objectMetadataHolder != null) {
-                throw new FileSystemException("Try to reattach file " + getName() + " without detach");
-            }
+        if (objectMetadataHolder != null) {
+            throw new FileSystemException("Try to reattach file " + getName() + " without detach");
+        }
 
-            objectMetadataHolder = requireNonNull(metadata);
+        objectMetadataHolder = requireNonNull(metadata);
 
-            if (type != null) {
-                injectType(type);
-            }
+        if (type != null) {
+            injectType(type);
         }
     }
 
     // avoid calling internally because it only partially detaches and is not thread safe by itself, call detachInternal() instead
     @Override
     protected void doDetach() throws FileSystemException {
-        synchronized (monitorLock()) {
-            if (objectMetadataHolder == null) {
-                throw new FileSystemException("Try to detach file " + getName() + " without attach");
-            }
-
-            log.debug("Detach [{}]", getName());
-
-            objectMetadataHolder = null;
-            fileOwner = null;
-
-            childCache.set(null);
+        if (objectMetadataHolder == null) {
+            throw new FileSystemException("Try to detach file " + getName() + " without attach");
         }
+
+        log.debug("Detach [{}]", getName());
+
+        objectMetadataHolder = null;
+        fileOwner = null;
+
+        childCache.set(null);
     }
 
     // should only be called when inputLock is locked
@@ -838,6 +831,11 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         return ((S3FileSystem) getFileSystem()).getService();
     }
 
+    @SuppressWarnings("WeakerAccess")
+    protected TransferManager getTransferManager() {
+        return ((S3FileSystem) getFileSystem()).getTransferManager();
+    }
+
     /**
      * Amazon S3 bucket
      */
@@ -1058,26 +1056,6 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     }
 
     /**
-     * Creates an executor service for use with a TransferManager. This allows us to control the maximum number
-     * of threads used because for the TransferManager default of 10 is way too many.
-     *
-     * @return an executor service
-     */
-    private ExecutorService createTransferManagerExecutorService() {
-        int maxThreads = (new S3FileSystemOptions(getFileSystem().getFileSystemOptions())).getMaxUploadThreads();
-        ThreadFactory threadFactory = new ThreadFactory() {
-            private int threadCount = 1;
-
-            public Thread newThread(Runnable r) {
-                Thread thread = new Thread(r);
-                thread.setName("s3-upload-" + getName().getBaseName() + "-" + threadCount++);
-                return thread;
-            }
-        };
-        return Executors.newFixedThreadPool(maxThreads, threadFactory);
-    }
-
-    /**
      * Uploads File to S3
      *
      * @param file the File
@@ -1103,13 +1081,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             if (file.length() < tmConfig.getMultipartUploadThreshold()) {
                 return getService().putObject(request).getETag();
             } else {
-                TransferManager transferManager = new TransferManager(getService(), createTransferManagerExecutorService());
-                try {
-                    Upload upload = transferManager.upload(request);
-                    return upload.waitForUploadResult().getETag();
-                } finally {
-                    transferManager.shutdownNow(false);
-                }
+                Upload upload = getTransferManager().upload(request);
+
+                return upload.waitForUploadResult().getETag();
             }
         } catch (InterruptedException e) {
             throw new InterruptedIOException();

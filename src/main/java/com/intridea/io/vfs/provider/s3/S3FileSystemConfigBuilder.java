@@ -92,24 +92,6 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     }
 
     /**
-     * Set maximum number of threads to use for a single large (16MB or more) upload
-     * @param opts The FileSystemOptions
-     * @param maxThread maximum number of threads to use for a single large (16MB or more) upload
-     */
-    public void setMaxUploadThreads(FileSystemOptions opts, int maxThread) {
-        new S3FileSystemOptions(opts, false).setMaxUploadThreads(maxThread);
-    }
-
-    /**
-     * Get maximum number of threads to use for a single large (16MB or more) upload
-     * @param opts The FileSystemOptions
-     * @return maximum number of threads to use for a single large (16MB or more) upload
-     */
-    public int getMaxUploadThreads(FileSystemOptions opts) {
-        return new S3FileSystemOptions(opts, false).getMaxUploadThreads();
-    }
-
-    /**
      * Set predefined AWSCredentials object with access and secret keys for accessing AWS.
      *
      * @param opts

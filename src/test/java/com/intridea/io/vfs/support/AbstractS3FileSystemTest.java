@@ -1,6 +1,7 @@
 package com.intridea.io.vfs.support;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
@@ -41,17 +42,21 @@ public abstract class AbstractS3FileSystemTest {
         EnvironmentConfiguration configuration = new EnvironmentConfiguration();
 
         // Try to load access and secret key from environment
+        AWSCredentials awsCredentials = null;
+
         try {
-            if ((new EnvironmentVariableCredentialsProvider()).getCredentials() != null) {
-                log.info("Will use AWS credentials from environment variables");
-            } else {
-                configuration.computeIfPresent(
-                        ACCESS_KEY_ENV_VAR,
-                        SECRET_KEY_ENV_VAR,
-                        (access, secret) -> options.setCredentialsProvider(new AWSStaticCredentialsProvider(new BasicAWSCredentials(access, secret))));
-            }
+            awsCredentials = (new EnvironmentVariableCredentialsProvider()).getCredentials();
         } catch (AmazonClientException e) {
             log.info("Not able to load credentials from environment - try .envrc file");
+        }
+
+        if (awsCredentials != null) {
+            log.info("Will use AWS credentials from environment variables");
+        } else {
+            configuration.computeIfPresent(
+                    ACCESS_KEY_ENV_VAR,
+                    SECRET_KEY_ENV_VAR,
+                    (access, secret) -> options.setCredentialsProvider(new AWSStaticCredentialsProvider(new BasicAWSCredentials(access, secret))));
         }
 
         String bucketId = configuration.get(BUCKET_PARAMETER).

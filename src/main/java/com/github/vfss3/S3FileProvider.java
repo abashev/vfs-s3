@@ -3,6 +3,7 @@ package com.github.vfss3;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.transfer.TransferManager;
 import org.apache.commons.vfs2.Capability;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileSystem;
@@ -10,10 +11,14 @@ import org.apache.commons.vfs2.FileSystemConfigBuilder;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.provider.AbstractOriginatingFileProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+
+import static com.amazonaws.services.s3.transfer.TransferManagerBuilder.standard;
 
 /**
  * An S3 file provider. Create an S3 file system out of an S3 file name. Also
@@ -24,6 +29,8 @@ import java.util.Collections;
  * @author Moritz Siuts
  */
 public class S3FileProvider extends AbstractOriginatingFileProvider {
+    private final Logger log = LoggerFactory.getLogger(S3FileProvider.class);
+
     final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
         Capability.CREATE,
         Capability.DELETE,
@@ -83,9 +90,13 @@ public class S3FileProvider extends AbstractOriginatingFileProvider {
                 parser.regionFromHost(file.getHostAndPort(), "us-east-1")
         ));
 
+        TransferManager transferManager = standard().
+                withS3Client(clientBuilder.build()).
+                build();
+
         final String bucket = file.getPathPrefix();
 
-        return (new S3FileSystem(bucket, file, clientBuilder.build(), options));
+        return (new S3FileSystem(bucket, file, options, transferManager));
     }
 
     /**

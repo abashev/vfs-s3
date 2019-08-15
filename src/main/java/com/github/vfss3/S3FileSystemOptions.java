@@ -84,42 +84,6 @@ public class S3FileSystemOptions {
     }
 
     /**
-     * Set maximum number of threads to use for a single large (16MB or more) upload
-     *
-     * @param maxUploadThreads maximum number of threads to use for a single large (16MB or more) upload
-     */
-    public void setMaxUploadThreads(int maxUploadThreads) {
-        S3FileSystemConfigBuilder.getInstance().setMaxUploadThreads(options, maxUploadThreads);
-    }
-
-    /**
-     * Get maximum number of threads to use for a single large (16MB or more) upload
-     *
-     * @return maximum number of threads to use for a single large (16MB or more) upload
-     */
-    public int getMaxUploadThreads() {
-        return S3FileSystemConfigBuilder.getInstance().getMaxUploadThreads(options);
-    }
-
-    /**
-     * Sets per-file locking.
-     *
-     * @param perFileLocking true if per-file locking should be used.
-     */
-    public void setPerFileLocking(boolean perFileLocking) {
-        S3FileSystemConfigBuilder.getInstance().setPerFileLocking(options, perFileLocking);
-    }
-
-    /**
-     * Gets per-file locking.
-     *
-     * @return true if per-file locking should be used.
-     */
-    public boolean isPerFileLocking() {
-        return S3FileSystemConfigBuilder.getInstance().getPerFileLocking(options);
-    }
-
-    /**
      * Set option to disable chunked encoding
      *
      * @param disableChunkedEncoding

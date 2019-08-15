@@ -228,8 +228,6 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
     public void uploadBigFile() throws IOException {
         S3FileSystemOptions fso = new S3FileSystemOptions();
 
-        fso.setMaxUploadThreads(10);
-
         FileObject dest = resolveFile(fso, "/%s", BIG_FILE);
 
         // Delete file if exists

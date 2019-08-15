@@ -14,17 +14,13 @@ import static java.util.Objects.requireNonNull;
  * The config builder for various AWS S3 configuration options.
  */
 public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
-
     private static final String SERVER_SIDE_ENCRYPTION   = "serverSideEncryption";
     private static final String CLIENT_CONFIGURATION     = "clientConfiguration";
-    private static final String MAX_UPLOAD_THREADS       = "maxUploadThreads";
-    private static final String PER_FILE_LOCKING         = "perFileLocking";
     private static final String DISABLE_CHUNKED_ENCODING = "disableChunkedEncoding"; // Useful for localstack
     private static final String USE_HTTPS                = "useHttps";               // Useful for localstack
     private static final String CREATE_BUCKET            = "createBucket";
     private static final String CREDENTIALS_PROVIDER     = "credentialsProvider";
 
-    private static final int DEFAULT_MAX_UPLOAD_THREADS = 2;
     private static final int DEFAULT_MAX_ERROR_RETRY = 8;
 
     private static final S3FileSystemConfigBuilder BUILDER = new S3FileSystemConfigBuilder();
@@ -102,46 +98,6 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         }
 
         return clientConfiguration;
-    }
-
-    /**
-     * Set maximum number of threads to use for a single large (16MB or more) upload
-     *
-     * @param maxUploadThreads maximum number of threads to use for a single large (16MB or more) upload
-     */
-    public void setMaxUploadThreads(FileSystemOptions opts, int maxUploadThreads) {
-        setOption(opts, MAX_UPLOAD_THREADS, maxUploadThreads);
-    }
-
-    /**
-     * Get maximum number of threads to use for a single large (16MB or more) upload
-     *
-     * @return maximum number of threads to use for a single large (16MB or more) upload
-     */
-    public int getMaxUploadThreads(FileSystemOptions opts) {
-        return getIntegerOption(opts, MAX_UPLOAD_THREADS, DEFAULT_MAX_UPLOAD_THREADS);
-    }
-
-    /**
-     * Sets per-file locking.
-     *
-     * @param perFileLocking true if per-file locking should be used.
-     */
-    public void setPerFileLocking(FileSystemOptions opts, boolean perFileLocking) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        builder.setOption(opts, PER_FILE_LOCKING, perFileLocking);
-    }
-
-    /**
-     * Gets per-file locking.
-     *
-     * @return true if per-file locking should be used.
-     */
-    public boolean getPerFileLocking(FileSystemOptions opts) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        return builder.getBooleanOption(opts, S3FileSystemConfigBuilder.PER_FILE_LOCKING, true);
     }
 
     /**
