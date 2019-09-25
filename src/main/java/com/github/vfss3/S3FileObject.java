@@ -29,7 +29,6 @@ import org.apache.commons.vfs2.FileSelector;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.Selectors;
-import org.apache.commons.vfs2.provider.AbstractFileObject;
 import org.apache.commons.vfs2.util.MonitorOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -263,10 +262,12 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
     @Override
     protected void doDelete() throws Exception {
-        getService().deleteObject(
-                getBucket().getName(),
-                getName().getS3Key().orElseThrow(() -> new FileSystemException("Can't delete whole bucket"))
-        );
+        final String bucket = getBucket().getName();
+        final String key = getName().getS3Key().orElseThrow(() -> new FileSystemException("Can't delete whole bucket"));
+
+        log.debug("Delete object [bucket={},name={}]", bucket, key);
+
+        getService().deleteObject(bucket, key);
     }
 
     @Override
@@ -275,7 +276,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
         log.debug("Create new folder in bucket [{}] with key [{}]", getBucket(), key);
 
-        if (objectMetadataHolder == null) {
+        if (!isAttached()) {
             throw new FileSystemException("Need to attach first");
         }
 
@@ -301,14 +302,10 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         if (outputInProgress.compareAndSet(false, true)) {
             try {
                 return new S3OutputStream(new S3TempFile());
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 outputInProgress.set(false);
 
-                if (t instanceof Exception) {
-                    throw (Exception) t;
-                } else {
-                    throw new Exception(t);
-                }
+                throw t;
             }
         } else {
             throw new IOException("File already open for writing");
@@ -392,7 +389,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             String stripPath = commonPrefix.substring(path.length());
             if (!stripPath.equals(ROOT_PATH)) {
                 FileObject childObject = resolveFile(stripPath, CHILD);
-                S3FileObject s3FileObject = (S3FileObject) getAbstractFileObject(childObject);
+                S3FileObject s3FileObject = (S3FileObject) FileObjectUtils.unwrap(childObject);
 
                 if (s3FileObject != null) {
                     s3FileObject.doAttachVirtualFolder();
@@ -407,7 +404,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 // strip path from name (leave only base name)
                 final String stripPath = summary.getKey().substring(path.length());
                 FileObject childObject = resolveFile(stripPath, CHILD);
-                S3FileObject s3FileObject = (S3FileObject) getAbstractFileObject(childObject);
+                S3FileObject s3FileObject = (S3FileObject) FileObjectUtils.unwrap(childObject);
 
                 if (s3FileObject != null) {
                     s3FileObject.doAttach(FILE, new ObjectMetadataHolder(summary));
@@ -913,15 +910,15 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         final ArrayList<FileObject> files = new ArrayList<>();
         file.findFiles(selector, false, files);
 
-        Map<AbstractFileObject, AbstractFileObject> filesToCopy = new HashMap<>();
+        Map<FileObject, FileObject> filesToCopy = new HashMap<>();
 
         // Copy everything across
         for (FileObject srcFile : files) {
-            final AbstractFileObject unwrappedSrcFile = getAbstractFileObject(srcFile);
+            final FileObject unwrappedSrcFile = FileObjectUtils.unwrap(srcFile);
             // Determine the destination file
             final String relPath = file.getName().getRelativeName(unwrappedSrcFile.getName());
             final FileObject destFile = resolveFile(relPath, DESCENDENT_OR_SELF);
-            final AbstractFileObject unwrappedDestFile = getAbstractFileObject(destFile);
+            final FileObject unwrappedDestFile = FileObjectUtils.unwrap(destFile);
 
             if (!allowS3Copy(unwrappedSrcFile, unwrappedDestFile)) {
                 log.warn(
@@ -937,15 +934,15 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             filesToCopy.put(unwrappedSrcFile, unwrappedDestFile);
         }
 
-        for (Map.Entry<AbstractFileObject, AbstractFileObject> entry : filesToCopy.entrySet()) {
-            final AbstractFileObject source = entry.getKey();
-            final AbstractFileObject destination = entry.getValue();
+        for (Map.Entry<FileObject, FileObject> entry : filesToCopy.entrySet()) {
+            final FileObject source = entry.getKey();
+            final FileObject destination = entry.getValue();
 
             doCopyFrom(source, destination);
         }
     }
 
-    protected boolean allowS3Copy(AbstractFileObject fromFile, AbstractFileObject toFile) throws FileSystemException {
+    protected boolean allowS3Copy(FileObject fromFile, FileObject toFile) throws FileSystemException {
         if (fromFile.getType().hasChildren()) {
             return true;
         } else if ((fromFile instanceof S3FileObject) && (toFile instanceof S3FileObject)) {
@@ -969,7 +966,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
      * @return was it success?? - false - need to fallback to default implementation
      * @throws FileSystemException
      */
-    protected boolean doCopyFrom(AbstractFileObject fromFile, AbstractFileObject toFile) throws FileSystemException {
+    protected boolean doCopyFrom(FileObject fromFile, FileObject toFile) throws FileSystemException {
         log.debug("Do S3 copy [from={},to={}]", fromFile, toFile);
 
         // Clean up the destination file, if necessary

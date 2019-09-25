@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 /**
@@ -28,6 +29,9 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
     @BeforeClass
     public void setUp() throws IOException {
         resolveFile("/concurrent/").createFolder();
+        resolveFile("/read-deadlock/").createFolder();
+        resolveFile("/read-deadlock/file1").createFile();
+        resolveFile("/read-deadlock/file2").createFile();
     }
 
     @Test(invocationCount = 200, threadPoolSize = 10)
@@ -51,6 +55,19 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
         file.refresh();
 
         assertFalse(file.exists());
+    }
+
+    @Test(invocationCount = 200, threadPoolSize = 10)
+    public void checkReadDeadlock() throws FileSystemException {
+        FileObject file = resolveFile("/read-deadlock");
+
+        assertNotNull(file.getParent());
+
+        file.refresh();
+
+        assertNotNull(file.getChildren());
+
+        assertTrue(file.exists());
     }
 
     @Test

@@ -5,11 +5,9 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import org.apache.commons.vfs2.Capability;
+import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.provider.AbstractFileName;
-import org.apache.commons.vfs2.provider.AbstractFileSystem;
-import org.apache.commons.vfs2.provider.LockByFileStrategyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +35,7 @@ public class S3FileSystem extends AbstractFileSystem {
             String bucketId, S3FileName fileName, S3FileSystemOptions options,
             TransferManager transferManager
     ) throws FileSystemException {
-        super(fileName, null, options.toFileSystemOptions(), new LockByFileStrategyFactory());
+        super(fileName, null, options.toFileSystemOptions());
 
         this.transferManager = transferManager;
         this.service = transferManager.getAmazonS3Client();
@@ -84,7 +82,7 @@ public class S3FileSystem extends AbstractFileSystem {
     }
 
     @Override
-    protected FileObject createFile(AbstractFileName fileName) throws Exception {
+    protected FileObject createFile(FileName fileName) throws Exception {
         S3FileObject s3FileObject = new S3FileObject((S3FileName) fileName, this);
 
         return s3FileObject;

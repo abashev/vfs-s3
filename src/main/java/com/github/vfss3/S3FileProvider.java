@@ -10,7 +10,6 @@ import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemConfigBuilder;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileSystemOptions;
-import org.apache.commons.vfs2.provider.AbstractOriginatingFileProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

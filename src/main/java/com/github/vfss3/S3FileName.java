@@ -18,7 +18,6 @@ package com.github.vfss3;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
-import org.apache.commons.vfs2.provider.AbstractFileName;
 
 import java.util.Optional;
 

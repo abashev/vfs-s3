@@ -226,9 +226,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods={"createFileOk"})
     public void uploadBigFile() throws IOException {
-        S3FileSystemOptions fso = new S3FileSystemOptions();
-
-        FileObject dest = resolveFile(fso, "/%s", BIG_FILE);
+        FileObject dest = resolveFile("/%s", BIG_FILE);
 
         // Delete file if exists
         if (dest.exists()) {
@@ -247,6 +245,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         assertTrue(dest.exists(), "Destination file should be on place");
         assertEquals(dest.getType(), FileType.FILE);
         assertEquals(src.getContent().getSize(), dest.getContent().getSize());
+        assertEquals(63963136, dest.getContent().getSize());
     }
 
     @Test(dependsOnMethods={"createFileOk"})
