@@ -47,6 +47,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Objects.requireNonNull;
@@ -535,4 +536,17 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
         return openStreams.get() > 0;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AbstractFileSystem that = (AbstractFileSystem) o;
+        return rootName.equals(that.rootName) &&
+                fileSystemOptions.equals(that.fileSystemOptions);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(rootName, fileSystemOptions);
+    }
 }
