@@ -26,7 +26,7 @@ import static java.lang.Boolean.parseBoolean;
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
 public abstract class AbstractS3FileSystemTest {
-    private final Logger log = LoggerFactory.getLogger(AbstractS3FileSystemTest.class);
+    protected final Logger log = LoggerFactory.getLogger(AbstractS3FileSystemTest.class);
 
     private static final String BUCKET_PARAMETER = "AWS_TEST_BUCKET";
     private static final String USE_HTTP = "USE_HTTPS";

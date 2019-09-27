@@ -26,7 +26,7 @@ import org.apache.commons.vfs2.provider.UriParser;
 /**
  * A default file name implementation.
  */
-public abstract class AbstractFileName implements FileName {
+abstract class AbstractFileName implements FileName {
 
     // URI Characters that are possible in local file names, but must be escaped
     // for proper URI handling.

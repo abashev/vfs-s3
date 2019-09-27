@@ -55,8 +55,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.commons.vfs2.FileType.FILE;
 import static org.apache.commons.vfs2.FileType.FOLDER;
@@ -143,12 +141,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
     private FileOperations operations;
 
     /**
-     * Special access lock from file system to protect concurrent access. Could be
-     * file-system global or file-based
-     */
-    protected final Lock accessLock = new ReentrantLock();
-
-    /**
      *
      * @param name the file name - muse be an instance of {@link AbstractFileName}
      * @param fileSystem the file system
@@ -167,43 +159,37 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      * @throws FileSystemException if an error occurs.
      */
     protected final void attach() throws FileSystemException {
-        accessLock.lock();
+        if (isAttached()) {
+            return;
+        }
 
         try {
-            if (isAttached()) {
-                return;
-            }
+            // Attach and determine the file type
+            doAttach();
 
-            try {
-                // Attach and determine the file type
-                doAttach();
+            setAttached(true);
+            // now the type could already be injected by doAttach (e.g from parent to child)
 
-                setAttached(true);
-                // now the type could already be injected by doAttach (e.g from parent to child)
+            // Locate the parent of this file
+            if (parent == null) {
+                final FileName name = fileName.getParent();
 
-                // Locate the parent of this file
-                if (parent == null) {
-                    final FileName name = fileName.getParent();
-
-                    if (name == null) {
-                        parent = null;
-                    } else {
-                        parent = fileSystem.resolveFile(name);
-                    }
+                if (name == null) {
+                    setParent(null);
+                } else {
+                    setParent(fileSystem.resolveFile(name));
                 }
-
-                /*
-                 * VFS-210: determine the type when really asked fore if (type == null) { setFileType(doGetType()); } if
-                 * (type == null) { setFileType(FileType.IMAGINARY); }
-                 */
-            } catch (Exception exc) {
-                throw new FileSystemException("vfs.provider/get-type.error", exc, fileName);
             }
 
-            // fs.fileAttached(this);
-        } finally {
-            accessLock.unlock();
+            /*
+             * VFS-210: determine the type when really asked fore if (type == null) { setFileType(doGetType()); } if
+             * (type == null) { setFileType(FileType.IMAGINARY); }
+             */
+        } catch (Exception exc) {
+            throw new FileSystemException("vfs.provider/get-type.error", exc, fileName);
         }
+
+        // fs.fileAttached(this);
     }
 
     /**
@@ -252,31 +238,25 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
     public void close() throws FileSystemException {
         FileSystemException exc = null;
 
-        accessLock.lock();
-
-        try {
-            // Close the content
-            if (content != null) {
-                try {
-                    content.close();
-                    content = null;
-                } catch (final FileSystemException e) {
-                    exc = e;
-                }
-            }
-
-            // Detach from the file
+        // Close the content
+        if (content != null) {
             try {
-                detach();
-            } catch (final Exception e) {
-                exc = new FileSystemException("vfs.provider/close.error", fileName, e);
+                content.close();
+                content = null;
+            } catch (final FileSystemException e) {
+                exc = e;
             }
+        }
 
-            if (exc != null) {
-                throw exc;
-            }
-        } finally {
-            accessLock.unlock();
+        // Detach from the file
+        try {
+            detach();
+        } catch (final Exception e) {
+            exc = new FileSystemException("vfs.provider/close.error", fileName, e);
+        }
+
+        if (exc != null) {
+            throw exc;
         }
     }
 
@@ -346,8 +326,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      */
     @Override
     public void createFile() throws FileSystemException {
-        accessLock.lock();
-
         try {
             // VFS-210: We do not want to trunc any existing file, checking for its existence is
             // still required
@@ -363,8 +341,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
             throw re;
         } catch (final Exception e) {
             throw new FileSystemException("vfs.provider/create-file.error", fileName, e);
-        } finally {
-            accessLock.unlock();
         }
     }
 
@@ -375,8 +351,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      */
     @Override
     public void createFolder() throws FileSystemException {
-        accessLock.lock();
-
         try {
             // VFS-210: we create a folder only if it does not already exist. So this check should be safe.
             if (getType().hasChildren()) {
@@ -410,8 +384,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
             throw re;
         } catch (Exception exc) {
             throw new FileSystemException("vfs.provider/create-folder.error", fileName, exc);
-        } finally {
-            accessLock.unlock();
         }
     }
 
@@ -498,8 +470,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
          * VFS-210 if (getType() == FileType.IMAGINARY) { // File does not exist return false; }
          */
 
-        accessLock.lock();
-
         try {
             // Delete the file
             doDelete();
@@ -510,8 +480,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
             throw re;
         } catch (final Exception exc) {
             throw new FileSystemException("vfs.provider/delete.error", exc, fileName);
-        } finally {
-            accessLock.unlock();
         }
 
         return true;
@@ -524,26 +492,19 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      * @throws Exception if an error occurs.
      */
     private void detach() throws Exception {
-        accessLock.lock();
+        if (isAttached()) {
+            try {
+                doDetach();
+            } finally {
+                setFileType(null);
+                setAttached(false);
+                setParent(null);
 
-        try {
-            if (isAttached()) {
-                try {
-                    doDetach();
-                } finally {
-                    setFileType(null);
-                    setAttached(false);
+                // fs.fileDetached(this);
 
-                    parent = null;
-
-                    // fs.fileDetached(this);
-
-                    removeChildrenCache();
-                    // children = null;
-                }
+                removeChildrenCache();
+                // children = null;
             }
-        } finally {
-            accessLock.unlock();
         }
     }
 
@@ -1108,72 +1069,66 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
             throw new FileNotFolderException(fileName);
         }
 
-        accessLock.lock();
+        attach();
 
-        try {
-            attach();
+        /*
+         * VFS-210 if (!getType().hasChildren()) { throw new
+         * FileSystemException("vfs.provider/list-children-not-folder.error", name); }
+         */
 
-            /*
-             * VFS-210 if (!getType().hasChildren()) { throw new
-             * FileSystemException("vfs.provider/list-children-not-folder.error", name); }
-             */
-
-            // Use cached info, if present
-            if (children != null) {
-                return resolveFiles(children);
-            }
-
-            // allow the filesystem to return resolved children. e.g. prefill type for webdav
-            FileObject[] childrenObjects;
-            try {
-                childrenObjects = doListChildrenResolved();
-                children = extractNames(childrenObjects);
-            } catch (final FileSystemException exc) {
-                // VFS-210
-                throw exc;
-            } catch (final Exception exc) {
-                throw new FileSystemException("vfs.provider/list-children.error", exc, fileName);
-            }
-
-            if (childrenObjects != null) {
-                return childrenObjects;
-            }
-
-            // List the children
-            final String[] files;
-            try {
-                files = doListChildren();
-            } catch (final FileSystemException exc) {
-                // VFS-210
-                throw exc;
-            } catch (final Exception exc) {
-                throw new FileSystemException("vfs.provider/list-children.error", exc, fileName);
-            }
-
-            if (files == null) {
-                // VFS-210
-                // honor the new doListChildren contract
-                // return null;
-                throw new FileNotFolderException(fileName);
-            } else if (files.length == 0) {
-                // No children
-                children = EMPTY_FILE_ARRAY;
-            } else {
-                // Create file objects for the children
-                final FileName[] cache = new FileName[files.length];
-                for (int i = 0; i < files.length; i++) {
-                    final String file = files[i];
-                    cache[i] = fileSystem.getFileSystemManager().resolveName(fileName, file, NameScope.CHILD);
-                }
-                // VFS-285: only assign the children file names after all of them have been
-                // resolved successfully to prevent an inconsistent internal state
-                children = cache;
-            }
-
+        // Use cached info, if present
+        if (children != null) {
             return resolveFiles(children);
-        } finally {
-            accessLock.unlock();
         }
+
+        // allow the filesystem to return resolved children. e.g. prefill type for webdav
+        FileObject[] childrenObjects;
+        try {
+            childrenObjects = doListChildrenResolved();
+            children = extractNames(childrenObjects);
+        } catch (final FileSystemException exc) {
+            // VFS-210
+            throw exc;
+        } catch (final Exception exc) {
+            throw new FileSystemException("vfs.provider/list-children.error", exc, fileName);
+        }
+
+        if (childrenObjects != null) {
+            return childrenObjects;
+        }
+
+        // List the children
+        final String[] files;
+        try {
+            files = doListChildren();
+        } catch (final FileSystemException exc) {
+            // VFS-210
+            throw exc;
+        } catch (final Exception exc) {
+            throw new FileSystemException("vfs.provider/list-children.error", exc, fileName);
+        }
+
+        if (files == null) {
+            // VFS-210
+            // honor the new doListChildren contract
+            // return null;
+            throw new FileNotFolderException(fileName);
+        } else if (files.length == 0) {
+            // No children
+            children = EMPTY_FILE_ARRAY;
+        } else {
+            // Create file objects for the children
+            final FileName[] cache = new FileName[files.length];
+            for (int i = 0; i < files.length; i++) {
+                final String file = files[i];
+                cache[i] = fileSystem.getFileSystemManager().resolveName(fileName, file, NameScope.CHILD);
+            }
+            // VFS-285: only assign the children file names after all of them have been
+            // resolved successfully to prevent an inconsistent internal state
+            children = cache;
+        }
+
+        return resolveFiles(children);
     }
 
     /**
@@ -1184,19 +1139,13 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      */
     @Override
     public FileContent getContent() throws FileSystemException {
-        accessLock.lock();
+        attach();
 
-        try {
-            attach();
-
-            if (content == null) {
-                content = doCreateFileContent();
-            }
-
-            return content;
-        } finally {
-            accessLock.unlock();
+        if (content == null) {
+            content = doCreateFileContent();
         }
+
+        return content;
     }
 
     /**
@@ -1299,19 +1248,13 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
             throw new FileSystemException("vfs.provider/write-append-not-supported.error", fileName);
         }
 
-        accessLock.lock();
+        if (getType() == FileType.IMAGINARY) {
+            // Does not exist - make sure parent does
+            final FileObject parent = getParent();
 
-        try {
-            if (getType() == FileType.IMAGINARY) {
-                // Does not exist - make sure parent does
-                final FileObject parent = getParent();
-
-                if (parent != null) {
-                    parent.createFolder();
-                }
+            if (parent != null) {
+                parent.createFolder();
             }
-        } finally {
-            accessLock.unlock();
         }
 
         // Get the raw output stream
@@ -1342,17 +1285,13 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
             return fileSystem.getParentLayer().getParent();
         }
 
-        log.debug("Get parent for " + fileName);
-
-        accessLock.lock();
-
-        try {
-            attach();
-        } finally {
-            accessLock.unlock();
-        }
+        attach();
 
         return parent;
+    }
+
+    protected void setParent(FileObject parent) {
+        this.parent = parent;
     }
 
     /**
@@ -1412,8 +1351,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      */
     @Override
     public FileType getType() throws FileSystemException {
-        accessLock.lock();
-
         try {
             attach();
 
@@ -1426,8 +1363,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
             }
         } catch (final Exception e) {
             throw new FileSystemException("vfs.provider/get-type.error", e, fileName);
-        } finally {
-            accessLock.unlock();
         }
 
         return type;
@@ -1573,14 +1508,10 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      */
     @Override
     public boolean isExecutable() throws FileSystemException {
-        accessLock.lock();
-
         try {
             return exists() ? doIsExecutable() : false;
         } catch (final Exception exc) {
             throw new FileSystemException("vfs.provider/check-is-executable.error", fileName, exc);
-        } finally {
-            accessLock.unlock();
         }
     }
 
@@ -1594,14 +1525,8 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      */
     @Override
     public boolean isFile() throws FileSystemException {
-        accessLock.lock();
-
-        try {
-            // Use equals instead of == to avoid any class loader worries.
-            return FILE.equals(getType());
-        } finally {
-            accessLock.unlock();
-        }
+        // Use equals instead of == to avoid any class loader worries.
+        return FILE.equals(getType());
     }
 
     /**
@@ -1614,14 +1539,8 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      */
     @Override
     public boolean isFolder() throws FileSystemException {
-        accessLock.lock();
-
-        try {
-            // Use equals instead of == to avoid any class loader worries.
-            return FOLDER.equals(getType());
-        } finally {
-            accessLock.unlock();
-        }
+        // Use equals instead of == to avoid any class loader worries.
+        return FOLDER.equals(getType());
     }
 
     /**
@@ -1632,14 +1551,10 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      */
     @Override
     public boolean isHidden() throws FileSystemException {
-        accessLock.lock();
-
         try {
             return exists() ? doIsHidden() : false;
         } catch (final Exception exc) {
             throw new FileSystemException("vfs.provider/check-is-hidden.error", fileName, exc);
-        } finally {
-            accessLock.unlock();
         }
     }
 
@@ -1651,14 +1566,10 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      */
     @Override
     public boolean isReadable() throws FileSystemException {
-        accessLock.lock();
-
         try {
             return exists() ? doIsReadable() : false;
         } catch (final Exception exc) {
             throw new FileSystemException("vfs.provider/check-is-readable.error", fileName, exc);
-        } finally {
-            accessLock.unlock();
         }
     }
 
@@ -1683,14 +1594,10 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      */
     @Override
     public boolean isSymbolicLink() throws FileSystemException {
-        accessLock.lock();
-
         try {
             return exists() ? doIsSymbolicLink() : false;
         } catch (final Exception exc) {
             throw new FileSystemException("vfs.provider/check-is-symbolic-link.error", fileName, exc);
-        } finally {
-            accessLock.unlock();
         }
     }
 
@@ -1702,8 +1609,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      */
     @Override
     public boolean isWriteable() throws FileSystemException {
-        accessLock.lock();
-
         try {
             if (exists()) {
                 return doIsWriteable();
@@ -1715,8 +1620,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
             return true;
         } catch (final Exception exc) {
             throw new FileSystemException("vfs.provider/check-is-writeable.error", fileName, exc);
-        } finally {
-            accessLock.unlock();
         }
     }
 
@@ -1776,8 +1679,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
         }
 
         if (canRenameTo(destFile)) {
-            accessLock.lock();
-
             // issue rename on same filesystem
             try {
                 // remember type to avoid attach
@@ -1793,8 +1694,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
                 throw re;
             } catch (final Exception exc) {
                 throw new FileSystemException("vfs.provider/rename.error", exc, getName(), destFile.getName());
-            } finally {
-                accessLock.unlock();
             }
         } else {
             // different fs - do the copy/delete stuff

@@ -27,7 +27,7 @@ import static com.amazonaws.services.s3.transfer.TransferManagerBuilder.standard
  * @author Matthias L. Jugel
  * @author Moritz Siuts
  */
-public class S3FileProvider extends AbstractOriginatingFileProvider {
+public class S3FileProvider extends CachingFileProvider {
     private final Logger log = LoggerFactory.getLogger(S3FileProvider.class);
 
     final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(

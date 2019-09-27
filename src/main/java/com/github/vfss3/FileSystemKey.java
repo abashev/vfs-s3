@@ -18,6 +18,10 @@ package com.github.vfss3;
 
 import org.apache.commons.vfs2.FileSystemOptions;
 
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
+
 /**
  * Used to identify a file system
  */
@@ -34,8 +38,8 @@ class FileSystemKey implements Comparable<FileSystemKey> {
      * @param key must implement Comparable, and must be self-comparable
      * @param fileSystemOptions the required options
      */
-    FileSystemKey(final Comparable<?> key, final FileSystemOptions fileSystemOptions) {
-        this.key = key;
+    FileSystemKey(Comparable<?> key, FileSystemOptions fileSystemOptions) {
+        this.key = requireNonNull(key);
         if (fileSystemOptions != null) {
             this.fileSystemOptions = fileSystemOptions;
         } else {
@@ -58,21 +62,20 @@ class FileSystemKey implements Comparable<FileSystemKey> {
 
     @Override
     public String toString() {
-        return super.toString() + " [key=" + key + ", fileSystemOptions=" + fileSystemOptions + "]";
+        return "FileSystemKey[key=" + key + ", fileSystemOptions=" + fileSystemOptions + "]";
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
-        return (this.compareTo((FileSystemKey) o) == 0);
+        FileSystemKey that = (FileSystemKey) o;
+        return key.equals(that.key) &&
+                fileSystemOptions.equals(that.fileSystemOptions);
     }
 
     @Override
     public int hashCode() {
-        int result = key != null ? key.hashCode() : 0;
-        result = 31 * result + (fileSystemOptions != null ? fileSystemOptions.hashCode() : 0);
-        return result;
+        return Objects.hash(key, fileSystemOptions);
     }
 }

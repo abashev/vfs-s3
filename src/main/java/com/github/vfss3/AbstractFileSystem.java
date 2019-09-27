@@ -48,11 +48,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
-import static org.apache.commons.vfs2.CacheStrategy.ON_RESOLVE;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A partial {@link org.apache.commons.vfs2.FileSystem} implementation.
@@ -87,23 +84,15 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
     private final FileSystemOptions fileSystemOptions;
 
     /**
-     * How many fileObjects are handed out
-     */
-    private final AtomicLong useCount = new AtomicLong(0);
-
-    private FileSystemKey cacheKey;
-
-    /**
      * open streams counter for this file system
      */
     private final AtomicInteger openStreams = new AtomicInteger(0);
-
-    protected final ReentrantLock fileSystemLock = new ReentrantLock(true);
 
     protected AbstractFileSystem(FileName rootName, FileObject parentLayer, FileSystemOptions fileSystemOptions) {
         this.parentLayer = parentLayer;
         this.rootName = rootName;
         this.fileSystemOptions = fileSystemOptions;
+
         final FileSystemConfigBuilder builder = DefaultFileSystemConfigBuilder.getInstance();
         String uri = builder.getRootURI(fileSystemOptions);
         if (uri == null) {
@@ -127,22 +116,9 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
      */
     @Override
     public void close() {
-        closeCommunicationLink();
+        doCloseCommunicationLink();
 
         parentLayer = null;
-    }
-
-    /**
-     * Closes the underlying link used to access the files.
-     */
-    public void closeCommunicationLink() {
-        try {
-            fileSystemLock.lock();
-
-            doCloseCommunicationLink();
-        } finally {
-            fileSystemLock.unlock();
-        }
     }
 
     /**
@@ -317,34 +293,15 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
 
         FileObject file;
 
-        fileSystemLock.lock();
-
         try {
-            if ((file = getFileFromCache(name)) == null) {
-                try {
-                    file = createFile(name);
-                } catch (final Exception e) {
-                    throw new FileSystemException("vfs.provider/resolve-file.error", name, e);
-                }
-
-                file = decorateFileObject(file);
-
-                putFileToCache(file);
-
-                return file;
-            }
-        } finally {
-            fileSystemLock.unlock();
+            file = createFile(name);
+        } catch (final Exception e) {
+            throw new FileSystemException("vfs.provider/resolve-file.error", name, e);
         }
 
-        /**
-         * resync the file information if requested
-         */
-        if (getFileSystemManager().getCacheStrategy().equals(ON_RESOLVE)) {
-            file.refresh();
-        }
+        file = decorateFileObject(file);
 
-        return file;
+        return requireNonNull(file);
     }
 
     protected FileObject decorateFileObject(FileObject file) throws FileSystemException {
@@ -356,13 +313,7 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
             try {
                 file = (FileObject) getFileSystemManager().getFileObjectDecoratorConst()
                         .newInstance(new Object[] { file });
-            } catch (final InstantiationException e) {
-                throw new FileSystemException("vfs.impl/invalid-decorator.error",
-                        getFileSystemManager().getFileObjectDecorator().getName(), e);
-            } catch (final IllegalAccessException e) {
-                throw new FileSystemException("vfs.impl/invalid-decorator.error",
-                        getFileSystemManager().getFileObjectDecorator().getName(), e);
-            } catch (final InvocationTargetException e) {
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 throw new FileSystemException("vfs.impl/invalid-decorator.error",
                         getFileSystemManager().getFileObjectDecorator().getName(), e);
             }
@@ -525,19 +476,6 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
     }
 
     /**
-     * Returns true if no file is using this FileSystem.
-     *
-     * @return true if no file is using this FileSystem.
-     */
-    public boolean isReleaseable() {
-        return useCount.get() < 1;
-    }
-
-    void freeResources() {
-        // default is noop.
-    }
-
-    /**
      * Fires an event.
      */
     private void fireEvent(final AbstractFileChangeEvent event) {
@@ -565,19 +503,10 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
     }
 
     void fileObjectHanded(final FileObject fileObject) {
-        useCount.incrementAndGet();
     }
 
     void fileObjectDestroyed(final FileObject fileObject) {
-        useCount.decrementAndGet();
-    }
 
-    void setCacheKey(FileSystemKey cacheKey) {
-        this.cacheKey = cacheKey;
-    }
-
-    FileSystemKey getCacheKey() {
-        return this.cacheKey;
     }
 
     void streamOpened() {
@@ -604,15 +533,6 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
      */
     public boolean isOpen() {
         return openStreams.get() > 0;
-    }
-
-    /**
-     * Get lock for protecting access to file system.
-     *
-     * @return
-     */
-    public Lock getFileSystemLock() {
-        return fileSystemLock;
     }
 
 }

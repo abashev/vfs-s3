@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -84,11 +85,12 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
             String fileName = "deadlock-" + i;
             FileObject file = parent.resolveFile(fileName);
             file.createFile();
+
             assertTrue(file.exists());
         }
 
         // create threads to continuously do getParent and another one to list files
-
+        final AtomicInteger wrongResults = new AtomicInteger(0);
         final AtomicBoolean stopFlag = new AtomicBoolean(false);
 
         List<Thread> threads = new ArrayList<>();
@@ -99,11 +101,18 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
                 while(!stopFlag.get()) {
                     for (int i = 0; i < childCount; i++) {
                         String fileName = "deadlock-" + i;
+
                         try {
                             FileObject file = parent.resolveFile(fileName);
-                            file.getParent();
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                            FileObject p = file.getParent();
+
+                            if (p == null) {
+                                wrongResults.incrementAndGet();
+
+                                log.error("Parent is null");
+                            }
+                        } catch (FileSystemException e) {
+                            log.error("Not able to get parent for {}", fileName, e);
                         }
                     }
                 }
@@ -121,9 +130,16 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
                         try {
                             final FileObject parent = resolveFile("/concurrent/");
                             int count = parent.getChildren().length;
-                            assertEquals(count, childCount, "parent.getChildren().length");
-                        } catch (Throwable e) {
-                            e.printStackTrace();
+
+                            if (count != childCount) {
+                                wrongResults.incrementAndGet();
+
+                                log.error("Wrong number of children - {}", count);
+                            }
+
+                            parent.refresh();
+                        } catch (FileSystemException e) {
+                            log.error("Not able to get children for /concurrent/", e);
                         }
                     }
                 }
@@ -173,6 +189,8 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
 
             resolveFile("/concurrent/").delete(Selectors.SELECT_CHILDREN);
         }
+
+        assertEquals(wrongResults.get(), 0, "Number of wrong calculations should be zero");
     }
 
     @AfterClass
