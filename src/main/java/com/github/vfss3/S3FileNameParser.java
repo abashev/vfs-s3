@@ -26,11 +26,15 @@ import static org.apache.commons.vfs2.FileType.IMAGINARY;
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
 public class S3FileNameParser extends AbstractFileNameParser {
+    public static final String DEFAULT_SIGNING_REGION = "us-east-1";
+
     private final Logger log = LoggerFactory.getLogger(S3FileNameParser.class);
 
-    private static final Pattern HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3[-.]((?<region>[a-z0-9\\-]+)\\.)?amazonaws\\.com");
+    private static final Pattern AWS_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3[-.]((?<region>[a-z0-9\\-]+)\\.)?amazonaws\\.com");
+    private static final Pattern YANDEX_HOST_PATTERN = compile("(?<bucket>[a-z0-9\\-]+)\\.storage\\.yandexcloud\\.net");
 
     private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
+
 
     public S3FileNameParser() {
     }
@@ -42,7 +46,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
     public FileName parseUri(
             VfsComponentContext context, FileName base, String filename
     ) throws FileSystemException {
-        log.trace("Parse uri [context={},base={},filename={}", context, base, filename);
+        log.debug("Parse uri [base={},filename={}]", base, filename);
 
         URI uri;
 
@@ -60,9 +64,18 @@ public class S3FileNameParser extends AbstractFileNameParser {
             throw new FileSystemException("Not able to find host in url [" + filename + "]");
         }
 
-        final Matcher hostNameMatcher = HOST_PATTERN.matcher(uri.getHost());
+        if (base != null) {
+            // We already have all configuration
+            S3FileName file = buildS3FileName(base, filename);
 
-        if (hostNameMatcher.matches()) {
+            log.debug("From [base={},file={}] got {}", base, filename, file);
+
+            return file;
+        }
+
+        Matcher hostNameMatcher;
+
+        if ((hostNameMatcher = AWS_HOST_PATTERN.matcher(uri.getHost())).matches()) {
             // Standard AWS endpoint
             String region = hostNameMatcher.group("region");
 
@@ -97,9 +110,24 @@ public class S3FileNameParser extends AbstractFileNameParser {
                 throw new FileSystemException("Not able to find bucket inside [" + filename + "]");
             }
 
-            S3FileName file = buildS3FileName(host, bucket, key);
+            if (region == null) {
+                region = DEFAULT_SIGNING_REGION;
+            }
 
-            log.trace("From uri {} got {}", filename, file);
+            S3FileName file = buildS3FileName(host, null, bucket, bucket, region, key);
+
+            log.debug("From uri {} got {}", filename, file);
+
+            return file;
+        } else if ((hostNameMatcher = YANDEX_HOST_PATTERN.matcher(uri.getHost())).matches()) {
+            String bucket = hostNameMatcher.group("bucket");
+            String key = uri.getPath();
+
+            S3FileName file = buildS3FileName(
+                    "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key
+            );
+
+            log.debug("From uri {} got {}", filename, file);
 
             return file;
         } else {
@@ -113,9 +141,16 @@ public class S3FileNameParser extends AbstractFileNameParser {
             final Matcher pathMatcher = PATH.matcher(uri.getPath());
 
             if (pathMatcher.matches()) {
-                S3FileName file = buildS3FileName(host, pathMatcher);
+                S3FileName file = buildS3FileName(
+                        host.toString(),
+                        null,
+                        pathMatcher.group("bucket"),
+                        pathMatcher.group("bucket"),
+                        DEFAULT_SIGNING_REGION,
+                        pathMatcher.group("key")
+                );
 
-                log.trace("From uri {} got {}", filename, file);
+                log.debug("From uri {} got {}", filename, file);
 
                 return file;
             } else {
@@ -123,36 +158,6 @@ public class S3FileNameParser extends AbstractFileNameParser {
             }
         }
     }
-
-    /**
-     * Extract region name from host name.
-     *
-     * @param host
-     * @param defaultRegion
-     * @return
-     */
-    public String regionFromHost(String host, String defaultRegion) {
-        final Matcher hostNameMatcher = HOST_PATTERN.matcher(host);
-
-        if (hostNameMatcher.matches()) {
-            String candidate = hostNameMatcher.group("region");
-            Regions region = null;
-
-            if ((candidate != null) && (candidate.trim().length() > 0)) {
-                try {
-                    region = Regions.fromName(candidate);
-                } catch (IllegalArgumentException e) {
-                }
-            }
-
-            if (region != null) {
-                return region.getName();
-            }
-        }
-
-        return defaultRegion;
-    }
-
 
     /**
      * Check region for correct name.
@@ -170,21 +175,32 @@ public class S3FileNameParser extends AbstractFileNameParser {
         }
     }
 
-    private S3FileName buildS3FileName(String host, String bucket, String key) {
-        if ((key != null) && (key.trim().length() > 0) && (!key.equals(ROOT_PATH))) {
+    private S3FileName buildS3FileName(FileName base, String key) {
+        S3FileName s3Base = (S3FileName) base;
+
+        return s3Base.createName(key.substring(s3Base.getRootURI().length()), IMAGINARY);
+    }
+
+    private S3FileName buildS3FileName(
+            String endpoint, String urlPrefix, String pathPrefix,
+            String bucket, String signingRegion,
+            String key
+    ) throws FileSystemException {
+        if ((key == null) || (key.trim().length() == 0)) {
+            key = ROOT_PATH;
+        }
+
+        if (!key.equals(ROOT_PATH)) {
             StringBuilder sb = new StringBuilder(key);
 
             UriParser.fixSeparators(sb);
+            UriParser.normalisePath(sb);
 
             key = sb.toString();
         }
 
         FileType type = (ROOT_PATH.equals(key)) ? FOLDER : IMAGINARY;
 
-        return (new S3FileName(host, bucket, key, type));
-    }
-
-    private S3FileName buildS3FileName(StringBuilder host, Matcher pathMatcher) throws FileSystemException {
-        return buildS3FileName(host.toString(), pathMatcher.group("bucket"), pathMatcher.group("key"));
+        return (new S3FileName(endpoint, urlPrefix, pathPrefix, bucket, signingRegion, key, type));
     }
 }

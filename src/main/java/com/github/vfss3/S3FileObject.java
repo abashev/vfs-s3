@@ -4,7 +4,6 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AccessControlList;
-import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.CanonicalGrantee;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.Grant;
@@ -132,7 +131,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 // Do we have file with name?
                 String candidateKey = getName().getS3KeyAs(FILE);
 
-                doAttach(FILE, new ObjectMetadataHolder(getService().getObjectMetadata(getBucket().getName(), candidateKey)));
+                doAttach(FILE, new ObjectMetadataHolder(getService().getObjectMetadata(getBucketName(), candidateKey)));
 
                 log.debug("Attach file to S3 Object {}", getName());
 
@@ -145,7 +144,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 // Do we have folder with that name?
                 String candidateKey = getName().getS3KeyAs(FOLDER);
 
-                doAttach(FOLDER, new ObjectMetadataHolder(getService().getObjectMetadata(getBucket().getName(), candidateKey)));
+                doAttach(FOLDER, new ObjectMetadataHolder(getService().getObjectMetadata(getBucketName(), candidateKey)));
 
                 log.debug("Attach folder to S3 Object {}", getName());
 
@@ -160,7 +159,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
                 ObjectListing listing = getService().listObjects(
                         new ListObjectsRequest().
-                                withBucketName(getBucket().getName()).
+                                withBucketName(getBucketName()).
                                 withPrefix(candidateKey).
                                 withMaxKeys(1)
                 );
@@ -231,7 +230,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
     @Override
     protected void doDelete() throws Exception {
-        final String bucket = getBucket().getName();
+        final String bucket = getBucketName();
         final String key = getName().getS3Key().orElseThrow(() -> new FileSystemException("Can't delete whole bucket"));
 
         log.debug("Delete object [bucket={},name={}]", bucket, key);
@@ -243,7 +242,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     protected void doCreateFolder() throws Exception {
         final String key = getName().getS3KeyAs(FOLDER);
 
-        log.debug("Create new folder in bucket [{}] with key [{}]", getBucket(), key);
+        log.debug("Create new folder in bucket [{}] with key [{}]", getBucketName(), key);
 
         if (!isAttached()) {
             throw new FileSystemException("Need to attach first");
@@ -253,7 +252,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(0);
 
-        getService().putObject(new PutObjectRequest(getBucket().getName(), key, input, metadata));
+        getService().putObject(new PutObjectRequest(getBucketName(), key, input, metadata));
     }
 
     @Override
@@ -300,7 +299,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
         ObjectListing listing = getService().listObjects(
                 new ListObjectsRequest().
-                        withBucketName(getBucket().getName()).
+                        withBucketName(getBucketName()).
                         withDelimiter(SEPARATOR).
                         withPrefix(path)
         );
@@ -382,7 +381,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         S3TempFile tempFile = cacheFile;
 
         try {
-            obj = getService().getObject(getBucket().getName(), objectPath);
+            obj = getService().getObject(getBucketName(), objectPath);
             ObjectMetadataHolder holder = new ObjectMetadataHolder(obj.getObjectMetadata());
 
             log.debug("Downloading S3 Object: {}", objectPath);
@@ -463,7 +462,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
      */
     private AccessControlList getS3Acl() throws FileSystemException {
         Optional<String> key = getName().getS3Key();
-        final String bucketName = getBucket().getName();
+        final String bucketName = getBucketName();
 
         if (key.isPresent()) {
             if ((getType() != FILE) && (getType() != FOLDER)) {
@@ -495,9 +494,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             }
 
             // Put ACL to S3
-            getService().setObjectAcl(getBucket().getName(), key.get(), s3Acl);
+            getService().setObjectAcl(getBucketName(), key.get(), s3Acl);
         } else {
-            getService().setBucketAcl(getBucket().getName(), s3Acl);
+            getService().setBucketAcl(getBucketName(), s3Acl);
         }
     }
 
@@ -513,6 +512,8 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
      * @see IAclGetter
      */
     public Acl getAcl() throws FileSystemException {
+        assertType(FILE, FOLDER);
+
         Acl myAcl = new Acl();
         AccessControlList s3Acl;
         try {
@@ -582,6 +583,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
      * @see IAclGetter
      */
     public void setAcl(Acl acl) throws FileSystemException {
+        assertType(FILE, FOLDER);
 
         // Create empty S3 ACL list
         AccessControlList s3Acl = new AccessControlList();
@@ -661,7 +663,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
         try {
             return getService().generatePresignedUrl(
-                    getBucket().getName(),
+                    getBucketName(),
                     getName().getS3Key().orElseThrow(() -> new FileSystemException("Not able get presigned url for a bucket")),
                     cal.getTime()
             ).toString();
@@ -743,8 +745,8 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     /**
      * Amazon S3 bucket
      */
-    protected Bucket getBucket() {
-        return ((S3FileSystem) getFileSystem()).getBucket();
+    protected String getBucketName() {
+        return ((S3FileName) getFileSystem().getRootName()).getBucket();
     }
 
     /**
@@ -908,9 +910,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 S3FileObject s3SrcFile = (S3FileObject) fromFile;
                 S3FileObject s3DestFile = (S3FileObject) toFile;
 
-                String srcBucketName = s3SrcFile.getBucket().getName();
+                String srcBucketName = s3SrcFile.getBucketName();
                 String srcFileName = s3SrcFile.getName().getS3Key().orElseThrow(() -> new FileSystemException("Not able to copy whole bucket"));
-                String destBucketName = s3DestFile.getBucket().getName();
+                String destBucketName = s3DestFile.getBucketName();
                 String destFileName = s3DestFile.getName().getS3KeyAs(FILE); // Because target could be not exists
 
                 if (!s3SrcFile.exists()) {
@@ -974,7 +976,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 getName().getS3KeyAs(FILE) :
                 getName().getS3Key().orElseThrow(() -> new FileSystemException("Not able to copy whole bucket"));
 
-        PutObjectRequest request = new PutObjectRequest(getBucket().getName(), key, file);
+        PutObjectRequest request = new PutObjectRequest(getBucketName(), key, file);
 
         new ObjectMetadataHolder().
                 withContentLength(file.length()).

@@ -15,7 +15,6 @@
  */
 package com.github.vfss3;
 
-import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 
@@ -32,47 +31,94 @@ public class S3FileName extends AbstractFileName {
     /**
      * Host and port for S3 url - endpoint for the client
      */
-    private final String hostAndPort;
+    private final String endpoint;
 
     /**
-     * First segment of path as a bucket
+     * Bucket name as part of host name
+     */
+    private final String urlPrefix;
+
+    /**
+     * First segment of path as a bucket - can be null in case of
      */
     private final String pathPrefix;
 
-    S3FileName(String hostAndPort, String pathPrefix, String path, FileType type) {
+    /**
+     * Bucket name as separated field.
+     */
+    private final String bucket;
+
+    /**
+     * Region name for signing requests
+     */
+    private final String signingRegion;
+
+    S3FileName(
+            String endpoint,
+            String urlPrefix, String pathPrefix,
+            String bucket, String signingRegion,
+            String path, FileType type
+    ) {
         super(SCHEME, path, type);
 
-        this.hostAndPort = requireNonNull(hostAndPort);
+        this.endpoint = requireNonNull(endpoint);
 
-        if (pathPrefix != null && (pathPrefix.contains("/") || pathPrefix.contains(" ") || (pathPrefix.trim().length() == 0))) {
-            throw new IllegalArgumentException("Path prefix [" + pathPrefix + "] shouldn't contain / and has to be valid bucket name");
+        if ((bucket != null) && (bucket.contains("/") || bucket.contains(" ") || (bucket.trim().length() == 0))) {
+            throw new IllegalArgumentException("Bucket name [" + bucket + "] has to be valid bucket name");
         }
 
-        this.pathPrefix = requireNonNull(pathPrefix);
+        this.bucket = requireNonNull(bucket);
+        this.signingRegion = requireNonNull(signingRegion);
+        this.pathPrefix = pathPrefix;
+        this.urlPrefix = urlPrefix;
     }
 
     @Override
-    public FileName createName(String absPath, FileType type) {
-        return new S3FileName(hostAndPort, pathPrefix, absPath, type);
+    public S3FileName createName(String absPath, FileType type) {
+        return new S3FileName(
+                endpoint, urlPrefix, pathPrefix, bucket, signingRegion,
+                absPath, type
+        );
     }
 
     @Override
     protected void appendRootUri(StringBuilder buffer, boolean addPassword) {
         buffer.append(getScheme());
         buffer.append("://");
-        buffer.append(hostAndPort);
+
+        if (urlPrefix != null) {
+            buffer.append(urlPrefix).append('.');
+        }
+
+        buffer.append(endpoint);
 
         if (pathPrefix != null) {
             buffer.append('/').append(pathPrefix);
         }
     }
 
-    public String getHostAndPort() {
-        return hostAndPort;
+    public String getEndpoint() {
+        return endpoint;
     }
 
-    public String getPathPrefix() {
+    public boolean hasPathPrefix() {
+        return (pathPrefix != null);
+    }
+
+    String getPathPrefix() {
         return pathPrefix;
+    }
+
+    String getUrlPrefix() {
+        return urlPrefix;
+    }
+
+    public String getBucket() {
+        return bucket;
+    }
+
+    public String getSigningRegion() {
+        return signingRegion;
     }
 
     /**
@@ -120,8 +166,11 @@ public class S3FileName extends AbstractFileName {
     @Override
     public String toString() {
         return "S3FileName{" +
-                "hostAndPort='" + hostAndPort + '\'' +
+                "endpoint='" + endpoint + '\'' +
+                ", urlPrefix='" + urlPrefix + '\'' +
                 ", pathPrefix='" + pathPrefix + '\'' +
+                ", bucket='" + bucket + '\'' +
+                ", signingRegion='" + signingRegion + '\'' +
                 ", path='" + getPath() + '\'' +
                 ", type='" + getType() + '\'' +
                 '}';

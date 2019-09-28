@@ -41,10 +41,8 @@ public class S3FileProvider extends CachingFileProvider {
         Capability.WRITE_CONTENT
     ));
 
-    private final S3FileNameParser parser = new S3FileNameParser();
-
     public S3FileProvider() {
-        setFileNameParser(parser);
+        setFileNameParser(new S3FileNameParser());
     }
 
     /**
@@ -59,7 +57,7 @@ public class S3FileProvider extends CachingFileProvider {
     protected FileSystem doCreateFileSystem(
             FileName fileName, FileSystemOptions fileSystemOptions
     ) throws FileSystemException {
-        final S3FileName file = (S3FileName) fileName;
+        final S3FileName root = (S3FileName) fileName;
         final S3FileSystemOptions options = new S3FileSystemOptions(fileSystemOptions);
 
         ClientConfiguration clientConfiguration = options.getClientConfiguration();
@@ -72,7 +70,9 @@ public class S3FileProvider extends CachingFileProvider {
             clientBuilder.disableChunkedEncoding();
         }
 
-        clientBuilder.enablePathStyleAccess();
+        if (root.hasPathPrefix()) {
+            clientBuilder.enablePathStyleAccess();
+        }
 
         StringBuilder endpoint = new StringBuilder();
 
@@ -82,20 +82,17 @@ public class S3FileProvider extends CachingFileProvider {
             endpoint.append("http://");
         }
 
-        endpoint.append(file.getHostAndPort());
+        endpoint.append(root.getEndpoint());
 
-        clientBuilder.withEndpointConfiguration(new EndpointConfiguration(
-                endpoint.toString(),
-                parser.regionFromHost(file.getHostAndPort(), "us-east-1")
-        ));
+        log.debug("Endpoint configuration [endpoint={},region={}]", endpoint, root.getSigningRegion());
+
+        clientBuilder.withEndpointConfiguration(new EndpointConfiguration(endpoint.toString(), root.getSigningRegion()));
 
         TransferManager transferManager = standard().
                 withS3Client(clientBuilder.build()).
                 build();
 
-        final String bucket = file.getPathPrefix();
-
-        return (new S3FileSystem(bucket, file, options, transferManager));
+        return (new S3FileSystem(root, options, transferManager));
     }
 
     /**

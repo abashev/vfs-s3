@@ -1252,7 +1252,7 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
             // Does not exist - make sure parent does
             final FileObject parent = getParent();
 
-            if (parent != null) {
+            if ((parent != null) && !parent.exists()) {
                 parent.createFolder();
             }
         }

@@ -32,26 +32,22 @@ public class S3FileSystem extends AbstractFileSystem {
     private final Bucket bucket;
 
     S3FileSystem(
-            String bucketId, S3FileName fileName, S3FileSystemOptions options,
-            TransferManager transferManager
+            S3FileName rootName, S3FileSystemOptions options, TransferManager transferManager
     ) throws FileSystemException {
-        super(fileName, null, options.toFileSystemOptions());
+        super(rootName, null, options.toFileSystemOptions());
 
         this.transferManager = transferManager;
         this.service = transferManager.getAmazonS3Client();
 
-        log.info(
-                "Init new S3 FileSystem [bucket={},fileName={},opts={}]",
-                bucketId, fileName, options
-        );
+        log.info("Init new S3 FileSystem [root={},opts={}]", rootName, options);
 
         try {
-            if (options.isCreateBucket() && !doesBucketExist(bucketId)) {
-                bucket = service.createBucket(bucketId);
+            if (options.isCreateBucket() && !doesBucketExist(rootName.getBucket())) {
+                bucket = service.createBucket(rootName.getBucket());
 
                 log.info("Created new bucket [{}].", bucket);
             } else {
-                bucket = new Bucket(bucketId);
+                bucket = new Bucket(rootName.getBucket());
             }
         } catch (AmazonServiceException e) {
             String s3message = e.getMessage();
@@ -67,10 +63,6 @@ public class S3FileSystem extends AbstractFileSystem {
     @Override
     protected void addCapabilities(Collection<Capability> caps) {
         caps.addAll(S3FileProvider.capabilities);
-    }
-
-    Bucket getBucket() {
-        return bucket;
     }
 
     AmazonS3 getService() {

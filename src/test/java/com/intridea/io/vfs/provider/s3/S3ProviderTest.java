@@ -2,7 +2,6 @@ package com.intridea.io.vfs.provider.s3;
 
 import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.github.vfss3.S3FileObject;
-import com.github.vfss3.S3FileSystemOptions;
 import com.github.vfss3.operations.IPublicUrlsGetter;
 import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.support.AbstractS3FileSystemTest;
@@ -64,7 +63,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test
     public void createFileOk() throws FileSystemException {
-        file = resolveFile("/test-place/%s", fileName);
+        file = resolveFile("/test-place/" + fileName);
         file.createFile();
         assertTrue(file.exists());
     }
@@ -85,7 +84,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods = {"createFileOk"}, expectedExceptions = { FileSystemException.class })
     public void checkLastModified() throws FileSystemException {
-        file = resolveFile("/test-place/%s", fileName);
+        file = resolveFile("/test-place/" + fileName);
 
         assertTrue(file.exists());
 
@@ -106,13 +105,13 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
      */
     @Test(expectedExceptions={FileSystemException.class}, dependsOnMethods={"createFileOk"})
     public void createFileFailed2() throws FileSystemException {
-        FileObject tmpFile = resolveFile("/test-place/%s", fileName);
+        FileObject tmpFile = resolveFile("/test-place/" + fileName);
         tmpFile.createFolder();
     }
 
     @Test
     public void createDirOk() throws FileSystemException {
-        dir = resolveFile("/test-place/%s", dirName);
+        dir = resolveFile("/test-place/" + dirName);
         dir.createFolder();
 
         assertTrue(dir.exists());
@@ -131,7 +130,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
      */
     @Test(expectedExceptions = FileSystemException.class, dependsOnMethods = "createDirOk")
     public void createDirFailed2() throws FileSystemException {
-        FileObject tmpFile = resolveFile("/test-place/%s", dirName);
+        FileObject tmpFile = resolveFile("/test-place/" + dirName);
         tmpFile.createFile();
     }
 
@@ -226,7 +225,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods={"createFileOk"})
     public void uploadBigFile() throws IOException {
-        FileObject dest = resolveFile("/%s", BIG_FILE);
+        FileObject dest = resolveFile("/" + BIG_FILE);
 
         // Delete file if exists
         if (dest.exists()) {
@@ -382,7 +381,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods={"createFileOk"})
     public void renameAndMove() throws FileSystemException {
-        FileObject sourceFile = resolveFile("/test-place/%s", fileName);
+        FileObject sourceFile = resolveFile("/test-place/" + fileName);
         FileObject targetFile = resolveFile("/test-place/rename-target");
 
         assertTrue(sourceFile.exists());
@@ -468,7 +467,6 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
         assertThat(urlsGetter.getHttpUrl()).contains(
                 "https",
-                "amazonaws.com",
                 "/test-place/backup.zip"
         );
 
@@ -476,7 +474,6 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
         assertThat(signedUrl).contains(
                 "https",
-                "amazonaws.com",
                 "/test-place/backup.zip",
                 "Signature=",
                 "Expires=",

@@ -12,11 +12,11 @@ import org.apache.commons.vfs2.FileSystemManager;
 import org.apache.commons.vfs2.VFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import static com.amazonaws.SDKGlobalConfiguration.ACCESS_KEY_ENV_VAR;
 import static com.amazonaws.SDKGlobalConfiguration.SECRET_KEY_ENV_VAR;
@@ -28,17 +28,19 @@ import static java.lang.Boolean.parseBoolean;
 public abstract class AbstractS3FileSystemTest {
     protected final Logger log = LoggerFactory.getLogger(AbstractS3FileSystemTest.class);
 
-    private static final String BUCKET_PARAMETER = "AWS_TEST_BUCKET";
+    private static final String BASE_URL = "BASE_URL";
     private static final String USE_HTTP = "USE_HTTPS";
     private static final String CREATE_BUCKET = "CREATE_BUCKET";
     private static final String DISABLE_CHUNKED_ENCODING = "DISABLE_CHUNKED_ENCODING";
 
     protected FileSystemManager vfs;
-    protected FileObject bucket;
+    protected S3FileSystemOptions options;
+    protected String baseUrl;
 
     @BeforeClass
     public final void initVFS() throws IOException {
-        final S3FileSystemOptions options = new S3FileSystemOptions();
+        this.options = new S3FileSystemOptions();
+
         EnvironmentConfiguration configuration = new EnvironmentConfiguration();
 
         // Try to load access and secret key from environment
@@ -59,33 +61,26 @@ public abstract class AbstractS3FileSystemTest {
                     (access, secret) -> options.setCredentialsProvider(new AWSStaticCredentialsProvider(new BasicAWSCredentials(access, secret))));
         }
 
-        String bucketId = configuration.get(BUCKET_PARAMETER).
-                orElseThrow(() -> new IllegalStateException(BUCKET_PARAMETER + " should present in environment configuration"));
-
         configuration.computeIfPresent(USE_HTTP, v -> options.setUseHttps(parseBoolean(v)));
         configuration.computeIfPresent(CREATE_BUCKET, v -> options.setCreateBucket(parseBoolean(v)));
         configuration.computeIfPresent(DISABLE_CHUNKED_ENCODING, v -> options.setDisableChunkedEncoding(parseBoolean(v)));
 
+        baseUrl = configuration.get(BASE_URL).
+                orElseThrow(() -> new IllegalStateException(BASE_URL + " should present in environment configuration"));
+
         this.vfs = VFS.getManager();
-        this.bucket = vfs.resolveFile("s3://" + bucketId, options.toFileSystemOptions());
     }
 
-    @AfterClass
-    public final void closeFS() throws IOException {
-        if ((vfs != null) && (bucket != null)) {
-            vfs.closeFileSystem(bucket.getFileSystem());
-
-            vfs = null;
-            bucket = null;
-        }
+    public FileObject resolveFile(String path) throws FileSystemException {
+        return vfs.resolveFile(baseUrl + path, options.toFileSystemOptions());
     }
 
-    public FileObject resolveFile(String path, Object ... args) throws FileSystemException {
-        return bucket.resolveFile(String.format(path, args));
-    }
+    public FileObject resolveFile(String path, Consumer<S3FileSystemOptions> optionsConsumer) throws FileSystemException {
+        S3FileSystemOptions newOptions = new S3FileSystemOptions(options.toFileSystemOptions());
 
-    public FileObject resolveFile(S3FileSystemOptions options, String path, Object ... args) throws FileSystemException {
-        return vfs.resolveFile(resolveFile(path, args).getURL().toString(), options.toFileSystemOptions());
+        optionsConsumer.accept(newOptions);
+
+        return vfs.resolveFile(baseUrl + path, newOptions.toFileSystemOptions());
     }
 
     /**
