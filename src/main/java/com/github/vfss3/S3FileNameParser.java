@@ -26,7 +26,7 @@ import static org.apache.commons.vfs2.FileType.IMAGINARY;
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
 public class S3FileNameParser extends AbstractFileNameParser {
-    public static final String DEFAULT_SIGNING_REGION = "us-east-1";
+    private static final String DEFAULT_SIGNING_REGION = "us-east-1";
 
     private final Logger log = LoggerFactory.getLogger(S3FileNameParser.class);
 
@@ -114,7 +114,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
                 region = DEFAULT_SIGNING_REGION;
             }
 
-            S3FileName file = buildS3FileName(host, null, bucket, bucket, region, key);
+            S3FileName file = buildS3FileName(host, null, bucket, bucket, region, key, true);
 
             log.debug("From uri {} got {}", filename, file);
 
@@ -124,7 +124,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
             String key = uri.getPath();
 
             S3FileName file = buildS3FileName(
-                    "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key
+                    "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key, false
             );
 
             log.debug("From uri {} got {}", filename, file);
@@ -147,7 +147,8 @@ public class S3FileNameParser extends AbstractFileNameParser {
                         pathMatcher.group("bucket"),
                         pathMatcher.group("bucket"),
                         DEFAULT_SIGNING_REGION,
-                        pathMatcher.group("key")
+                        pathMatcher.group("key"),
+                        false
                 );
 
                 log.debug("From uri {} got {}", filename, file);
@@ -184,7 +185,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
     private S3FileName buildS3FileName(
             String endpoint, String urlPrefix, String pathPrefix,
             String bucket, String signingRegion,
-            String key
+            String key, boolean supportsSSE
     ) throws FileSystemException {
         if ((key == null) || (key.trim().length() == 0)) {
             key = ROOT_PATH;
@@ -201,6 +202,6 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
         FileType type = (ROOT_PATH.equals(key)) ? FOLDER : IMAGINARY;
 
-        return (new S3FileName(endpoint, urlPrefix, pathPrefix, bucket, signingRegion, key, type));
+        return (new S3FileName(endpoint, urlPrefix, pathPrefix, bucket, signingRegion, key, type, supportsSSE));
     }
 }

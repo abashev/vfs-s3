@@ -74,6 +74,10 @@ public class S3FileProvider extends CachingFileProvider {
             clientBuilder.enablePathStyleAccess();
         }
 
+        if (options.getServerSideEncryption() && !root.supportsSSE()) {
+            log.warn("Try to use Server-Side Encryption with cloud that doesn't support it");
+        }
+
         StringBuilder endpoint = new StringBuilder();
 
         if (options.isUseHttps()) {

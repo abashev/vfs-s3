@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.github.vfss3.S3FileObject;
 import com.github.vfss3.operations.IMD5HashGetter;
 import com.github.vfss3.operations.IPublicUrlsGetter;
+import com.github.vfss3.operations.ServerSideEncryption;
 import com.intridea.io.vfs.support.AbstractS3FileSystemTest;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.vfs2.FileObject;
@@ -11,7 +12,6 @@ import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.Selectors;
 import org.apache.commons.vfs2.provider.AbstractFileSystem;
-import org.assertj.core.api.AssertDelegateTarget;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -37,7 +37,6 @@ import static java.nio.file.Files.readAllBytes;
 import static java.time.Instant.ofEpochMilli;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static org.apache.commons.vfs2.Selectors.SELECT_ALL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
@@ -70,16 +69,12 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods = {"createFileOk"})
     public void createEncryptedFileOk() throws FileSystemException {
-        final S3FileSystemOptions options = new S3FileSystemOptions();
-
-        options.setServerSideEncryption(true);
-
-        file = resolveFile(options, "/test-place/%s", encryptedFileName);
+        file = resolveFile("/test-place/" + encryptedFileName, o -> o.setServerSideEncryption(true));
 
         file.createFile();
 
         assertTrue(file.exists());
-        assertEquals(((S3FileObject) file).getSSEAlgorithm(), of(AES_256_SERVER_SIDE_ENCRYPTION));
+        assertAES256Encryption(file);
     }
 
     @Test(dependsOnMethods = {"createFileOk"}, expectedExceptions = { FileSystemException.class })
@@ -171,16 +166,12 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         dest.copyFrom(src, Selectors.SELECT_SELF);
 
         assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
-        assertEquals(((S3FileObject)dest).getSSEAlgorithm(), empty());
+        assertNoEncryption(dest);
     }
 
     @Test(dependsOnMethods = {"createEncryptedFileOk"})
     public void uploadEncrypted() throws IOException {
-        final S3FileSystemOptions options = new S3FileSystemOptions();
-
-        options.setServerSideEncryption(true);
-
-        FileObject dest = resolveFile(options, "/test-place/backup.zip");
+        FileObject dest = resolveFile("/test-place/backup.zip", o -> o.setServerSideEncryption(true));
 
         // Delete file if exists
         if (dest.exists()) {
@@ -196,7 +187,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         dest.copyFrom(src, Selectors.SELECT_SELF);
 
         assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
-        assertEquals(((S3FileObject)dest).getSSEAlgorithm(), of(AES_256_SERVER_SIDE_ENCRYPTION));
+        assertAES256Encryption(dest);
     }
 
     @Test(dependsOnMethods={"createFileOk"})
@@ -280,11 +271,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods = {"createEncryptedFileOk"})
     public void outputStreamEncrypted() throws IOException {
-        final S3FileSystemOptions options = new S3FileSystemOptions();
-
-        options.setServerSideEncryption(true);
-
-        FileObject dest = resolveFile(options, "/test-place/output.txt");
+        FileObject dest = resolveFile("/test-place/output.txt", o -> o.setServerSideEncryption(true));
 
         // Delete file if exists
         if (dest.exists()) {
@@ -300,7 +287,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
         assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
         assertEquals(dest.getContent().getSize(), binaryFile().length());
-        assertEquals(((S3FileObject) dest).getSSEAlgorithm(), of(AES_256_SERVER_SIDE_ENCRYPTION));
+        assertAES256Encryption(dest);
 
         try (InputStream in = dest.getContent().getInputStream()) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -525,14 +512,10 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods={"createDirOk", "findFiles"})
     public void copyAllToEncryptedInsideBucket() throws FileSystemException {
-        final S3FileSystemOptions options = new S3FileSystemOptions();
-
-        options.setServerSideEncryption(true);
-
         FileObject testsDir = dir.resolveFile("find-tests");
 
         FileObject testsDirCopy =
-                resolveFile(options, "/test-place/%s", dirName).
+                resolveFile("/test-place/" + dirName, o -> o.setServerSideEncryption(true)).
                 resolveFile("find-tests-encrypted-copy");
 
         assertTrue(testsDir.exists());
@@ -548,8 +531,8 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
         for (int i = 0; i < files.length; i++) {
             if (files[i].getType() == FileType.FILE) {
-                assertThat(new FileObjectAssert(files[i])).noSSEAlgorithm();
-                assertThat(new FileObjectAssert(filesCopy[i])).hasAES256Algorithm();
+                assertNoEncryption(files[i]);
+                assertAES256Encryption(filesCopy[i]);
             }
         }
     }
@@ -617,19 +600,19 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         }
     }
 
-    private static class FileObjectAssert implements AssertDelegateTarget {
-        private final S3FileObject file;
+    private void assertNoEncryption(FileObject file) throws FileSystemException {
+        ServerSideEncryption sse = (ServerSideEncryption) file.getFileOperations().getOperation(ServerSideEncryption.class);
 
-        public FileObjectAssert(FileObject file) {
-            this.file = (S3FileObject) file;
-        }
+        sse.process();
 
-        public void noSSEAlgorithm() throws FileSystemException {
-            assertThat(file.getSSEAlgorithm()).isEqualTo(empty());
-        }
+        assertTrue(sse.noEncryption());
+    }
 
-        public void hasAES256Algorithm() throws FileSystemException {
-            assertThat(file.getSSEAlgorithm()).isEqualTo(of(AES_256_SERVER_SIDE_ENCRYPTION));
-        }
+    private void assertAES256Encryption(FileObject file) throws FileSystemException {
+        ServerSideEncryption sse = (ServerSideEncryption) file.getFileOperations().getOperation(ServerSideEncryption.class);
+
+        sse.process();
+
+        assertTrue(sse.encryptedWith(AES_256_SERVER_SIDE_ENCRYPTION));
     }
 }

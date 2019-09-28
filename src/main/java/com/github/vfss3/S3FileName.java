@@ -53,11 +53,17 @@ public class S3FileName extends AbstractFileName {
      */
     private final String signingRegion;
 
+    /**
+     * Flag does cloud support SSE or not
+     */
+    private final boolean supportsSSE;
+
     S3FileName(
             String endpoint,
             String urlPrefix, String pathPrefix,
             String bucket, String signingRegion,
-            String path, FileType type
+            String path, FileType type,
+            boolean supportsSSE
     ) {
         super(SCHEME, path, type);
 
@@ -71,13 +77,14 @@ public class S3FileName extends AbstractFileName {
         this.signingRegion = requireNonNull(signingRegion);
         this.pathPrefix = pathPrefix;
         this.urlPrefix = urlPrefix;
+        this.supportsSSE = supportsSSE;
     }
 
     @Override
     public S3FileName createName(String absPath, FileType type) {
         return new S3FileName(
                 endpoint, urlPrefix, pathPrefix, bucket, signingRegion,
-                absPath, type
+                absPath, type, supportsSSE
         );
     }
 
@@ -119,6 +126,10 @@ public class S3FileName extends AbstractFileName {
 
     public String getSigningRegion() {
         return signingRegion;
+    }
+
+    public boolean supportsSSE() {
+        return supportsSSE;
     }
 
     /**

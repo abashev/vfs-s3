@@ -998,6 +998,10 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     }
 
     private boolean getServerSideEncryption() {
+        if (!getName().supportsSSE()) {
+            return false;
+        }
+
         return (new S3FileSystemOptions(getFileSystem().getFileSystemOptions())).getServerSideEncryption();
     }
 }
