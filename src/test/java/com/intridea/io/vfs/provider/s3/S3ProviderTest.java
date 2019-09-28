@@ -2,8 +2,8 @@ package com.intridea.io.vfs.provider.s3;
 
 import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.github.vfss3.S3FileObject;
+import com.github.vfss3.operations.IMD5HashGetter;
 import com.github.vfss3.operations.IPublicUrlsGetter;
-import com.intridea.io.vfs.operations.IMD5HashGetter;
 import com.intridea.io.vfs.support.AbstractS3FileSystemTest;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.vfs2.FileObject;

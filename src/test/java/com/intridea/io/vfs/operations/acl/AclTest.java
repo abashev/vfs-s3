@@ -1,9 +1,8 @@
 package com.intridea.io.vfs.operations.acl;
 
+import com.github.vfss3.operations.Acl;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import com.intridea.io.vfs.operations.Acl;
 
 public class AclTest {
     @Test
