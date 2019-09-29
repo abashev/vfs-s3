@@ -170,14 +170,14 @@ public class Acl {
     /**
      * Returns true when a group has specific access.
      */
-    public boolean isAllowed (Group group, Permission permission) {
+    public boolean isAllowed(Group group, Permission permission) {
         return rulesTable[group.ordinal()][permission.ordinal()] == 1;
     }
 
     /**
      * Returns true when specific access is denied for a group
      */
-    public boolean isDenied (Group group, Permission permission) {
+    public boolean isDenied(Group group, Permission permission) {
         return rulesTable[group.ordinal()][permission.ordinal()] == 0;
     }
 

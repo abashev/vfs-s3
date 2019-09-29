@@ -4,6 +4,7 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CanonicalGrantee;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.Grant;
@@ -91,11 +92,6 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     private S3TempFile cacheFile;
 
     /**
-     * Amazon file owner. Used in ACL
-     */
-    private Owner fileOwner;
-
-    /**
      * Lock to control output stream - not thread specific, just based on the output stream being open
      */
     private final AtomicBoolean outputInProgress = new AtomicBoolean();
@@ -136,7 +132,15 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 log.debug("Attach file to S3 Object {}", getName());
 
                 return;
-            } catch (AmazonClientException e) {
+            } catch (AmazonS3Exception e) {
+                if (e.getStatusCode() == 403) { // Forbidden
+                    doAttach(FILE, new ObjectMetadataHolder());
+
+                    log.debug("Attach to forbidden S3 object {}", getName());
+
+                    return;
+                }
+
                 // We are attempting to attach to the root bucket
             }
 
@@ -210,10 +214,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             throw new FileSystemException("Try to detach file " + getName() + " without attach");
         }
 
-        log.trace("Detach [{}]", getName());
+        log.debug("Detach [{}]", getName());
 
         objectMetadataHolder = null;
-        fileOwner = null;
     }
 
     // should only be called when inputLock is locked
@@ -442,19 +445,6 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     }
 
     // ACL extension methods
-
-    /**
-     * Returns S3 file owner.
-     * Loads it from S3 if needed.
-     */
-    private Owner getS3Owner() throws FileSystemException {
-        if (fileOwner == null) {
-            AccessControlList s3Acl = getS3Acl();
-            fileOwner = s3Acl.getOwner();
-        }
-        return fileOwner;
-    }
-
     /**
      * Get S3 ACL list
      *
@@ -469,7 +459,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 throw new FileSystemException("Wrong type to get acl " + getName());
             }
 
-            log.debug("Get acl for object [bucket={},key={}", bucketName, key.get());
+            log.debug("Get acl for object [bucket={},key={}]", bucketName, key.get());
 
             return getService().getObjectAcl(bucketName, key.get());
         } else {
@@ -524,7 +514,6 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
         // Get S3 file owner
         Owner owner = s3Acl.getOwner();
-        fileOwner = owner;
 
         // Read S3 ACL list and build VFS ACL.
         List<Grant> grants = s3Acl.getGrantsAsList();
@@ -590,11 +579,13 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
         // Get file owner
         Owner owner;
+
         try {
-            owner = getS3Owner();
+            owner = getS3Acl().getOwner();
         } catch (AmazonServiceException e) {
             throw new FileSystemException(e);
         }
+
         s3Acl.setOwner(owner);
 
         // Iterate over VFS ACL rules and fill S3 ACL list

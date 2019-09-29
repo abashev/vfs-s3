@@ -1,6 +1,8 @@
 package com.intridea.io.vfs.provider.s3;
 
 import com.github.vfss3.operations.Acl;
+import com.github.vfss3.operations.Acl.Group;
+import com.github.vfss3.operations.Acl.Permission;
 import com.github.vfss3.operations.IAclGetter;
 import com.github.vfss3.operations.IAclSetter;
 import com.intridea.io.vfs.support.AbstractS3FileSystemTest;
@@ -22,8 +24,9 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class AclHandlingTest extends AbstractS3FileSystemTest {
-    private FileObject file;
-    private Acl fileAcl;
+    FileObject file;
+    FileObject folder;
+    Acl fileAcl;
 
     @Test
     public void checkGet() throws FileSystemException {
@@ -44,17 +47,11 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
         assertNotNull(fileAcl);
 
-        // Owner can read/write
-//        Assert.assertTrue(aclGetter.canRead(OWNER));
-//        Assert.assertTrue(aclGetter.canWrite(OWNER));
-//
-//        // Authorized coldn't read/write
-//        Assert.assertFalse(aclGetter.canRead(AUTHORIZED));
-//        Assert.assertFalse(aclGetter.canWrite(AUTHORIZED));
-//
-//        // Guest also coldn't read/write
-//        Assert.assertFalse(aclGetter.canRead(EVERYONE));
-//        Assert.assertFalse(aclGetter.canWrite(EVERYONE));
+        // Default permissions
+        // By default AWS owner can read but for Yandex all access forbidden
+        // assertAllowed(fileAcl, OWNER);
+        assertDenied(fileAcl, AUTHORIZED);
+        assertDenied(fileAcl, EVERYONE);
     }
 
     @Test(dependsOnMethods = "checkGet")
@@ -70,21 +67,13 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
         Acl changedAcl = getAcl(file);
 
         // Guest can read
-        assertTrue(changedAcl.isAllowed(EVERYONE, READ));
+        assertAllowed(changedAcl, EVERYONE, READ);
+
         // Write rules for guest not changed
-        assertEquals(
-            changedAcl.isAllowed(EVERYONE, WRITE),
-            fileAcl.isAllowed(EVERYONE, WRITE)
-        );
+        assertSameAllowed(changedAcl, fileAcl, EVERYONE, WRITE);
         // Read rules not spreaded to another groups
-        assertEquals(
-            changedAcl.isAllowed(AUTHORIZED, READ),
-            fileAcl.isAllowed(AUTHORIZED, READ)
-        );
-        assertEquals(
-            changedAcl.isAllowed(OWNER, READ),
-            fileAcl.isAllowed(OWNER, READ)
-        );
+        assertSameAllowed(changedAcl, fileAcl, AUTHORIZED, READ);
+        assertSameAllowed(changedAcl, fileAcl, OWNER, READ);
 
         fileAcl = changedAcl;
     }
@@ -102,32 +91,19 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
         Acl changedAcl = getAcl(file);
 
         // Authorized can do everything
-        assertTrue(changedAcl.isAllowed(AUTHORIZED, READ));
-        assertTrue(changedAcl.isAllowed(AUTHORIZED, WRITE));
+        assertAllowed(changedAcl, AUTHORIZED);
 
         // All other rules not changed
-        assertEquals(
-            changedAcl.isAllowed(EVERYONE, READ),
-            fileAcl.isAllowed(EVERYONE, READ)
-        );
-        assertEquals(
-            changedAcl.isAllowed(EVERYONE, WRITE),
-            fileAcl.isAllowed(EVERYONE, WRITE)
-        );
-        assertEquals(
-            changedAcl.isAllowed(OWNER, READ),
-            fileAcl.isAllowed(OWNER, READ)
-        );
-        assertEquals(
-            changedAcl.isAllowed(OWNER, WRITE),
-            fileAcl.isAllowed(OWNER, WRITE)
-        );
+        assertSameAllowed(changedAcl, fileAcl, EVERYONE, READ);
+        assertSameAllowed(changedAcl, fileAcl, EVERYONE, WRITE);
+        assertSameAllowed(changedAcl, fileAcl, OWNER, READ);
+        assertSameAllowed(changedAcl, fileAcl, OWNER, WRITE);
 
         fileAcl = changedAcl;
     }
 
     @Test(dependsOnMethods = {"checkSet2"})
-    public void checkSet3() throws FileSystemException {
+    public void checkDenyAllForFile() throws FileSystemException {
         // Set deny to all
         fileAcl.denyAll();
 
@@ -138,18 +114,44 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
         Acl changedAcl = getAcl(file);
 
-        assertTrue(changedAcl.isDenied(OWNER, READ));
-        assertTrue(changedAcl.isDenied(OWNER, WRITE));
-        assertTrue(changedAcl.isDenied(AUTHORIZED, READ));
-        assertTrue(changedAcl.isDenied(AUTHORIZED, WRITE));
-        assertTrue(changedAcl.isDenied(EVERYONE, READ));
-        assertTrue(changedAcl.isDenied(EVERYONE, WRITE));
+        assertDenied(changedAcl, OWNER);
+        assertDenied(changedAcl, AUTHORIZED);
+        assertDenied(changedAcl, EVERYONE);
+    }
+
+    @Test(dependsOnMethods = {"checkSet2"})
+    public void checkDenyAllForFolder() throws FileSystemException {
+        folder = resolveFile("/acl/check_acl/");
+
+        if (!folder.exists()) {
+            folder.createFolder();
+        }
+
+        Acl folderAcl = getAcl(folder);
+
+        // Set deny to all
+        folderAcl.denyAll();
+
+        setAcl(folder, folderAcl);
+
+        // Verify
+        folder.refresh();
+
+        Acl changedAcl = getAcl(folder);
+
+        assertDenied(changedAcl, OWNER);
+        assertDenied(changedAcl, AUTHORIZED);
+        assertDenied(changedAcl, EVERYONE);
     }
 
     @AfterClass
     public void restoreAcl() throws FileSystemException {
         if (file != null) {
             file.delete();
+        }
+
+        if (folder != null) {
+            folder.delete();
         }
     }
 
@@ -166,5 +168,26 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
         getter.process();
 
         return getter.getAcl();
+    }
+
+    private void assertAllowed(Acl acl, Group group, Permission permission) {
+        assertTrue(acl.isAllowed(group, permission));
+    }
+
+    private void assertAllowed(Acl acl, Group group) {
+        assertTrue(acl.isAllowed(group, READ));
+        assertTrue(acl.isAllowed(group, WRITE));
+    }
+
+    private void assertDenied(Acl acl, Group group) {
+        assertTrue(acl.isDenied(group, READ));
+        assertTrue(acl.isDenied(group, WRITE));
+    }
+
+    private void assertSameAllowed(Acl actual, Acl expected, Group group, Permission permission) {
+        assertEquals(
+                actual.isAllowed(group, permission),
+                expected.isAllowed(group, permission)
+        );
     }
 }
