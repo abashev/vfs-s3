@@ -31,7 +31,17 @@ public class S3FileNameParserTest {
                 hasPathPrefix("bucket").
                 hasType(IMAGINARY);
 
+        assertThat(parse("s3://bucket.s3-eu-west-1.amazonaws.com/some file")).
+                hasEndpoint("s3-eu-west-1.amazonaws.com").
+                hasPathPrefix("bucket").
+                hasType(IMAGINARY);
+
         assertThat(parse("s3://s3-tests.storage.yandexcloud.net/some_file")).
+                hasEndpoint("storage.yandexcloud.net").
+                hasPathPrefix(null).
+                hasType(IMAGINARY);
+
+        assertThat(parse("s3://s3-tests.storage.yandexcloud.net/some file")).
                 hasEndpoint("storage.yandexcloud.net").
                 hasPathPrefix(null).
                 hasType(IMAGINARY);
@@ -70,6 +80,12 @@ public class S3FileNameParserTest {
                 hasPathPrefix("bucket").
                 hasType(IMAGINARY).
                 hasPath("/concurrent");
+
+        assertThat(parse("s3://s3.eu-central-1.amazonaws.com/bucket/conc urrent/")).
+                hasEndpoint("s3.eu-central-1.amazonaws.com").
+                hasPathPrefix("bucket").
+                hasType(IMAGINARY).
+                hasPath("/conc urrent");
     }
 
     @Test

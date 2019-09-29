@@ -51,7 +51,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
         URI uri;
 
         try {
-            uri = new URI(filename);
+            uri = new URI(filename.replace(" ", "%20"));
         } catch (URISyntaxException e) {
             throw new FileSystemException(e);
         }

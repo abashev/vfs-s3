@@ -65,6 +65,14 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         file = resolveFile("/test-place/" + fileName);
         file.createFile();
         assertTrue(file.exists());
+
+        FileObject f1 = resolveFile("/test-place/name with space");
+        f1.createFile();
+        assertTrue(f1.exists());
+
+        FileObject f2 = resolveFile("/test-place/folder with space");
+        f2.createFolder();
+        assertTrue(f2.exists());
     }
 
     @Test(dependsOnMethods = {"createFileOk"})
@@ -332,14 +340,23 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
     @Test(dependsOnMethods = {"createFileOk", "createDirOk", "uploadBigFile"})
     public void listChildrenRoot() throws FileSystemException {
         assertHasChildren(resolveFile("/"), "test-place", BIG_FILE, "acl", "read-deadlock");
-        assertHasChildren(resolveFile("/test-place/"), "backup.zip", dirName, encryptedFileName);
-        assertHasChildren(resolveFile("/test-place"), "backup.zip", dirName, encryptedFileName);
+        assertHasChildren(
+                resolveFile("/test-place/"),
+                "backup.zip", dirName, encryptedFileName, "folder with space", "name with space"
+        );
+        assertHasChildren(
+                resolveFile("/test-place"),
+                "backup.zip", dirName, encryptedFileName, "folder with space", "name with space"
+        );
 
         final FileObject destFile = resolveFile("/test-place-2");
 
         destFile.copyFrom(resolveFile("/test-place"), SELECT_ALL);
 
-        assertHasChildren(destFile, "backup.zip", dirName, encryptedFileName);
+        assertHasChildren(
+                destFile,
+                "backup.zip", dirName, encryptedFileName, "folder with space", "name with space"
+        );
     }
 
     @Test(dependsOnMethods={"createDirOk"})
