@@ -24,6 +24,11 @@ matrix:
         - BASE_URL=s3://storage.yandexcloud.net/s3-tests
         - secure: "H35SN7WfvG52NIOmE7QzzWkSxGPSXijftejiUt1OwHMbr9jtp9NWk8SxFNabaKXpOW9xg9PnzyDOiORFxKWtqzzdrqcVZTHrXN652b0EA3YXr1QFM0HLGy1paiMVksYPDO73PVWeQvDaxthHzB+Ysff+QhN67vC7sbsRCOG7KXo="
         - secure: "jSJS2PbNVozYnWl4b7/1WOCby8JtvyuM3FE8ulF4jrxEFKAxn3hlSo+EgehZnk5C4/gMBuEljSE+W95NQzgKhEDk1gpHfCqYGjRjwCxsEXK+qRBUSopI0GFsQVAtSZc3nky+NNqDRs8UBMP+rNxAfysw5b+4hKK8M3fw3oTdwrg="
+    - jdk: openjdk8
+      env:
+        - BASE_URL=s3://s3-tests.storage.yandexcloud.net/
+        - secure: "H35SN7WfvG52NIOmE7QzzWkSxGPSXijftejiUt1OwHMbr9jtp9NWk8SxFNabaKXpOW9xg9PnzyDOiORFxKWtqzzdrqcVZTHrXN652b0EA3YXr1QFM0HLGy1paiMVksYPDO73PVWeQvDaxthHzB+Ysff+QhN67vC7sbsRCOG7KXo="
+        - secure: "jSJS2PbNVozYnWl4b7/1WOCby8JtvyuM3FE8ulF4jrxEFKAxn3hlSo+EgehZnk5C4/gMBuEljSE+W95NQzgKhEDk1gpHfCqYGjRjwCxsEXK+qRBUSopI0GFsQVAtSZc3nky+NNqDRs8UBMP+rNxAfysw5b+4hKK8M3fw3oTdwrg="
 
     - jdk: openjdk11
       env:
@@ -43,6 +48,11 @@ matrix:
     - jdk: openjdk11
       env:
         - BASE_URL=s3://storage.yandexcloud.net/s3-tests
+        - secure: "H35SN7WfvG52NIOmE7QzzWkSxGPSXijftejiUt1OwHMbr9jtp9NWk8SxFNabaKXpOW9xg9PnzyDOiORFxKWtqzzdrqcVZTHrXN652b0EA3YXr1QFM0HLGy1paiMVksYPDO73PVWeQvDaxthHzB+Ysff+QhN67vC7sbsRCOG7KXo="
+        - secure: "jSJS2PbNVozYnWl4b7/1WOCby8JtvyuM3FE8ulF4jrxEFKAxn3hlSo+EgehZnk5C4/gMBuEljSE+W95NQzgKhEDk1gpHfCqYGjRjwCxsEXK+qRBUSopI0GFsQVAtSZc3nky+NNqDRs8UBMP+rNxAfysw5b+4hKK8M3fw3oTdwrg="
+    - jdk: openjdk11
+      env:
+        - BASE_URL=s3://s3-tests.storage.yandexcloud.net/
         - secure: "H35SN7WfvG52NIOmE7QzzWkSxGPSXijftejiUt1OwHMbr9jtp9NWk8SxFNabaKXpOW9xg9PnzyDOiORFxKWtqzzdrqcVZTHrXN652b0EA3YXr1QFM0HLGy1paiMVksYPDO73PVWeQvDaxthHzB+Ysff+QhN67vC7sbsRCOG7KXo="
         - secure: "jSJS2PbNVozYnWl4b7/1WOCby8JtvyuM3FE8ulF4jrxEFKAxn3hlSo+EgehZnk5C4/gMBuEljSE+W95NQzgKhEDk1gpHfCqYGjRjwCxsEXK+qRBUSopI0GFsQVAtSZc3nky+NNqDRs8UBMP+rNxAfysw5b+4hKK8M3fw3oTdwrg="
 
@@ -66,6 +76,11 @@ matrix:
         - BASE_URL=s3://storage.yandexcloud.net/s3-tests
         - secure: "H35SN7WfvG52NIOmE7QzzWkSxGPSXijftejiUt1OwHMbr9jtp9NWk8SxFNabaKXpOW9xg9PnzyDOiORFxKWtqzzdrqcVZTHrXN652b0EA3YXr1QFM0HLGy1paiMVksYPDO73PVWeQvDaxthHzB+Ysff+QhN67vC7sbsRCOG7KXo="
         - secure: "jSJS2PbNVozYnWl4b7/1WOCby8JtvyuM3FE8ulF4jrxEFKAxn3hlSo+EgehZnk5C4/gMBuEljSE+W95NQzgKhEDk1gpHfCqYGjRjwCxsEXK+qRBUSopI0GFsQVAtSZc3nky+NNqDRs8UBMP+rNxAfysw5b+4hKK8M3fw3oTdwrg="
+    - jdk: openjdk12
+      env:
+        - BASE_URL=s3://s3-tests.storage.yandexcloud.net/
+        - secure: "H35SN7WfvG52NIOmE7QzzWkSxGPSXijftejiUt1OwHMbr9jtp9NWk8SxFNabaKXpOW9xg9PnzyDOiORFxKWtqzzdrqcVZTHrXN652b0EA3YXr1QFM0HLGy1paiMVksYPDO73PVWeQvDaxthHzB+Ysff+QhN67vC7sbsRCOG7KXo="
+        - secure: "jSJS2PbNVozYnWl4b7/1WOCby8JtvyuM3FE8ulF4jrxEFKAxn3hlSo+EgehZnk5C4/gMBuEljSE+W95NQzgKhEDk1gpHfCqYGjRjwCxsEXK+qRBUSopI0GFsQVAtSZc3nky+NNqDRs8UBMP+rNxAfysw5b+4hKK8M3fw3oTdwrg="
 
     - jdk: openjdk-ea
       env:
@@ -87,6 +102,11 @@ matrix:
         - BASE_URL=s3://storage.yandexcloud.net/s3-tests
         - secure: "H35SN7WfvG52NIOmE7QzzWkSxGPSXijftejiUt1OwHMbr9jtp9NWk8SxFNabaKXpOW9xg9PnzyDOiORFxKWtqzzdrqcVZTHrXN652b0EA3YXr1QFM0HLGy1paiMVksYPDO73PVWeQvDaxthHzB+Ysff+QhN67vC7sbsRCOG7KXo="
         - secure: "jSJS2PbNVozYnWl4b7/1WOCby8JtvyuM3FE8ulF4jrxEFKAxn3hlSo+EgehZnk5C4/gMBuEljSE+W95NQzgKhEDk1gpHfCqYGjRjwCxsEXK+qRBUSopI0GFsQVAtSZc3nky+NNqDRs8UBMP+rNxAfysw5b+4hKK8M3fw3oTdwrg="
+    - jdk: openjdk-ea
+      env:
+        - BASE_URL=s3://s3-tests.storage.yandexcloud.net/
+        - secure: "H35SN7WfvG52NIOmE7QzzWkSxGPSXijftejiUt1OwHMbr9jtp9NWk8SxFNabaKXpOW9xg9PnzyDOiORFxKWtqzzdrqcVZTHrXN652b0EA3YXr1QFM0HLGy1paiMVksYPDO73PVWeQvDaxthHzB+Ysff+QhN67vC7sbsRCOG7KXo="
+        - secure: "jSJS2PbNVozYnWl4b7/1WOCby8JtvyuM3FE8ulF4jrxEFKAxn3hlSo+EgehZnk5C4/gMBuEljSE+W95NQzgKhEDk1gpHfCqYGjRjwCxsEXK+qRBUSopI0GFsQVAtSZc3nky+NNqDRs8UBMP+rNxAfysw5b+4hKK8M3fw3oTdwrg="
 
     - jdk: oraclejdk11
       env:
@@ -106,6 +126,11 @@ matrix:
     - jdk: oraclejdk11
       env:
         - BASE_URL=s3://storage.yandexcloud.net/s3-tests
+        - secure: "H35SN7WfvG52NIOmE7QzzWkSxGPSXijftejiUt1OwHMbr9jtp9NWk8SxFNabaKXpOW9xg9PnzyDOiORFxKWtqzzdrqcVZTHrXN652b0EA3YXr1QFM0HLGy1paiMVksYPDO73PVWeQvDaxthHzB+Ysff+QhN67vC7sbsRCOG7KXo="
+        - secure: "jSJS2PbNVozYnWl4b7/1WOCby8JtvyuM3FE8ulF4jrxEFKAxn3hlSo+EgehZnk5C4/gMBuEljSE+W95NQzgKhEDk1gpHfCqYGjRjwCxsEXK+qRBUSopI0GFsQVAtSZc3nky+NNqDRs8UBMP+rNxAfysw5b+4hKK8M3fw3oTdwrg="
+    - jdk: oraclejdk11
+      env:
+        - BASE_URL=s3://s3-tests.storage.yandexcloud.net/
         - secure: "H35SN7WfvG52NIOmE7QzzWkSxGPSXijftejiUt1OwHMbr9jtp9NWk8SxFNabaKXpOW9xg9PnzyDOiORFxKWtqzzdrqcVZTHrXN652b0EA3YXr1QFM0HLGy1paiMVksYPDO73PVWeQvDaxthHzB+Ysff+QhN67vC7sbsRCOG7KXo="
         - secure: "jSJS2PbNVozYnWl4b7/1WOCby8JtvyuM3FE8ulF4jrxEFKAxn3hlSo+EgehZnk5C4/gMBuEljSE+W95NQzgKhEDk1gpHfCqYGjRjwCxsEXK+qRBUSopI0GFsQVAtSZc3nky+NNqDRs8UBMP+rNxAfysw5b+4hKK8M3fw3oTdwrg="
 
