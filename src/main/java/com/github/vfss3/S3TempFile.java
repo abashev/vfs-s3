@@ -1,9 +1,9 @@
 package com.github.vfss3;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.util.MonitorInputStream;
 import org.apache.commons.vfs2.util.MonitorOutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Shon Vella
  */
 class S3TempFile {
-    private static final Logger logger = LoggerFactory.getLogger(S3TempFile.class);
+    private final Log log = LogFactory.getLog(getClass());
 
     private final Path tempFile;
     private final AtomicInteger useCounter = new AtomicInteger(1);
@@ -52,7 +52,9 @@ class S3TempFile {
             throw new FileNotFoundException("File no longer available");
         }
 
-        logger.debug("Increment counter for {}", tempFile);
+        if (log.isDebugEnabled()) {
+            log.debug("Increment counter for " + tempFile);
+        }
 
         useCounter.getAndIncrement();
     }
@@ -64,13 +66,15 @@ class S3TempFile {
      */
     void release() {
         if (useCounter.decrementAndGet() <= 0) {
-            logger.debug("Counter is zero for {}", tempFile);
+            if (log.isDebugEnabled()) {
+                log.debug("Counter is zero for " + tempFile);
+            }
 
             // useCount has gone to 0, delete the file
             try {
                 Files.deleteIfExists(tempFile);
             } catch (IOException e) {
-                logger.warn("Error deleting temp file: ", e);
+                log.warn("Error deleting temp file: " + tempFile, e);
             }
         }
     }

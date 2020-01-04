@@ -1,14 +1,14 @@
 package com.github.vfss3;
 
 import com.amazonaws.regions.Regions;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.provider.AbstractFileNameParser;
 import org.apache.commons.vfs2.provider.UriParser;
 import org.apache.commons.vfs2.provider.VfsComponentContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -28,7 +28,7 @@ import static org.apache.commons.vfs2.FileType.IMAGINARY;
 public class S3FileNameParser extends AbstractFileNameParser {
     private static final String DEFAULT_SIGNING_REGION = "us-east-1";
 
-    private final Logger log = LoggerFactory.getLogger(S3FileNameParser.class);
+    private final Log log = LogFactory.getLog(S3FileNameParser.class);
 
     private static final Pattern AWS_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3[-.]((?<region>[a-z0-9\\-]+)\\.)?amazonaws\\.com");
     private static final Pattern YANDEX_HOST_PATTERN = compile("(?<bucket>[a-z0-9\\-]+)\\.storage\\.yandexcloud\\.net");
@@ -46,7 +46,9 @@ public class S3FileNameParser extends AbstractFileNameParser {
     public FileName parseUri(
             VfsComponentContext context, FileName base, String filename
     ) throws FileSystemException {
-        log.debug("Parse uri [base={},filename={}]", base, filename);
+        if (log.isDebugEnabled()) {
+            log.debug("Parse uri [base=" + base + ",filename=" + filename + "]");
+        }
 
         URI uri;
 
@@ -68,7 +70,9 @@ public class S3FileNameParser extends AbstractFileNameParser {
             // We already have all configuration
             S3FileName file = buildS3FileName(base, filename);
 
-            log.debug("From [base={},file={}] got {}", base, filename, file);
+            if (log.isDebugEnabled()) {
+                log.debug("From [base=" + base + ",file=" + filename + "] got " + file);
+            }
 
             return file;
         }
@@ -116,7 +120,9 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
             S3FileName file = buildS3FileName(host, null, bucket, bucket, region, key, true);
 
-            log.debug("From uri {} got {}", filename, file);
+            if (log.isDebugEnabled()) {
+                log.debug("From uri " + filename + " got " + file);
+            }
 
             return file;
         } else if ((hostNameMatcher = YANDEX_HOST_PATTERN.matcher(uri.getHost())).matches()) {
@@ -127,7 +133,9 @@ public class S3FileNameParser extends AbstractFileNameParser {
                     "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key, false
             );
 
-            log.debug("From uri {} got {}", filename, file);
+            if (log.isDebugEnabled()) {
+                log.debug("From uri " + filename + " got " + file);
+            }
 
             return file;
         } else {
@@ -151,7 +159,9 @@ public class S3FileNameParser extends AbstractFileNameParser {
                         false
                 );
 
-                log.debug("From uri {} got {}", filename, file);
+                if (log.isDebugEnabled()) {
+                    log.debug("From uri " + filename + " got " + file);
+                }
 
                 return file;
             } else {

@@ -22,14 +22,14 @@ import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.github.vfss3.operations.Acl;
 import com.github.vfss3.operations.IAclGetter;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSelector;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.Selectors;
 import org.apache.commons.vfs2.util.MonitorOutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -79,7 +79,7 @@ import static org.apache.commons.vfs2.NameScope.DESCENDENT_OR_SELF;
  */
 @SuppressWarnings({"JavadocReference"})
 public class S3FileObject extends AbstractFileObject<S3FileSystem> {
-    private final Logger log = LoggerFactory.getLogger(S3FileObject.class);
+    private final Log log = LogFactory.getLog(getClass());
 
     /**
      * Amazon S3 object
@@ -116,7 +116,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     protected void doAttach() throws FileSystemException {
         try {
             if (getName().getPath().equals(ROOT_PATH)) {
-                log.debug("Attach S3FileObject to the bucket {}", getName());
+                if (log.isDebugEnabled()) {
+                    log.debug("Attach S3FileObject to the bucket " + getName());
+                }
 
                 doAttachVirtualFolder();
 
@@ -129,14 +131,18 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
                 doAttach(FILE, new ObjectMetadataHolder(getService().getObjectMetadata(getBucketName(), candidateKey)));
 
-                log.debug("Attach file to S3 Object {}", getName());
+                if (log.isDebugEnabled()) {
+                    log.debug("Attach file to S3 Object " + getName());
+                }
 
                 return;
             } catch (AmazonS3Exception e) {
                 if (e.getStatusCode() == 403) { // Forbidden
                     doAttach(FILE, new ObjectMetadataHolder());
 
-                    log.debug("Attach to forbidden S3 object {}", getName());
+                    if (log.isDebugEnabled()) {
+                        log.debug("Attach to forbidden S3 object " + getName());
+                    }
 
                     return;
                 }
@@ -150,7 +156,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
                 doAttach(FOLDER, new ObjectMetadataHolder(getService().getObjectMetadata(getBucketName(), candidateKey)));
 
-                log.debug("Attach folder to S3 Object {}", getName());
+                if (log.isDebugEnabled()) {
+                    log.debug("Attach folder to S3 Object " + getName());
+                }
 
                 return;
             } catch (AmazonServiceException e) {
@@ -172,7 +180,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                     // subordinate objects so we need to pretend there is a directory
                     doAttachVirtualFolder();
 
-                    log.debug("Attach folder to virtual S3 folder {}", getName());
+                    if (log.isDebugEnabled()) {
+                        log.debug("Attach folder to virtual S3 folder " + getName());
+                    }
 
                     return;
                 }
@@ -184,7 +194,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             if (objectMetadataHolder == null) {
                 doAttach(null, new ObjectMetadataHolder());
 
-                log.debug("Attach to empty S3 object {}", getName());
+                if (log.isDebugEnabled()) {
+                    log.debug("Attach to empty S3 object " + getName());
+                }
             }
         } finally {
             checkCacheFile(objectMetadataHolder);
@@ -214,7 +226,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             throw new FileSystemException("Try to detach file " + getName() + " without attach");
         }
 
-        log.debug("Detach [{}]", getName());
+        if (log.isDebugEnabled()) {
+            log.debug("Detach [" + getName() + "]");
+        }
 
         objectMetadataHolder = null;
     }
@@ -236,7 +250,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         final String bucket = getBucketName();
         final String key = getName().getS3Key().orElseThrow(() -> new FileSystemException("Can't delete whole bucket"));
 
-        log.debug("Delete object [bucket={},name={}]", bucket, key);
+        if (log.isDebugEnabled()) {
+            log.debug("Delete object [bucket=" + bucket + ",name=" + key + "]");
+        }
 
         getService().deleteObject(bucket, key);
     }
@@ -245,7 +261,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     protected void doCreateFolder() throws Exception {
         final String key = getName().getS3KeyAs(FOLDER);
 
-        log.debug("Create new folder in bucket [{}] with key [{}]", getBucketName(), key);
+        if (log.isDebugEnabled()) {
+            log.debug("Create new folder in bucket [" + getBucketName() + "] with key [" + key + "]");
+        }
 
         if (!isAttached()) {
             throw new FileSystemException("Need to attach first");
@@ -387,7 +405,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             obj = getService().getObject(getBucketName(), objectPath);
             ObjectMetadataHolder holder = new ObjectMetadataHolder(obj.getObjectMetadata());
 
-            log.debug("Downloading S3 Object: {}", objectPath);
+            if (log.isDebugEnabled()) {
+                log.debug("Downloading S3 Object: " + objectPath);
+            }
 
             tempFile = checkCacheFile(holder);
 
@@ -434,7 +454,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 try {
                     obj.close();
                 } catch (IOException e) {
-                    log.warn("Not able to close S3 object {}", objectPath, e);
+                    log.warn("Not able to close S3 object " + objectPath, e);
                 }
             }
         }
@@ -459,11 +479,15 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 throw new FileSystemException("Wrong type to get acl " + getName());
             }
 
-            log.debug("Get acl for object [bucket={},key={}]", bucketName, key.get());
+            if (log.isDebugEnabled()) {
+                log.debug("Get acl for object [bucket=" + bucketName + ",key=" + key.get() + "]");
+            }
 
             return getService().getObjectAcl(bucketName, key.get());
         } else {
-            log.debug("Get acl for bucket {}", bucketName);
+            if (log.isDebugEnabled()) {
+                log.debug("Get acl for bucket " + bucketName);
+            }
 
             return getService().getBucketAcl(bucketName);
         }
@@ -532,7 +556,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 rights[0] = WRITE;
             } else {
                 // Skip unknown permission
-                log.error("Skip unknown permission {}", perm);
+                log.error("Skip unknown permission " + perm);
 
                 continue;
             }
@@ -610,7 +634,8 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             } else if (acl.isAllowed(group, WRITE)) {
                 perm = Permission.Write;
             } else {
-                log.error("Skip unknown set of rights {}", Arrays.toString(rights));
+                log.error("Skip unknown set of rights " + Arrays.toString(rights));
+
                 continue;
             }
 
@@ -623,7 +648,8 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             } else if (group.equals(Acl.Group.OWNER)) {
                 grantee = new CanonicalGrantee(owner.getId());
             } else {
-                log.error("Skip unknown group {}", group);
+                log.error("Skip unknown group " + group);
+
                 continue;
             }
 
@@ -684,7 +710,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         assertType(FILE, FOLDER);
 
         if (objectMetadataHolder.isVirtual()) {
-            log.debug("Have to fetch real metadata for [{}]", getName());
+            if (log.isDebugEnabled()) {
+                log.debug("Have to fetch real metadata for [" + getName() + "]");
+            }
 
             refresh();
             getType(); // Force fetch metadata from S3
@@ -758,7 +786,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         @Override
         protected void onClose() throws IOException {
             try {
-                log.debug("Start to upload file {}", outputFile.getPath());
+                if (log.isDebugEnabled()) {
+                    log.debug("Start to upload file " + outputFile.getPath());
+                }
 
                 String md5 = upload(outputFile.getPath().toFile());
                 outputFile.setMD5Hash(md5);
@@ -821,8 +851,11 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
             if (!allowS3Copy(unwrappedSrcFile, unwrappedDestFile)) {
                 log.warn(
-                        "One of files don't allow S3 copy - fallback to default implementation [from={},to={}]",
-                        unwrappedSrcFile, unwrappedDestFile
+                        "One of files don't allow S3 copy - fallback to default implementation [from=" +
+                                unwrappedSrcFile +
+                                ",to=" +
+                                unwrappedDestFile +
+                                "]"
                 );
 
                 super.copyFrom(file, selector);
@@ -870,7 +903,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
      * @throws FileSystemException
      */
     protected boolean doCopyFrom(FileObject fromFile, FileObject toFile) throws FileSystemException {
-        log.debug("Do S3 copy [from={},to={}]", fromFile, toFile);
+        if (log.isDebugEnabled()) {
+            log.debug("Do S3 copy [from=" + fromFile + ",to=" + toFile + "]");
+        }
 
         // Clean up the destination file, if necessary
         if (toFile.exists()) {
@@ -975,7 +1010,19 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 withServerSideEncryption(getServerSideEncryption()).
                 sendWith(request);
 
-        log.debug("Upload request [file={},key={},length={},type={}]", file, key, file.length(), getName().getBaseName());
+        if (log.isDebugEnabled()) {
+            log.debug(
+                    "Upload request [file=" +
+                    file +
+                    ",key=" +
+                    key +
+                    ",length=" +
+                    file.length() +
+                    ",type=" +
+                    getName().getBaseName() +
+                    "]"
+            );
+        }
 
         try {
             Upload upload = getTransferManager().upload(request);

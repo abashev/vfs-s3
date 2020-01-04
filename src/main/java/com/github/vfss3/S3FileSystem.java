@@ -4,12 +4,12 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.transfer.TransferManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.Capability;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
@@ -25,7 +25,7 @@ import static com.amazonaws.services.s3.internal.Constants.NO_SUCH_BUCKET_STATUS
  * @author Moritz Siuts
  */
 public class S3FileSystem extends AbstractFileSystem {
-    private final Logger log = LoggerFactory.getLogger(S3FileSystem.class);
+    private final Log log = LogFactory.getLog(getClass());
 
     private AmazonS3 service;
     private TransferManager transferManager;
@@ -39,13 +39,17 @@ public class S3FileSystem extends AbstractFileSystem {
         this.transferManager = transferManager;
         this.service = transferManager.getAmazonS3Client();
 
-        log.info("Init new S3 FileSystem [root={},opts={}]", rootName, options);
+        if (log.isInfoEnabled()) {
+            log.info("Init new S3 FileSystem [root=" + rootName + ",opts=" + options + "]");
+        }
 
         try {
             if (options.isCreateBucket() && !doesBucketExist(rootName.getBucket())) {
                 bucket = service.createBucket(rootName.getBucket());
 
-                log.info("Created new bucket [{}].", bucket);
+                if (log.isInfoEnabled()) {
+                    log.info("Created new bucket [" + bucket + "]");
+                }
             } else {
                 bucket = new Bucket(rootName.getBucket());
             }

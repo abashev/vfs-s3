@@ -4,14 +4,14 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.transfer.TransferManager;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.Capability;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemConfigBuilder;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileSystemOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,7 +28,7 @@ import static com.amazonaws.services.s3.transfer.TransferManagerBuilder.standard
  * @author Moritz Siuts
  */
 public class S3FileProvider extends CachingFileProvider {
-    private final Logger log = LoggerFactory.getLogger(S3FileProvider.class);
+    private final Log log = LogFactory.getLog(getClass());
 
     final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
         Capability.CREATE,
@@ -88,7 +88,9 @@ public class S3FileProvider extends CachingFileProvider {
 
         endpoint.append(root.getEndpoint());
 
-        log.debug("Endpoint configuration [endpoint={},region={}]", endpoint, root.getSigningRegion());
+        if (log.isDebugEnabled()) {
+            log.debug("Endpoint configuration [endpoint=" + endpoint + ",region=" + root.getSigningRegion() + "]");
+        }
 
         clientBuilder.withEndpointConfiguration(new EndpointConfiguration(endpoint.toString(), root.getSigningRegion()));
 

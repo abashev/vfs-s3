@@ -16,6 +16,8 @@
  */
 package com.github.vfss3;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystem;
@@ -24,8 +26,6 @@ import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.provider.AbstractFileProvider;
 import org.apache.commons.vfs2.provider.FileProvider;
 import org.apache.commons.vfs2.provider.VfsComponent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -47,7 +47,7 @@ abstract class CachingFileProvider extends AbstractFileProvider {
     private final Lock writeLock = globalLock.writeLock();
 
     private final Map<FileSystemKey, FileSystem> fileSystems = new TreeMap<>();
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final Log log = LogFactory.getLog(getClass());
 
     public CachingFileProvider() {
         super();
@@ -113,7 +113,9 @@ abstract class CachingFileProvider extends AbstractFileProvider {
                 fs = findFileSystem(rootName, fileSystemOptions);
 
                 if (fs == null) {
-                    log.debug("Create new file system for [key={},options={}]", rootName, fileSystemOptions);
+                    if (log.isDebugEnabled()) {
+                        log.debug("Create new file system for [key=" + rootName + ",options=" + fileSystemOptions + "]");
+                    }
 
                     // Need to create the file system, and cache it
                     fs = doCreateFileSystem(rootName, fileSystemOptions);
@@ -146,7 +148,9 @@ abstract class CachingFileProvider extends AbstractFileProvider {
         // Add to the container and initialize
         addComponent(fs);
 
-        log.debug("Add new file system [key={},options={}]", key, fs.getFileSystemOptions());
+        if (log.isDebugEnabled()) {
+            log.debug("Add new file system [key=" + key + ",options=" + fs.getFileSystemOptions() + "]");
+        }
 
         final FileSystemKey treeKey = new FileSystemKey(key, fs.getFileSystemOptions());
 
@@ -167,7 +171,9 @@ abstract class CachingFileProvider extends AbstractFileProvider {
 
             for (Map.Entry<FileSystemKey, FileSystem> entry : fileSystems.entrySet()) {
                 if (entry.getValue().equals(fileSystem)) {
-                    log.debug("Remove file system {}", entry.getKey());
+                    if (log.isDebugEnabled()) {
+                        log.debug("Remove file system " + entry.getKey());
+                    }
 
                     keys.add(entry.getKey());
                 }
