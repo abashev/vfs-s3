@@ -9,3 +9,4 @@ target/
 .idea
 atlassian-ide-plugin.xml
 .envrc
+dependency-reduced-pom.xml
