@@ -48,6 +48,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -992,9 +993,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         final S3FileName destFile = ((S3FileObject) toFile).getName();
 
         return (
-                getName().getEndpoint().equals(destFile.getEndpoint()) &&
-                getName().getAccessKey().equals(destFile.getAccessKey()) &&
-                getName().getSecretKey().equals(destFile.getSecretKey())
+                Objects.equals(getName().getEndpoint(), destFile.getEndpoint()) &&
+                Objects.equals(getName().getAccessKey(), destFile.getAccessKey()) &&
+                Objects.equals(getName().getSecretKey(), destFile.getSecretKey())
         );
     }
 
