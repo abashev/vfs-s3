@@ -23,7 +23,7 @@ import static org.apache.commons.vfs2.FileType.IMAGINARY;
 
 /**
  * @author Matthias L. Jugel
- * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
+ * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */
 public class S3FileNameParser extends AbstractFileNameParser {
     private static final String DEFAULT_SIGNING_REGION = "us-east-1";

@@ -8,7 +8,7 @@ import org.apache.commons.vfs2.FileSystemOptions;
  * Wrapper around FileSystemOptions for storing and retrieving various options. It can't be immutable because it use
  * system properties as default values.
  *
- * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
+ * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */
 public class S3FileSystemOptions {
     /**

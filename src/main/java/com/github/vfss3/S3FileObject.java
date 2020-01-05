@@ -68,16 +68,14 @@ import static org.apache.commons.vfs2.NameScope.CHILD;
 import static org.apache.commons.vfs2.NameScope.DESCENDENT_OR_SELF;
 
 /**
- * Implementation of the virtual S3 file system object using the AWS-SDK.<p/>
+ * Implementation of the virtual S3 file system object using the AWS-SDK.
  * Based on Matthias Jugel code.
- * {@link http://thinkberg.com/svn/moxo/trunk/modules/vfs.s3/ }
  *
  * @author Marat Komarov
  * @author Matthias L. Jugel
  * @author Moritz Siuts
  * @author Shon Vella
  */
-@SuppressWarnings({"JavadocReference"})
 public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     private final Log log = LogFactory.getLog(getClass());
 

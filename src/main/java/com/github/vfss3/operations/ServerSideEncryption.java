@@ -6,7 +6,7 @@ import org.apache.commons.vfs2.operations.FileOperation;
 /**
  * File operation to work with server-side encryption. Some cloud providers don't support it.
  *
- * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
+ * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */
 public interface ServerSideEncryption extends FileOperation {
     /**

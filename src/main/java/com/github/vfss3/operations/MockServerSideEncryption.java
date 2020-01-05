@@ -3,7 +3,7 @@ package com.github.vfss3.operations;
 /**
  * Mock implementation that valid for no SSE clouds.
  *
- * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
+ * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */
 class MockServerSideEncryption implements ServerSideEncryption {
     @Override

@@ -6,8 +6,7 @@ import org.apache.commons.vfs2.operations.FileOperation;
 /**
  * File operation for gettin' direct urls to S3 objects.
  *
- * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
- * @version $Id$
+ * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */
 public interface IPublicUrlsGetter extends FileOperation {
     /**

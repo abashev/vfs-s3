@@ -4,7 +4,7 @@ import com.github.vfss3.S3FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 
 /**
- * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
+ * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */
 class ServerSideEncryptionImpl implements ServerSideEncryption {
     private final S3FileObject file;

@@ -6,8 +6,7 @@ import com.github.vfss3.S3FileSystemOptions;
 import org.apache.commons.vfs2.FileSystemException;
 
 /**
- * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
- * @version $Id$
+ * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */
 class PublicUrlsGetter implements IPublicUrlsGetter {
     private final S3FileObject file;

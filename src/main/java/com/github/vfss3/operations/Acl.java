@@ -20,8 +20,7 @@ import java.util.*;
  * </code>
  *
  * @author Marat Komarov
- * @author Alex Kovalyov <alex@intridea.com>
- *
+ * @author <A href="mailto:alex@intridea.com">Alex Kovalyov</A>
  */
 public class Acl {
     public enum Permission {
