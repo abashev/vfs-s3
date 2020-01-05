@@ -141,6 +141,28 @@ public class S3FileNameParserTest {
                 hasPath("/");
     }
 
+    @Test(expectedExceptions = FileSystemException.class)
+    public void wrongKeys() throws FileSystemException {
+        assertThat(parse("s3://access@bucket.s3.amazonaws.com")).
+                hasEndpoint("s3.amazonaws.com").
+                hasPathPrefix("bucket").
+                hasType(FOLDER);
+    }
+
+    @Test
+    public void checkCredentials() throws FileSystemException {
+        assertThat(parse("s3://access:secret@bucket.s3.amazonaws.com")).
+                hasEndpoint("s3.amazonaws.com").
+                hasPathPrefix("bucket").
+                hasType(FOLDER);
+
+        assertThat(parse("s3://access:secret:cn-north-1@bucket.s3.amazonaws.com")).
+                hasEndpoint("s3-cn-north-1.amazonaws.com").
+                hasPathPrefix("bucket").
+                hasType(FOLDER).
+                hasSigningRegion("cn-north-1");
+    }
+
     private S3FileNameAssert parse(String url) throws FileSystemException {
         return (new S3FileNameAssert((new S3FileNameParser()).parseUri(null, null, url)));
     }

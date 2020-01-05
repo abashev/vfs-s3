@@ -66,6 +66,20 @@ public class S3FileNameParser extends AbstractFileNameParser {
             throw new FileSystemException("Not able to find host in url [" + filename + "]");
         }
 
+        String accessKey = null, secretKey = null, region = null;
+
+        if ((uri.getUserInfo() != null) && (uri.getUserInfo().trim().length() != 0)) {
+            String[] info = uri.getUserInfo().split(":");
+
+            if ((info.length != 2) && (info.length != 3)) {
+                throw new FileSystemException("Wrong user info inside url [" + filename + "]");
+            } else {
+                accessKey = info[0];
+                secretKey = info[1];
+                region = (info.length == 3) ? info[2] : null;
+            }
+        }
+
         if (base != null) {
             // We already have all configuration
             S3FileName file = buildS3FileName(base, filename);
@@ -81,7 +95,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
         if ((hostNameMatcher = AWS_HOST_PATTERN.matcher(uri.getHost())).matches()) {
             // Standard AWS endpoint
-            String region = hostNameMatcher.group("region");
+            region = (region == null) ? hostNameMatcher.group("region") : region;
 
             checkRegion(region);
 
@@ -118,7 +132,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
                 region = DEFAULT_SIGNING_REGION;
             }
 
-            S3FileName file = buildS3FileName(host, null, bucket, bucket, region, key, true);
+            S3FileName file = buildS3FileName(host, null, bucket, bucket, region, key, true, accessKey, secretKey);
 
             if (log.isDebugEnabled()) {
                 log.debug("From uri " + filename + " got " + file);
@@ -130,7 +144,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
             String key = uri.getPath();
 
             S3FileName file = buildS3FileName(
-                    "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key, false
+                    "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key, false, accessKey, secretKey
             );
 
             if (log.isDebugEnabled()) {
@@ -154,9 +168,10 @@ public class S3FileNameParser extends AbstractFileNameParser {
                         null,
                         pathMatcher.group("bucket"),
                         pathMatcher.group("bucket"),
-                        DEFAULT_SIGNING_REGION,
+                        (region != null) ? region : DEFAULT_SIGNING_REGION,
                         pathMatcher.group("key"),
-                        false
+                        false,
+                        accessKey, secretKey
                 );
 
                 if (log.isDebugEnabled()) {
@@ -195,7 +210,8 @@ public class S3FileNameParser extends AbstractFileNameParser {
     private S3FileName buildS3FileName(
             String endpoint, String urlPrefix, String pathPrefix,
             String bucket, String signingRegion,
-            String key, boolean supportsSSE
+            String key, boolean supportsSSE,
+            String accessKey, String secretKey
     ) throws FileSystemException {
         if ((key == null) || (key.trim().length() == 0)) {
             key = ROOT_PATH;
@@ -212,6 +228,8 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
         FileType type = (ROOT_PATH.equals(key)) ? FOLDER : IMAGINARY;
 
-        return (new S3FileName(endpoint, urlPrefix, pathPrefix, bucket, signingRegion, key, type, supportsSSE));
+        return (new S3FileName(
+                endpoint, urlPrefix, pathPrefix, bucket, signingRegion, key, type, supportsSSE, accessKey, secretKey
+        ));
     }
 }

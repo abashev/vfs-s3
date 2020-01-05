@@ -58,12 +58,19 @@ public class S3FileName extends AbstractFileName {
      */
     private final boolean supportsSSE;
 
+    /**
+     * Force access key and secret key for the url
+     */
+    private final String accessKey;
+    private final String secretKey;
+
     S3FileName(
             String endpoint,
             String urlPrefix, String pathPrefix,
             String bucket, String signingRegion,
             String path, FileType type,
-            boolean supportsSSE
+            boolean supportsSSE,
+            String accessKey, String secretKey
     ) {
         super(SCHEME, path, type);
 
@@ -78,13 +85,15 @@ public class S3FileName extends AbstractFileName {
         this.pathPrefix = pathPrefix;
         this.urlPrefix = urlPrefix;
         this.supportsSSE = supportsSSE;
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
     }
 
     @Override
     public S3FileName createName(String absPath, FileType type) {
         return new S3FileName(
                 endpoint, urlPrefix, pathPrefix, bucket, signingRegion,
-                absPath, type, supportsSSE
+                absPath, type, supportsSSE, accessKey, secretKey
         );
     }
 
@@ -130,6 +139,18 @@ public class S3FileName extends AbstractFileName {
 
     public boolean supportsSSE() {
         return supportsSSE;
+    }
+
+    public boolean hasCredentials() {
+        return ((accessKey != null) && (secretKey != null));
+    }
+
+    public String getAccessKey() {
+        return accessKey;
+    }
+
+    public String getSecretKey() {
+        return secretKey;
     }
 
     /**

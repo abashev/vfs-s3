@@ -1,6 +1,8 @@
 package com.github.vfss3;
 
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.transfer.TransferManager;
@@ -59,6 +61,12 @@ public class S3FileProvider extends CachingFileProvider {
     ) throws FileSystemException {
         final S3FileName root = (S3FileName) fileName;
         final S3FileSystemOptions options = new S3FileSystemOptions(fileSystemOptions);
+
+        if (root.hasCredentials()) {
+            options.setCredentialsProvider(
+                    new AWSStaticCredentialsProvider(new BasicAWSCredentials(root.getAccessKey(), root.getSecretKey()))
+            );
+        }
 
         ClientConfiguration clientConfiguration = options.getClientConfiguration();
 
