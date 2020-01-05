@@ -42,7 +42,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
-            <version>1.11.390</version>
+            <version>1.11.700</version>
         </dependency>
 
         <dependency>
@@ -288,9 +288,9 @@
                                                 <exclude>com.amazonaws.auth.profile.internal.ProfileStaticCredentialsProvider</exclude>
                                                 <exclude>com.amazonaws.auth.profile.internal.securitytoken.STSProfileCredentialsServiceProvider</exclude>
                                                 <exclude>com.amazonaws.auth.profile.ProfileCredentialsProvider</exclude>
-                                                <exclude>com.amazonaws.auth.EC2CredentialsFetcher</exclude>
+                                                <exclude>com.amazonaws.auth.*CredentialsFetcher</exclude>
 
-                                                <exclude>com.amazonaws.ClientConfiguration</exclude>
+                                                <exclude>com.amazonaws.ClientConfiguration*</exclude>
                                                 <exclude>com.amazonaws.ApacheHttpClientConfig</exclude>
                                                 <exclude>com.amazonaws.DnsResolver</exclude>
                                                 <exclude>com.amazonaws.ProxyAuthenticationMethod</exclude>
