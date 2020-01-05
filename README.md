@@ -12,12 +12,30 @@ Amazon S3 driver for VFS (Apache Commons Virtual File System)
     <dependency>
         <groupId>com.github.abashev</groupId>
         <artifactId>vfs-s3</artifactId>
-        <version>4.0.0</version>
+        <version>4.1.0</version>
     </dependency>
 
 ### How to add as dependency into your Gradle build
     
-    implementation 'com.github.abashev:vfs-s3:4.0.0'
+    implementation 'com.github.abashev:vfs-s3:4.1.0'
+
+### URL format
+
+    s3://[[access-key:secret-key]:sign-region]@endpoint-url/folder-or-bucket/
+    
+- Access key and Secret key could come from default AWS SDK chain (environment, container etc)
+- Sign-region is useful for custom implementations
+- If endpoint URL from known providers then we will try to get bucket name from host, if not able to do it then bucket is first path segment
+
+### Sample groovy scripts - https://github.com/abashev/vfs-s3/tree/branch-4.x.x/samples
+
+- `s3-copy` able to copy between clouds, via http url or between different accounts
+
+
+    s3-copy s3://access1:secret1@s3-tests.storage.yandexcloud.net/javadoc.jar s3://access2:secret2@s3.eu-central-1.amazonaws.com/s3-tests-2/javadoc.jar
+
+    s3-copy https://oss.sonatype.org/some-name/120133-1-javadoc.jar s3://s3.eu-central-1.amazonaws.com/s3-tests-2/javadoc.jar
+
 
 ### Sample Java Code for AWS S3
 
@@ -56,7 +74,7 @@ For running tests you need active credentials for AWS. You can specify them as
 
 ### TODO 
 
-- [ ] Shadow all dependencies inside vfs-s3 artifact
+- [x] Shadow all dependencies inside vfs-s3 artifact
 
 ### Old releases 
 
