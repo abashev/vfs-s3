@@ -29,12 +29,12 @@ Amazon S3 driver for VFS (Apache Commons Virtual File System)
 
 ### Sample groovy scripts - https://github.com/abashev/vfs-s3/tree/branch-4.x.x/samples
 
-- `s3-copy` able to copy between clouds, via http url or between different accounts
-
+`s3-copy` able to copy between clouds, via http url or between different accounts
 
     s3-copy s3://access1:secret1@s3-tests.storage.yandexcloud.net/javadoc.jar s3://access2:secret2@s3.eu-central-1.amazonaws.com/s3-tests-2/javadoc.jar
 
     s3-copy https://oss.sonatype.org/some-name/120133-1-javadoc.jar s3://s3.eu-central-1.amazonaws.com/s3-tests-2/javadoc.jar
+
 
 
 ### Sample Java Code for AWS S3
