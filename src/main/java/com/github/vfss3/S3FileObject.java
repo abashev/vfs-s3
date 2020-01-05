@@ -879,7 +879,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     protected boolean allowS3Copy(FileObject fromFile, FileObject toFile) throws FileSystemException {
         if (fromFile.getType().hasChildren()) {
             return true;
-        } else if ((fromFile instanceof S3FileObject) && (toFile instanceof S3FileObject)) {
+        } else if ((fromFile instanceof S3FileObject) && (((S3FileObject) fromFile).sameFileSystem(toFile))) {
             return true;
         } else if (fromFile.getType().hasContent() && fromFile.getURL().getProtocol().equals("file") && (toFile instanceof S3FileObject)) {
             try {
@@ -897,17 +897,16 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
      *
      * @param fromFile
      * @param toFile
-     * @return was it success?? - false - need to fallback to default implementation
      * @throws FileSystemException
      */
-    protected boolean doCopyFrom(FileObject fromFile, FileObject toFile) throws FileSystemException {
+    protected void doCopyFrom(FileObject fromFile, FileObject toFile) throws FileSystemException {
         if (log.isDebugEnabled()) {
             log.debug("Do S3 copy [from=" + fromFile + ",to=" + toFile + "]");
         }
 
         // Clean up the destination file, if necessary
         if (toFile.exists()) {
-            if (toFile.getType() != toFile.getType()) {
+            if (fromFile.getType() != toFile.getType()) {
                 // The destination file exists, and is not of the same type,
                 // so delete it
                 // TODO - add a pluggable policy for deleting and overwriting existing files
@@ -915,6 +914,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             }
         } else {
             FileObject parent = getParent();
+
             if (parent != null) {
                 parent.createFolder();
             }
@@ -924,15 +924,11 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         try {
             if (fromFile.getType().hasChildren()) {
                 toFile.createFolder();
-
-                // do server side copy if both source and dest are in same file system
-                // (we could probably check credentials instead of file system to allow bucket-to-bucket direct
-                // copy, but that would be a pita
-
-                return true;
-            } else if ((fromFile instanceof S3FileObject) && (toFile instanceof S3FileObject)) {
+            } else if ((fromFile instanceof S3FileObject) && (((S3FileObject) fromFile).sameFileSystem(toFile))) {
                 S3FileObject s3SrcFile = (S3FileObject) fromFile;
                 S3FileObject s3DestFile = (S3FileObject) toFile;
+
+                // do server side copy if both source and dest are in same file system
 
                 String srcBucketName = s3SrcFile.getBucketName();
                 String srcFileName = s3SrcFile.getName().getS3Key().orElseThrow(() -> new FileSystemException("Not able to copy whole bucket"));
@@ -963,8 +959,6 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 }
 
                 getService().copyObject(copy);
-
-                return true;
             } else if (fromFile.getType().hasContent() && fromFile.getURL().getProtocol().equals("file") && (toFile instanceof S3FileObject)) {
                 // do direct upload from file to avoid overhead of making a copy of the file
                 S3FileObject s3DestFile = (S3FileObject) toFile;
@@ -973,19 +967,35 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                     File localFile = new File(fromFile.getURL().toURI());
 
                     s3DestFile.upload(localFile);
-
-                    return true;
                 } catch (URISyntaxException e) {
                     // couldn't convert URL to URI, but should still be able to do the slower way
                 }
             }
-
-            return false;
         } catch (IOException | AmazonClientException e) {
             throw new FileSystemException("vfs.provider/copy-file.error", e, fromFile, toFile);
         } finally {
             toFile.close();
         }
+    }
+
+    /**
+     * Check S3 file system endpoint and credentials
+     *
+     * @param toFile
+     * @return
+     */
+    protected boolean sameFileSystem(FileObject toFile) {
+        if (!(toFile instanceof S3FileObject)) {
+            return false;
+        }
+
+        final S3FileName destFile = ((S3FileObject) toFile).getName();
+
+        return (
+                getName().getEndpoint().equals(destFile.getEndpoint()) &&
+                getName().getAccessKey().equals(destFile.getAccessKey()) &&
+                getName().getSecretKey().equals(destFile.getSecretKey())
+        );
     }
 
     /**
