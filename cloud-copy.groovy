@@ -1,0 +1,24 @@
+#!/usr/bin/env groovy
+
+@Grab(group='com.github.abashev', module='vfs-s3', version='4.1.0-SNAPSHOT')
+@Grab(group='commons-httpclient', module='commons-httpclient', version='3.1')
+
+import org.apache.commons.vfs2.*
+
+if (args.length != 2) {
+    println 'Use: cloud-copy <from commons-vfs url> <to commons-vfs url>'
+    println 'Url example - s3://access:secret@s3.eu-central-1.amazonaws.com/s3-tests-2 or any http url'
+
+    return
+}
+
+FileSystemManager fsManager = VFS.getManager()
+
+fromPath = fsManager.resolveFile(args[0])
+toPath = fsManager.resolveFile(args[1])
+
+toPath.copyFrom(fromPath, Selectors.SELECT_SELF_AND_CHILDREN)
+
+// Need to close file systems to shutdown transfer threads
+fsManager.closeFileSystem(fromPath.getFileSystem())
+fsManager.closeFileSystem(toPath.getFileSystem())

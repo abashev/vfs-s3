@@ -1,11 +1,13 @@
 #!/usr/bin/env groovy
 
 @Grab(group='com.github.abashev', module='vfs-s3', version='4.1.0-SNAPSHOT')
+@Grab(group='commons-httpclient', module='commons-httpclient', version='3.1')
+
 import org.apache.commons.vfs2.*
 import java.text.SimpleDateFormat
 
 if (args.length != 1) {
-    println 'Use: cloud-list <s3 url>'
+    println 'Use: cloud-list <commons-vfs url>'
     println 'Url example - s3://s3.eu-central-1.amazonaws.com/s3-tests-2'
 
     return
