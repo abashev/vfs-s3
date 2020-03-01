@@ -27,7 +27,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.Random;
 
@@ -512,46 +511,6 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         FileObject backup = resolveFile("/test-place/backup.zip");
 
         assertTrue(ofEpochMilli(backup.getContent().getLastModifiedTime()).atZone(UTC).getYear() > 2010);
-    }
-
-    @Test(dependsOnMethods={"findFiles"})
-	public void copyInsideBucket() throws FileSystemException {
-        FileObject testsDir = dir.resolveFile("find-tests");
-        FileObject testsDirCopy = dir.resolveFile("find-tests-copy");
-        testsDirCopy.copyFrom(testsDir, Selectors.SELECT_SELF_AND_CHILDREN);
-
-        // Should have same number of files
-        FileObject[] files = testsDir.findFiles(Selectors.SELECT_SELF_AND_CHILDREN);
-        FileObject[] filesCopy = testsDirCopy.findFiles(Selectors.SELECT_SELF_AND_CHILDREN);
-        assertEquals(files.length, filesCopy.length,
-            Arrays.deepToString(files) + " vs. " + Arrays.deepToString(filesCopy));
-	}
-
-    @Test(dependsOnMethods={"createDirOk", "findFiles"})
-    public void copyAllToEncryptedInsideBucket() throws FileSystemException {
-        FileObject testsDir = dir.resolveFile("find-tests");
-
-        FileObject testsDirCopy =
-                resolveFile("/test-place/" + dirName, o -> o.setServerSideEncryption(true)).
-                resolveFile("find-tests-encrypted-copy");
-
-        assertTrue(testsDir.exists());
-        assertFalse(testsDirCopy.exists());
-
-        testsDirCopy.copyFrom(testsDir, SELECT_ALL);
-
-        // Should have same number of files
-        FileObject[] files = testsDir.findFiles(SELECT_ALL);
-        FileObject[] filesCopy = testsDirCopy.findFiles(SELECT_ALL);
-
-        assertEquals(files.length, filesCopy.length);
-
-        for (int i = 0; i < files.length; i++) {
-            if (files[i].getType() == FileType.FILE) {
-                assertNoEncryption(files[i]);
-                assertAES256Encryption(filesCopy[i]);
-            }
-        }
     }
 
     @Test(dependsOnMethods={"findFiles", "download"})
