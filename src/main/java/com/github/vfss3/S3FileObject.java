@@ -45,7 +45,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -838,7 +838,11 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         final ArrayList<FileObject> files = new ArrayList<>();
         file.findFiles(selector, false, files);
 
-        Map<FileObject, FileObject> filesToCopy = new HashMap<>();
+        if (log.isDebugEnabled()) {
+            log.debug("Found files " + files.toString());
+        }
+
+        Map<FileObject, FileObject> filesToCopy = new LinkedHashMap<>();
 
         // Copy everything across
         for (FileObject srcFile : files) {
@@ -870,6 +874,10 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         for (Map.Entry<FileObject, FileObject> entry : filesToCopy.entrySet()) {
             final FileObject source = entry.getKey();
             final FileObject destination = entry.getValue();
+
+            if (log.isDebugEnabled()) {
+                log.debug("Do file copy from [" + source.getName() + "] to [" + destination.getName() + "]");
+            }
 
             doCopyFrom(source, destination);
         }

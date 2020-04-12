@@ -7,9 +7,12 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.amazonaws.services.s3.Headers.ETAG;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
+import static com.amazonaws.util.DateUtils.cloneDate;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -117,10 +120,40 @@ class ObjectMetadataHolder {
      * @param request
      */
     public void sendWith(PutObjectRequest request) {
-        request.setMetadata(metadata.clone());
+        request.setMetadata(deepMetadataClone());
     }
 
     public void sendWith(CopyObjectRequest request) {
-        request.setNewObjectMetadata(metadata.clone());
+        request.setNewObjectMetadata(deepMetadataClone());
+    }
+
+    /**
+     * Make deep clone for ObjectMetadata and remove tracing headers (break mail.ru cloud integration)
+     *
+     * @return
+     */
+    private ObjectMetadata deepMetadataClone() {
+        ObjectMetadata result = new ObjectMetadata();
+
+        final Map<String, Object> headers = new HashMap<>(metadata.getRawMetadata());
+
+        headers.remove("X-Host");
+        headers.remove("X-Req-Id");
+
+        headers.forEach(result::setHeader);
+
+        result.setUserMetadata(metadata.getUserMetadata());
+
+        result.setExpirationTime(cloneDate(metadata.getExpirationTime()));
+        result.setHttpExpiresDate(cloneDate(metadata.getHttpExpiresDate()));
+        result.setRestoreExpirationTime(cloneDate(metadata.getRestoreExpirationTime()));
+
+        if (metadata.getOngoingRestore() != null) {
+            result.setOngoingRestore(metadata.getOngoingRestore());
+        }
+
+        result.setExpirationTimeRuleId(metadata.getExpirationTimeRuleId());
+
+        return result;
     }
 }

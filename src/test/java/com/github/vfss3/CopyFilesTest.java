@@ -14,6 +14,7 @@ import java.util.Random;
 
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 import static org.apache.commons.vfs2.Selectors.SELECT_ALL;
+import static org.apache.commons.vfs2.Selectors.SELECT_SELF_AND_CHILDREN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -59,13 +60,13 @@ public class CopyFilesTest extends AbstractS3FileSystemTest {
         assertTrue(testsDir.exists());
         assertFalse(testsDirCopy.exists());
 
-        testsDirCopy.copyFrom(testsDir, Selectors.SELECT_SELF_AND_CHILDREN);
+        testsDirCopy.copyFrom(testsDir, SELECT_SELF_AND_CHILDREN);
 
         assertTrue(testsDirCopy.exists());
 
         // Should have same number of files
-        FileObject[] files = testsDir.findFiles(Selectors.SELECT_SELF_AND_CHILDREN);
-        FileObject[] filesCopy = testsDirCopy.findFiles(Selectors.SELECT_SELF_AND_CHILDREN);
+        FileObject[] files = testsDir.findFiles(SELECT_SELF_AND_CHILDREN);
+        FileObject[] filesCopy = testsDirCopy.findFiles(SELECT_SELF_AND_CHILDREN);
 
         assertEquals(files.length, filesCopy.length,
                 Arrays.deepToString(files) + " vs. " + Arrays.deepToString(filesCopy));
