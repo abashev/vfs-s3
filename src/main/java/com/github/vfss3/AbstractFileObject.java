@@ -420,6 +420,10 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
         final ArrayList<FileObject> files = new ArrayList<>();
         findFiles(selector, true, files);
 
+        if (log.isDebugEnabled()) {
+            log.debug("Found files to delete " + files.toString());
+        }
+
         for (FileObject fileObject : files) {
             final AbstractFileObject file = FileObjectUtils.getAbstractFileObject(fileObject);
 

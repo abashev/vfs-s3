@@ -32,6 +32,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
     private static final Pattern AWS_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3[-.]((?<region>[a-z0-9\\-]+)\\.)?amazonaws\\.com");
     private static final Pattern YANDEX_HOST_PATTERN = compile("(?<bucket>[a-z0-9\\-]+)\\.storage\\.yandexcloud\\.net");
+    private static final Pattern MAIL_RU_HOST_PATTERN = compile("hb\\.bizmrg\\.com");
 
     private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
 
@@ -146,6 +147,26 @@ public class S3FileNameParser extends AbstractFileNameParser {
             S3FileName file = buildS3FileName(
                     "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key, false, accessKey, secretKey
             );
+
+            if (log.isDebugEnabled()) {
+                log.debug("From uri " + filename + " got " + file);
+            }
+
+            return file;
+        } else if ((hostNameMatcher = MAIL_RU_HOST_PATTERN.matcher(uri.getHost())).matches()) {
+            final Matcher pathMatcher = PATH.matcher(uri.getPath());
+            S3FileName file;
+
+            if (pathMatcher.matches()) {
+                String bucket = pathMatcher.group("bucket");
+                String key = pathMatcher.group("key");
+
+                file = buildS3FileName(
+                        "hb.bizmrg.com", null, bucket, bucket, "ru-msk", key, false, accessKey, secretKey
+                );
+            } else {
+                throw new FileSystemException("Not able to find bucket inside [" + filename + "]");
+            }
 
             if (log.isDebugEnabled()) {
                 log.debug("From uri " + filename + " got " + file);

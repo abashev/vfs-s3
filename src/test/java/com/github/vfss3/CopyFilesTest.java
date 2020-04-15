@@ -6,7 +6,6 @@ import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.Selectors;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
@@ -23,11 +22,12 @@ import static org.testng.Assert.assertTrue;
  * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */
 public class CopyFilesTest extends AbstractS3FileSystemTest {
+    private String rootName = "/copy-tests-" + (new Random()).nextInt(1000);
     private FileObject rootFolder;
 
     @Test
     public void createDirOk() throws FileSystemException {
-        rootFolder = resolveFile("/copy-tests-" + (new Random()).nextInt(1000));
+        rootFolder = resolveFile(rootName);
         rootFolder.createFolder();
 
         assertTrue(rootFolder.exists());
@@ -98,11 +98,15 @@ public class CopyFilesTest extends AbstractS3FileSystemTest {
         }
     }
 
-    @AfterClass
-    public void cleanup() throws FileSystemException {
-        if (rootFolder != null) {
-            rootFolder.deleteAll();
-        }
+    @Test(dependsOnMethods = "copyAllToEncryptedInsideBucket")
+    public void checkDelete() throws FileSystemException {
+        rootFolder = resolveFile(rootName);
+
+        assertTrue(rootFolder.deleteAll() > 0);
+
+        rootFolder = resolveFile(rootName);
+
+        assertFalse(rootFolder.exists());
     }
 
     public FileObject resolveFile(String path) throws FileSystemException {
