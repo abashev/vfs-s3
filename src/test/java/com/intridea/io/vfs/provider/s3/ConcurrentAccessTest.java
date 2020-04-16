@@ -196,5 +196,6 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
     @AfterClass
     public void tearDown() throws FileSystemException {
         resolveFile("/concurrent/").deleteAll();
+        resolveFile("/read-deadlock/").deleteAll();
     }
 }

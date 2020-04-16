@@ -338,7 +338,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods = {"createFileOk", "createDirOk", "uploadBigFile"})
     public void listChildrenRoot() throws FileSystemException {
-        assertHasChildren(resolveFile("/"), "test-place", BIG_FILE, "acl", "read-deadlock");
+        assertHasChildren(resolveFile("/"), "test-place", BIG_FILE, "acl");
         assertHasChildren(
                 resolveFile("/test-place/"),
                 "backup.zip", dirName, encryptedFileName, "folder with space", "name with space"

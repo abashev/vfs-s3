@@ -167,10 +167,12 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
     @AfterClass
     public void restoreAcl() throws FileSystemException {
         if (file != null) {
+            file.refresh();
             file.delete();
         }
 
         if (folder != null) {
+            folder.refresh();
             folder.delete();
         }
     }
