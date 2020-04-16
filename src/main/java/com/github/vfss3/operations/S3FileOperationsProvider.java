@@ -19,6 +19,7 @@ public class S3FileOperationsProvider implements FileOperationProvider {
             operationsList.add(IPublicUrlsGetter.class);
             operationsList.add(IMD5HashGetter.class);
             operationsList.add(ServerSideEncryption.class);
+            operationsList.add(PlatformFeatures.class);
         }
     }
 
@@ -43,11 +44,13 @@ public class S3FileOperationsProvider implements FileOperationProvider {
                 // get md5 hash
                 return new MD5HashGetter(s3file);
             } else if (operationClass.equals(ServerSideEncryption.class)) {
-                if (s3file.getName().supportsSSE()) {
+                if (s3file.getName().getPlatformFeatures().supportsServerSideEncryption()) {
                     return (new ServerSideEncryptionImpl(s3file));
                 } else {
                     return (new MockServerSideEncryption());
                 }
+            } else if (operationClass.equals(PlatformFeatures.class)) {
+                return s3file.getName().getPlatformFeatures();
             }
         }
 

@@ -1,6 +1,7 @@
 package com.github.vfss3;
 
 import com.amazonaws.regions.Regions;
+import com.github.vfss3.operations.PlatformFeatures;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.FileName;
@@ -32,7 +33,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
     private static final Pattern AWS_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3[-.]((?<region>[a-z0-9\\-]+)\\.)?amazonaws\\.com");
     private static final Pattern YANDEX_HOST_PATTERN = compile("(?<bucket>[a-z0-9\\-]+)\\.storage\\.yandexcloud\\.net");
-    private static final Pattern MAIL_RU_HOST_PATTERN = compile("hb\\.bizmrg\\.com");
+    private static final Pattern MAIL_RU_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?[ih]b\\.bizmrg\\.com");
 
     private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
 
@@ -133,7 +134,10 @@ public class S3FileNameParser extends AbstractFileNameParser {
                 region = DEFAULT_SIGNING_REGION;
             }
 
-            S3FileName file = buildS3FileName(host, null, bucket, bucket, region, key, true, accessKey, secretKey);
+            S3FileName file = buildS3FileName(
+                    host, null, bucket, bucket, region, key, accessKey, secretKey,
+                    new PlatformFeaturesImpl(true, true, true)
+            );
 
             if (log.isDebugEnabled()) {
                 log.debug("From uri " + filename + " got " + file);
@@ -145,7 +149,8 @@ public class S3FileNameParser extends AbstractFileNameParser {
             String key = uri.getPath();
 
             S3FileName file = buildS3FileName(
-                    "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key, false, accessKey, secretKey
+                    "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key, accessKey, secretKey,
+                    new PlatformFeaturesImpl(false, true, false)
             );
 
             if (log.isDebugEnabled()) {
@@ -154,19 +159,28 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
             return file;
         } else if ((hostNameMatcher = MAIL_RU_HOST_PATTERN.matcher(uri.getHost())).matches()) {
-            final Matcher pathMatcher = PATH.matcher(uri.getPath());
+            String bucket = hostNameMatcher.group("bucket");
+            String key;
+
+            if ((bucket != null) && (bucket.trim().length() > 0)) {
+                key = uri.getPath();
+            } else {
+                final Matcher pathMatcher = PATH.matcher(uri.getPath());
+
+                if (pathMatcher.matches()) {
+                    bucket = pathMatcher.group("bucket");
+                    key = pathMatcher.group("key");
+                } else {
+                    throw new FileSystemException("Not able to find bucket inside [" + filename + "]");
+                }
+            }
+
             S3FileName file;
 
-            if (pathMatcher.matches()) {
-                String bucket = pathMatcher.group("bucket");
-                String key = pathMatcher.group("key");
-
-                file = buildS3FileName(
-                        "hb.bizmrg.com", null, bucket, bucket, "ru-msk", key, false, accessKey, secretKey
-                );
-            } else {
-                throw new FileSystemException("Not able to find bucket inside [" + filename + "]");
-            }
+            file = buildS3FileName(
+                    "hb.bizmrg.com", null, bucket, bucket, "ru-msk", key, accessKey, secretKey,
+                    new PlatformFeaturesImpl(true, false, false)
+            );
 
             if (log.isDebugEnabled()) {
                 log.debug("From uri " + filename + " got " + file);
@@ -191,8 +205,8 @@ public class S3FileNameParser extends AbstractFileNameParser {
                         pathMatcher.group("bucket"),
                         (region != null) ? region : DEFAULT_SIGNING_REGION,
                         pathMatcher.group("key"),
-                        false,
-                        accessKey, secretKey
+                        accessKey, secretKey,
+                        new PlatformFeaturesImpl(true, true, false)
                 );
 
                 if (log.isDebugEnabled()) {
@@ -209,8 +223,6 @@ public class S3FileNameParser extends AbstractFileNameParser {
     /**
      * Check region for correct name.
      *
-     * @param regionName
-     * @throws FileSystemException
      */
     private void checkRegion(String regionName) throws FileSystemException {
         if ((regionName != null) && (regionName.trim().length() > 0)) {
@@ -231,8 +243,9 @@ public class S3FileNameParser extends AbstractFileNameParser {
     private S3FileName buildS3FileName(
             String endpoint, String urlPrefix, String pathPrefix,
             String bucket, String signingRegion,
-            String key, boolean supportsSSE,
-            String accessKey, String secretKey
+            String key,
+            String accessKey, String secretKey,
+            PlatformFeatures features
     ) throws FileSystemException {
         if ((key == null) || (key.trim().length() == 0)) {
             key = ROOT_PATH;
@@ -250,7 +263,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
         FileType type = (ROOT_PATH.equals(key)) ? FOLDER : IMAGINARY;
 
         return (new S3FileName(
-                endpoint, urlPrefix, pathPrefix, bucket, signingRegion, key, type, supportsSSE, accessKey, secretKey
+                endpoint, urlPrefix, pathPrefix, bucket, signingRegion, key, type, accessKey, secretKey, features
         ));
     }
 }

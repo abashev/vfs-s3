@@ -15,6 +15,7 @@
  */
 package com.github.vfss3;
 
+import com.github.vfss3.operations.PlatformFeatures;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 
@@ -56,7 +57,7 @@ public class S3FileName extends AbstractFileName {
     /**
      * Flag does cloud support SSE or not
      */
-    private final boolean supportsSSE;
+    private final PlatformFeatures platformFeatures;
 
     /**
      * Force access key and secret key for the url
@@ -69,8 +70,8 @@ public class S3FileName extends AbstractFileName {
             String urlPrefix, String pathPrefix,
             String bucket, String signingRegion,
             String path, FileType type,
-            boolean supportsSSE,
-            String accessKey, String secretKey
+            String accessKey, String secretKey,
+            PlatformFeatures platformFeatures
     ) {
         super(SCHEME, path, type);
 
@@ -84,16 +85,16 @@ public class S3FileName extends AbstractFileName {
         this.signingRegion = requireNonNull(signingRegion);
         this.pathPrefix = pathPrefix;
         this.urlPrefix = urlPrefix;
-        this.supportsSSE = supportsSSE;
         this.accessKey = accessKey;
         this.secretKey = secretKey;
+        this.platformFeatures = requireNonNull(platformFeatures);
     }
 
     @Override
     public S3FileName createName(String absPath, FileType type) {
         return new S3FileName(
                 endpoint, urlPrefix, pathPrefix, bucket, signingRegion,
-                absPath, type, supportsSSE, accessKey, secretKey
+                absPath, type, accessKey, secretKey, platformFeatures
         );
     }
 
@@ -137,10 +138,6 @@ public class S3FileName extends AbstractFileName {
         return signingRegion;
     }
 
-    public boolean supportsSSE() {
-        return supportsSSE;
-    }
-
     public boolean hasCredentials() {
         return ((accessKey != null) && (secretKey != null));
     }
@@ -151,6 +148,10 @@ public class S3FileName extends AbstractFileName {
 
     public String getSecretKey() {
         return secretKey;
+    }
+
+    public PlatformFeatures getPlatformFeatures() {
+        return platformFeatures;
     }
 
     /**

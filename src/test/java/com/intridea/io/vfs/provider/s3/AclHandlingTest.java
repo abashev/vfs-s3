@@ -5,6 +5,7 @@ import com.github.vfss3.operations.Acl.Group;
 import com.github.vfss3.operations.Acl.Permission;
 import com.github.vfss3.operations.IAclGetter;
 import com.github.vfss3.operations.IAclSetter;
+import com.github.vfss3.operations.PlatformFeatures;
 import com.intridea.io.vfs.support.AbstractS3FileSystemTest;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
@@ -49,7 +50,12 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
         // Default permissions
         // By default AWS owner can read but for Yandex all access forbidden
-        // assertAllowed(fileAcl, OWNER);
+        if (((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).defaultAllowForOwner()) {
+            assertAllowed(fileAcl, OWNER);
+        } else {
+            assertDenied(fileAcl, OWNER);
+        }
+
         assertDenied(fileAcl, AUTHORIZED);
         assertDenied(fileAcl, EVERYONE);
     }
@@ -105,7 +111,14 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
     @Test(dependsOnMethods = {"checkSet2"})
     public void checkDenyAllForFile() throws FileSystemException {
         // Set deny to all
-        fileAcl.denyAll();
+        if (((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).allowDenyForOwner()) {
+            fileAcl.denyAll();
+
+            fileAcl.deny(OWNER, READ);
+            fileAcl.deny(AUTHORIZED, READ);
+        }
+
+        fileAcl.deny(EVERYONE, READ);
 
         setAcl(file, fileAcl);
 
@@ -114,8 +127,11 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
         Acl changedAcl = getAcl(file);
 
-        assertDenied(changedAcl, OWNER);
-        assertDenied(changedAcl, AUTHORIZED);
+        if (((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).allowDenyForOwner()) {
+            assertDenied(changedAcl, OWNER);
+            assertDenied(changedAcl, AUTHORIZED);
+        }
+
         assertDenied(changedAcl, EVERYONE);
     }
 
@@ -130,7 +146,9 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
         Acl folderAcl = getAcl(folder);
 
         // Set deny to all
-        folderAcl.denyAll();
+        if (((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).allowDenyForOwner()) {
+            folderAcl.denyAll();
+        }
 
         setAcl(folder, folderAcl);
 
@@ -139,9 +157,11 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
         Acl changedAcl = getAcl(folder);
 
-        assertDenied(changedAcl, OWNER);
-        assertDenied(changedAcl, AUTHORIZED);
-        assertDenied(changedAcl, EVERYONE);
+        if (((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).allowDenyForOwner()) {
+            assertDenied(changedAcl, OWNER);
+            assertDenied(changedAcl, AUTHORIZED);
+            assertDenied(changedAcl, EVERYONE);
+        }
     }
 
     @AfterClass
