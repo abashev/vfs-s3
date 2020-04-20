@@ -12,12 +12,12 @@ Amazon S3 driver for VFS (Apache Commons Virtual File System)
     <dependency>
         <groupId>com.github.abashev</groupId>
         <artifactId>vfs-s3</artifactId>
-        <version>4.1.0</version>
+        <version>4.2.0</version>
     </dependency>
 
 ### How to add as dependency into your Gradle build
     
-    implementation 'com.github.abashev:vfs-s3:4.1.0'
+    implementation 'com.github.abashev:vfs-s3:4.2.0'
 
 ### URL format
 
@@ -26,6 +26,14 @@ Amazon S3 driver for VFS (Apache Commons Virtual File System)
 - Access key and Secret key could come from default AWS SDK chain (environment, container etc)
 - Sign-region is useful for custom implementations
 - If endpoint URL from known providers then we will try to get bucket name from host, if not able to do it then bucket is first path segment
+
+### Supported providers
+
+Provider | URL
+----- | -------
+Amazon S3 | https://aws.amazon.com/s3/ 
+Yandex Object Storage | https://cloud.yandex.ru/services/storage 
+Mail.ru Cloud Storage | https://mcs.mail.ru/storage/ 
 
 ### Sample groovy scripts - https://github.com/abashev/vfs-s3/tree/branch-4.x.x/samples
 
