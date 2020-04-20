@@ -32,7 +32,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
     private final Log log = LogFactory.getLog(S3FileNameParser.class);
 
     private static final Pattern AWS_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3[-.]((?<region>[a-z0-9\\-]+)\\.)?amazonaws\\.com");
-    private static final Pattern YANDEX_HOST_PATTERN = compile("(?<bucket>[a-z0-9\\-]+)\\.storage\\.yandexcloud\\.net");
+    private static final Pattern YANDEX_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?storage\\.yandexcloud\\.net");
     private static final Pattern MAIL_RU_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?[ih]b\\.bizmrg\\.com");
 
     private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
@@ -146,7 +146,20 @@ public class S3FileNameParser extends AbstractFileNameParser {
             return file;
         } else if ((hostNameMatcher = YANDEX_HOST_PATTERN.matcher(uri.getHost())).matches()) {
             String bucket = hostNameMatcher.group("bucket");
-            String key = uri.getPath();
+            String key;
+
+            if ((bucket != null) && (bucket.trim().length() > 0)) {
+                key = uri.getPath();
+            } else {
+                final Matcher pathMatcher = PATH.matcher(uri.getPath());
+
+                if (pathMatcher.matches()) {
+                    bucket = pathMatcher.group("bucket");
+                    key = pathMatcher.group("key");
+                } else {
+                    throw new FileSystemException("Not able to find bucket inside [" + filename + "]");
+                }
+            }
 
             S3FileName file = buildS3FileName(
                     "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key, accessKey, secretKey,
@@ -175,9 +188,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
                 }
             }
 
-            S3FileName file;
-
-            file = buildS3FileName(
+            S3FileName file = buildS3FileName(
                     "hb.bizmrg.com", null, bucket, bucket, "ru-msk", key, accessKey, secretKey,
                     new PlatformFeaturesImpl(true, false, false)
             );
