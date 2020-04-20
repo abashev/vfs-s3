@@ -25,13 +25,15 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class AclHandlingTest extends AbstractS3FileSystemTest {
+    private static final String FOLDER = "/acl";
+
     FileObject file;
     FileObject folder;
     Acl fileAcl;
 
     @Test
     public void checkGet() throws FileSystemException {
-        file = resolveFile("/acl/check_acl.zip");
+        file = resolveFile(FOLDER + "/check_acl.zip");
 
         if (!file.exists()) {
             final File backupFile = binaryFile();
@@ -137,7 +139,7 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods = {"checkSet2"})
     public void checkDenyAllForFolder() throws FileSystemException {
-        folder = resolveFile("/acl/check_acl/");
+        folder = resolveFile(FOLDER + "/check_acl/");
 
         if (!folder.exists()) {
             folder.createFolder();
@@ -166,15 +168,7 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
     @AfterClass
     public void restoreAcl() throws FileSystemException {
-        if (file != null) {
-            file.refresh();
-            file.delete();
-        }
-
-        if (folder != null) {
-            folder.refresh();
-            folder.delete();
-        }
+        assertTrue(resolveFile(FOLDER).deleteAll() > 0);
     }
 
     private void setAcl(FileObject file, Acl acl) throws FileSystemException {

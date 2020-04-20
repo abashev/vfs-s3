@@ -11,7 +11,6 @@ import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.Selectors;
-import org.apache.commons.vfs2.provider.AbstractFileSystem;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -338,7 +337,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods = {"createFileOk", "createDirOk", "uploadBigFile"})
     public void listChildrenRoot() throws FileSystemException {
-        assertHasChildren(resolveFile("/"), "test-place", BIG_FILE, "acl");
+        assertHasChildren(resolveFile("/"), "test-place", BIG_FILE);
         assertHasChildren(
                 resolveFile("/test-place/"),
                 "backup.zip", dirName, encryptedFileName, "folder with space", "name with space"
@@ -525,14 +524,9 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @AfterClass
     public void tearDown() throws FileSystemException {
-        try {
-            resolveFile("/" + BIG_FILE).delete();
-            resolveFile("/test-place").delete(SELECT_ALL);
-            resolveFile("/test-place-2").delete(SELECT_ALL);
-
-            ((AbstractFileSystem) resolveFile("/").getFileSystem()).close();
-        } catch (Exception ignored) {
-        }
+        resolveFile("/" + BIG_FILE).delete();
+        resolveFile("/test-place").deleteAll();
+        resolveFile("/test-place-2").deleteAll();
     }
 
     /**
