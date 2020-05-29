@@ -34,6 +34,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
     private static final Pattern AWS_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3[-.]((?<region>[a-z0-9\\-]+)\\.)?amazonaws\\.com");
     private static final Pattern YANDEX_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?storage\\.yandexcloud\\.net");
     private static final Pattern MAIL_RU_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?[ih]b\\.bizmrg\\.com");
+    private static final Pattern ALIYUN_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?((?<region>[a-z0-9\\-]+)\\.)?aliyuncs\\.com");
 
     private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
 
@@ -191,6 +192,57 @@ public class S3FileNameParser extends AbstractFileNameParser {
             S3FileName file = buildS3FileName(
                     "hb.bizmrg.com", null, bucket, bucket, "ru-msk", key, accessKey, secretKey,
                     new PlatformFeaturesImpl(true, false, false)
+            );
+
+            if (log.isDebugEnabled()) {
+                log.debug("From uri " + filename + " got " + file);
+            }
+
+            return file;
+        } else if ((hostNameMatcher = ALIYUN_HOST_PATTERN.matcher(uri.getHost())).matches()) {
+            // Aliyun endpoint
+            region = (region == null) ? hostNameMatcher.group("region") : region;
+            String host = uri.getHost();
+
+            // Aliyun OSS only supports virtual hosted style access (info from 1. August 2019)
+            // https://www.alibabacloud.com/help/doc-detail/64919.htm
+
+            String bucket = hostNameMatcher.group("bucket");
+            final String pathPrefix;
+
+            if ((bucket == null) || (bucket.trim().length() == 0)) {
+                final Matcher pathMatcher = PATH.matcher(uri.getPath());
+                bucket = pathMatcher.group("bucket");
+                pathPrefix = "/" + bucket;
+
+                if ((bucket == null) || (bucket.trim().length() == 0)) {
+                    throw new FileSystemException("Not able to find bucket inside [" + filename + "]");
+                }
+            } else {
+                // set the path prefix to null to enforce the pathStyleAccess to be false
+                pathPrefix = null;
+                // strip the bucket name from the host uri as it will be prepended
+                // again in the S3RequestEndpointResolver
+                host = host.substring(host.indexOf('.') + 1);
+            }
+            Pattern PATH_PATTERN = compile("^/*(?<key>.*)$");
+            final Matcher pathPatternMatcher = PATH_PATTERN.matcher(uri.getPath());
+
+            String key = uri.getPath();
+            while (key.startsWith("/")) {
+                key = key.substring(1);
+            }
+
+            S3FileName file = buildS3FileName(
+                    host,
+                    null,
+                    pathPrefix,
+                    bucket,
+                    (region != null) ? region : DEFAULT_SIGNING_REGION,
+                    key, // pathPatternMatcher.group("key"),
+                    accessKey,
+                    secretKey,
+                    new PlatformFeaturesImpl(true, true, false)
             );
 
             if (log.isDebugEnabled()) {
