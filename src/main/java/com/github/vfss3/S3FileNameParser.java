@@ -28,13 +28,14 @@ import static org.apache.commons.vfs2.FileType.IMAGINARY;
  */
 public class S3FileNameParser extends AbstractFileNameParser {
     private static final String DEFAULT_SIGNING_REGION = "us-east-1";
+    private static final String DEFAULT_ALIYUN_SIGNING_REGION = "cn-hangzhou";
 
     private final Log log = LogFactory.getLog(S3FileNameParser.class);
 
     private static final Pattern AWS_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3[-.]((?<region>[a-z0-9\\-]+)\\.)?amazonaws\\.com");
     private static final Pattern YANDEX_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?storage\\.yandexcloud\\.net");
     private static final Pattern MAIL_RU_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?[ih]b\\.bizmrg\\.com");
-    private static final Pattern ALIYUN_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?((?<region>[a-z0-9\\-]+)\\.)?aliyuncs\\.com");
+    private static final Pattern ALIYUN_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?oss(-(?<region>[a-z0-9\\-]+))?\\.aliyuncs\\.com");
 
     private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
 
@@ -211,13 +212,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
             final String pathPrefix;
 
             if ((bucket == null) || (bucket.trim().length() == 0)) {
-                final Matcher pathMatcher = PATH.matcher(uri.getPath());
-                bucket = pathMatcher.group("bucket");
-                pathPrefix = "/" + bucket;
-
-                if ((bucket == null) || (bucket.trim().length() == 0)) {
-                    throw new FileSystemException("Not able to find bucket inside [" + filename + "]");
-                }
+                throw new FileSystemException("Path-style URLs are not supported on Aliyun Object Storage Service  [" + filename + "]");
             } else {
                 // set the path prefix to null to enforce the pathStyleAccess to be false
                 pathPrefix = null;
@@ -225,21 +220,16 @@ public class S3FileNameParser extends AbstractFileNameParser {
                 // again in the S3RequestEndpointResolver
                 host = host.substring(host.indexOf('.') + 1);
             }
-            Pattern PATH_PATTERN = compile("^/*(?<key>.*)$");
-            final Matcher pathPatternMatcher = PATH_PATTERN.matcher(uri.getPath());
 
             String key = uri.getPath();
-            while (key.startsWith("/")) {
-                key = key.substring(1);
-            }
 
             S3FileName file = buildS3FileName(
                     host,
                     null,
                     pathPrefix,
                     bucket,
-                    (region != null) ? region : DEFAULT_SIGNING_REGION,
-                    key, // pathPatternMatcher.group("key"),
+                    (region != null) ? region : DEFAULT_ALIYUN_SIGNING_REGION,
+                    key,
                     accessKey,
                     secretKey,
                     new PlatformFeaturesImpl(true, true, false)
