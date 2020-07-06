@@ -88,6 +88,11 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods = "checkGet")
     public void checkSet2() throws FileSystemException {
+        if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAuthorizedGroup()) {
+            // Doesn't support authorized group
+            return;
+        }
+
         // Set allow all to Authorized
         fileAcl.allow(AUTHORIZED);
 

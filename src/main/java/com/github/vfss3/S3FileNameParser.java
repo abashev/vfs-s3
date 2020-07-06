@@ -138,7 +138,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
             S3FileName file = buildS3FileName(
                     host, null, bucket, bucket, region, key, accessKey, secretKey,
-                    new PlatformFeaturesImpl(true, true, true)
+                    new PlatformFeaturesImpl(true, true, true, true)
             );
 
             if (log.isDebugEnabled()) {
@@ -165,7 +165,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
             S3FileName file = buildS3FileName(
                     "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key, accessKey, secretKey,
-                    new PlatformFeaturesImpl(false, true, false)
+                    new PlatformFeaturesImpl(false, true, false, true)
             );
 
             if (log.isDebugEnabled()) {
@@ -192,7 +192,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
             S3FileName file = buildS3FileName(
                     "hb.bizmrg.com", null, bucket, bucket, "ru-msk", key, accessKey, secretKey,
-                    new PlatformFeaturesImpl(true, false, false)
+                    new PlatformFeaturesImpl(true, false, false, true)
             );
 
             if (log.isDebugEnabled()) {
@@ -232,7 +232,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
                     key,
                     accessKey,
                     secretKey,
-                    new PlatformFeaturesImpl(true, true, false)
+                    new PlatformFeaturesImpl(true, false, true, false)
             );
 
             if (log.isDebugEnabled()) {
@@ -259,7 +259,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
                         (region != null) ? region : DEFAULT_SIGNING_REGION,
                         pathMatcher.group("key"),
                         accessKey, secretKey,
-                        new PlatformFeaturesImpl(true, true, false)
+                        new PlatformFeaturesImpl(true, true, false, true)
                 );
 
                 if (log.isDebugEnabled()) {

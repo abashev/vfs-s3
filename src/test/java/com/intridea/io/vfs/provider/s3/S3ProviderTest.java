@@ -502,7 +502,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
         String md5Local = toHex(computeMD5Hash(new FileInputStream(backupFile)));
 
-        assertEquals(md5Remote, md5Local, "Local and remote md5 should be equal");
+        assertTrue(md5Remote.equalsIgnoreCase(md5Local), "Local and remote md5 should be equal");
     }
 
     @Test(dependsOnMethods = "upload")

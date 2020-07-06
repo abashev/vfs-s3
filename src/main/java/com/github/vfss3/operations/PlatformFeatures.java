@@ -28,4 +28,10 @@ public interface PlatformFeatures extends FileOperation {
      * @return
      */
     boolean supportsServerSideEncryption();
+
+    /**
+     * Does it support special group for authorized requests - For AliCloud it is only Owner and Everyone
+     * @return
+     */
+    boolean supportsAuthorizedGroup();
 }

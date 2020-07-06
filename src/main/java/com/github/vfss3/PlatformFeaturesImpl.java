@@ -11,11 +11,16 @@ class PlatformFeaturesImpl implements PlatformFeatures {
     private final boolean defaultAllowForOwner;
     private final boolean allowDenyForOwner;
     private final boolean supportsServerSideEncryption;
+    private final boolean supportsAuthorizedGroup;
 
-    public PlatformFeaturesImpl(boolean defaultAllowForOwner, boolean allowDenyForOwner, boolean supportsServerSideEncryption) {
-        this.defaultAllowForOwner = defaultAllowForOwner;
-        this.allowDenyForOwner = allowDenyForOwner;
-        this.supportsServerSideEncryption = supportsServerSideEncryption;
+    public PlatformFeaturesImpl(
+        boolean defaultAllowForOwner, boolean allowDenyForOwner, boolean supportsServerSideEncryption,
+        boolean supportsAuthorizedGroup
+    ) {
+      this.defaultAllowForOwner = defaultAllowForOwner;
+      this.allowDenyForOwner = allowDenyForOwner;
+      this.supportsServerSideEncryption = supportsServerSideEncryption;
+      this.supportsAuthorizedGroup = supportsAuthorizedGroup;
     }
 
     @Override
@@ -31,6 +36,11 @@ class PlatformFeaturesImpl implements PlatformFeatures {
     @Override
     public boolean supportsServerSideEncryption() {
         return supportsServerSideEncryption;
+    }
+
+    @Override
+    public boolean supportsAuthorizedGroup() {
+      return supportsAuthorizedGroup;
     }
 
     @Override
@@ -56,9 +66,10 @@ class PlatformFeaturesImpl implements PlatformFeatures {
     @Override
     public String toString() {
         return "PlatformFeaturesImpl{" +
-                "defaultAllowForOwner=" + defaultAllowForOwner +
-                ", allowDenyForOwner=" + allowDenyForOwner +
-                ", supportsServerSideEncryption=" + supportsServerSideEncryption +
-                '}';
+            "defaultAllowForOwner=" + defaultAllowForOwner +
+            ", allowDenyForOwner=" + allowDenyForOwner +
+            ", supportsServerSideEncryption=" + supportsServerSideEncryption +
+            ", supportsAuthorizedGroup=" + supportsAuthorizedGroup +
+            '}';
     }
 }
