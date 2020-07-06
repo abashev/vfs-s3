@@ -39,6 +39,11 @@ matrix:
         - BASE_URL=s3://hb.bizmrg.com/s3-tests
         - secure: "HrXsReqXFxNiZaL017hb0mLocuiuWsvd0ytPJ4e7HfpInosbE7ZHEf6E4dEyKyRPzqhhR70oqdJzeMYrTCdY5qDV2edn/pjS4GWofcROqt0OuGoFL4ZWwAOkiKVHYTNK9T1/AH/pFcdXO1xQvkjehMg69BNW1FX1bZ2dbWLp1vA="
         - secure: "j8konyjygD1OQs0SuUICAWsVDAxBqs3pmye9cQ5OmymsahWIL07O4YJQ9x+JbI/m1EKjoMKZyj04LvrR/vGflDg4QTfc7szfbqV9rZr3oEOz0rsI09QqeNiKcDlnaeDHCL4uIEvC5DBUCfbGBesobf76o2DFVg46RPuHpJT6PbY="
+    - jdk: openjdk8
+      env:
+        - BASE_URL=s3://s3-tests.oss-eu-central-1.aliyuncs.com/
+        - secure: "mj059ZpLz+hogrggGmVhDEYgkDz6g+boO4qygOQ5WxLkxGUzhCBgRGaYtN0ZQtLSmrrFz47plpG3CeVbEAXS/tOGPUUI+lyvTeNnQwM99EE66YYOSWOd+jJJ5ZDKF4F8E9ggq9ZxvxMsWCHGnoWDyIQTyNKHct4hvEjnfnQMUOE="
+        - secure: "RqEhXP9KO8N22QHh42qbt8209rBNVVdFUgG08J4yebAfqiVoDr8ZFbrgMSRRW94GyLX6LCK3PArBMuqlaBQa502LJMqd+5+pgnLhO1mMjHlOkUtNo1OjC7zozatp4o/GffWMi6zghvL2aCfvX/hmea4pbBTHoxEZf2/+iOrCVZ8="
 
     - jdk: openjdk11
       env:
@@ -75,6 +80,11 @@ matrix:
         - BASE_URL=s3://hb.bizmrg.com/s3-tests
         - secure: "HrXsReqXFxNiZaL017hb0mLocuiuWsvd0ytPJ4e7HfpInosbE7ZHEf6E4dEyKyRPzqhhR70oqdJzeMYrTCdY5qDV2edn/pjS4GWofcROqt0OuGoFL4ZWwAOkiKVHYTNK9T1/AH/pFcdXO1xQvkjehMg69BNW1FX1bZ2dbWLp1vA="
         - secure: "j8konyjygD1OQs0SuUICAWsVDAxBqs3pmye9cQ5OmymsahWIL07O4YJQ9x+JbI/m1EKjoMKZyj04LvrR/vGflDg4QTfc7szfbqV9rZr3oEOz0rsI09QqeNiKcDlnaeDHCL4uIEvC5DBUCfbGBesobf76o2DFVg46RPuHpJT6PbY="
+    - jdk: openjdk11
+      env:
+        - BASE_URL=s3://s3-tests.oss-eu-central-1.aliyuncs.com/
+        - secure: "mj059ZpLz+hogrggGmVhDEYgkDz6g+boO4qygOQ5WxLkxGUzhCBgRGaYtN0ZQtLSmrrFz47plpG3CeVbEAXS/tOGPUUI+lyvTeNnQwM99EE66YYOSWOd+jJJ5ZDKF4F8E9ggq9ZxvxMsWCHGnoWDyIQTyNKHct4hvEjnfnQMUOE="
+        - secure: "RqEhXP9KO8N22QHh42qbt8209rBNVVdFUgG08J4yebAfqiVoDr8ZFbrgMSRRW94GyLX6LCK3PArBMuqlaBQa502LJMqd+5+pgnLhO1mMjHlOkUtNo1OjC7zozatp4o/GffWMi6zghvL2aCfvX/hmea4pbBTHoxEZf2/+iOrCVZ8="
 
     - jdk: oraclejdk11
       env:
@@ -111,6 +121,11 @@ matrix:
         - BASE_URL=s3://hb.bizmrg.com/s3-tests
         - secure: "HrXsReqXFxNiZaL017hb0mLocuiuWsvd0ytPJ4e7HfpInosbE7ZHEf6E4dEyKyRPzqhhR70oqdJzeMYrTCdY5qDV2edn/pjS4GWofcROqt0OuGoFL4ZWwAOkiKVHYTNK9T1/AH/pFcdXO1xQvkjehMg69BNW1FX1bZ2dbWLp1vA="
         - secure: "j8konyjygD1OQs0SuUICAWsVDAxBqs3pmye9cQ5OmymsahWIL07O4YJQ9x+JbI/m1EKjoMKZyj04LvrR/vGflDg4QTfc7szfbqV9rZr3oEOz0rsI09QqeNiKcDlnaeDHCL4uIEvC5DBUCfbGBesobf76o2DFVg46RPuHpJT6PbY="
+    - jdk: oraclejdk11
+      env:
+        - BASE_URL=s3://s3-tests.oss-eu-central-1.aliyuncs.com/
+        - secure: "mj059ZpLz+hogrggGmVhDEYgkDz6g+boO4qygOQ5WxLkxGUzhCBgRGaYtN0ZQtLSmrrFz47plpG3CeVbEAXS/tOGPUUI+lyvTeNnQwM99EE66YYOSWOd+jJJ5ZDKF4F8E9ggq9ZxvxMsWCHGnoWDyIQTyNKHct4hvEjnfnQMUOE="
+        - secure: "RqEhXP9KO8N22QHh42qbt8209rBNVVdFUgG08J4yebAfqiVoDr8ZFbrgMSRRW94GyLX6LCK3PArBMuqlaBQa502LJMqd+5+pgnLhO1mMjHlOkUtNo1OjC7zozatp4o/GffWMi6zghvL2aCfvX/hmea4pbBTHoxEZf2/+iOrCVZ8="
 
 after_success:
   - mvn -V -B -e jacoco:report
