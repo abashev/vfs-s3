@@ -45,6 +45,18 @@ public class S3FileNameParserTest {
                 hasEndpoint("storage.yandexcloud.net").
                 hasPathPrefix(null).
                 hasType(IMAGINARY);
+
+        assertThat(parse("s3://s3-tests.oss-cn-beijing.aliyuncs.com/some_file")).
+                hasEndpoint("oss-cn-beijing.aliyuncs.com").
+                hasPathPrefix(null).
+                hasSigningRegion("cn-beijing").
+                hasType(IMAGINARY);
+
+        assertThat(parse("s3://s3-tests.oss-cn-beijing.aliyuncs.com/some file")).
+                hasEndpoint("oss-cn-beijing.aliyuncs.com").
+                hasPathPrefix(null).
+                hasSigningRegion("cn-beijing").
+                hasType(IMAGINARY);
     }
 
     @Test
@@ -88,6 +100,11 @@ public class S3FileNameParserTest {
                 hasPath("/conc urrent");
     }
 
+    @Test(expectedExceptions = FileSystemException.class)
+    public void checkAliyunPathStyleUrl() throws FileSystemException {
+        parse("s3://oss-cn-beijing.aliyuncs.com/test-bucket/some-file");
+    }
+
     @Test
     public void checkLocalStackUrl() throws FileSystemException {
         assertThat(parse("s3://localhost:4572/bucket")).
@@ -108,6 +125,9 @@ public class S3FileNameParserTest {
 
         assertThat(parse("s3://s3-tests.storage.yandexcloud.net")).
                 hasSigningRegion("ru-central1");
+
+        assertThat(parse("s3://s3-tests.oss.aliyuncs.com")).
+                hasSigningRegion("cn-hangzhou");
     }
 
     @Test
@@ -139,6 +159,12 @@ public class S3FileNameParserTest {
                 hasUrlPrefix("s3-tests").
                 hasPathPrefix(null).
                 hasPath("/");
+
+        assertThat(parse("s3://s3-tests.oss.aliyuncs.com////////s3-tests///////big_file.iso")).
+                hasEndpoint("oss.aliyuncs.com").
+                hasUrlPrefix(null).
+                hasPathPrefix(null).
+                hasPath("/s3-tests/big_file.iso");
     }
 
     @Test(expectedExceptions = FileSystemException.class)
