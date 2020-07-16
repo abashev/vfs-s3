@@ -1,6 +1,5 @@
 package com.github.vfss3;
 
-import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
@@ -8,12 +7,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs2.Capability;
-import org.apache.commons.vfs2.FileName;
-import org.apache.commons.vfs2.FileSystem;
-import org.apache.commons.vfs2.FileSystemConfigBuilder;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemOptions;
+import org.apache.commons.vfs2.*;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,17 +56,16 @@ public class S3FileProvider extends CachingFileProvider {
         final S3FileName root = (S3FileName) fileName;
         final S3FileSystemOptions options = new S3FileSystemOptions(fileSystemOptions);
 
+        final AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().
+                withClientConfiguration(options.getClientConfiguration());
+
         if (root.hasCredentials()) {
-            options.setCredentialsProvider(
+            clientBuilder.withCredentials(
                     new AWSStaticCredentialsProvider(new BasicAWSCredentials(root.getAccessKey(), root.getSecretKey()))
             );
+        } else {
+            clientBuilder.withCredentials(options.getCredentialsProvider());
         }
-
-        ClientConfiguration clientConfiguration = options.getClientConfiguration();
-
-        final AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().
-                withClientConfiguration(clientConfiguration).
-                withCredentials(options.getCredentialsProvider());
 
         if (options.isDisableChunkedEncoding()) {
             clientBuilder.disableChunkedEncoding();

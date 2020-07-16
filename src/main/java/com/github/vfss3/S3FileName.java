@@ -204,8 +204,9 @@ public class S3FileName extends AbstractFileName {
                 ", pathPrefix='" + pathPrefix + '\'' +
                 ", bucket='" + bucket + '\'' +
                 ", signingRegion='" + signingRegion + '\'' +
-                ", path='" + getPath() + '\'' +
-                ", type='" + getType() + '\'' +
+                ", platformFeatures=" + platformFeatures +
+                ", accessKey='" + accessKey + '\'' +
+                ", secretKey='" + ((secretKey != null) ? "***secret***" : "null") + '\'' +
                 '}';
     }
 }
