@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 
-@Grab(group='com.github.abashev', module='vfs-s3', version='4.2.0')
+@Grab(group='com.github.abashev', module='vfs-s3', version='4.3.0')
 
 import org.apache.commons.vfs2.*
 

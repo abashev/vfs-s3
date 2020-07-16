@@ -12,12 +12,12 @@ Amazon S3 driver for VFS (Apache Commons Virtual File System)
     <dependency>
         <groupId>com.github.abashev</groupId>
         <artifactId>vfs-s3</artifactId>
-        <version>4.2.0</version>
+        <version>4.3.0</version>
     </dependency>
 
 ### How to add as dependency into your Gradle build
     
-    implementation 'com.github.abashev:vfs-s3:4.2.0'
+    implementation 'com.github.abashev:vfs-s3:4.3.0'
 
 ### URL format
 
@@ -33,7 +33,9 @@ Provider | URL
 ----- | -------
 Amazon S3 | https://aws.amazon.com/s3/ 
 Yandex Object Storage | https://cloud.yandex.ru/services/storage 
-Mail.ru Cloud Storage | https://mcs.mail.ru/storage/ 
+Mail.ru Cloud Storage | https://mcs.mail.ru/storage/
+Alibaba Cloud Object Storage Service | https://www.alibabacloud.com/product/oss 
+
 
 ### Sample groovy scripts - https://github.com/abashev/vfs-s3/tree/branch-4.x.x/samples
 
