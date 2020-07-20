@@ -53,7 +53,7 @@ class ObjectMetadataHolder {
     ObjectMetadataHolder withContentLength(long length) {
         ObjectMetadata newMeta = metadata.clone();
 
-        metadata.setContentLength(length);
+        newMeta.setContentLength(length);
 
         return new ObjectMetadataHolder(newMeta, virtual);
     }
@@ -61,7 +61,7 @@ class ObjectMetadataHolder {
     ObjectMetadataHolder withContentType(String type) {
         ObjectMetadata newMeta = metadata.clone();
 
-        metadata.setContentType(Mimetypes.getInstance().getMimetype(type));
+        newMeta.setContentType(Mimetypes.getInstance().getMimetype(type));
 
         return new ObjectMetadataHolder(newMeta, virtual);
     }
@@ -69,7 +69,7 @@ class ObjectMetadataHolder {
     ObjectMetadataHolder withLastModifiedNow() {
         ObjectMetadata newMeta = metadata.clone();
 
-        metadata.setLastModified(new Date());
+        newMeta.setLastModified(new Date());
 
         return new ObjectMetadataHolder(newMeta, virtual);
     }
