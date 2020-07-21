@@ -9,15 +9,27 @@ Amazon S3 driver for VFS (Apache Commons Virtual File System)
 
 ### How to add as dependency into your Maven build
 
+For an artifact with embedded AWS SDK (an easiest way to bootstrap)
+
     <dependency>
         <groupId>com.github.abashev</groupId>
         <artifactId>vfs-s3</artifactId>
-        <version>4.3.0</version>
+        <version>4.3.1</version>
+        <classifier>with-aws-sdk</classifier>
     </dependency>
+
+For an artifact without dependencies 
+
+    <dependency>
+        <groupId>com.github.abashev</groupId>
+        <artifactId>vfs-s3</artifactId>
+        <version>4.3.1</version>
+    </dependency>
+
 
 ### How to add as dependency into your Gradle build
     
-    implementation 'com.github.abashev:vfs-s3:4.3.0'
+    implementation 'com.github.abashev:vfs-s3:4.3.1'
 
 ### URL format
 
