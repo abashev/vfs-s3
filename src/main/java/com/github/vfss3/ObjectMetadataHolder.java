@@ -9,11 +9,13 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.amazonaws.services.s3.Headers.ETAG;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 import static com.amazonaws.util.DateUtils.cloneDate;
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.ofNullable;
 
 /**
  * Build class for S3 ObjectMetadata
@@ -92,16 +94,8 @@ class ObjectMetadataHolder {
         return virtual;
     }
 
-    public String getMD5Hash() {
-        return metadata.getETag();
-    }
-
-    public boolean hasMD5Hash(String md5) {
-        if (md5 == null) {
-            return (metadata.getETag() == null);
-        } else {
-            return ((metadata.getETag() != null) && metadata.getETag().equals(md5));
-        }
+    public Optional<String> getMD5Hash() {
+        return ofNullable(metadata.getETag());
     }
 
     public long getContentLength() {
