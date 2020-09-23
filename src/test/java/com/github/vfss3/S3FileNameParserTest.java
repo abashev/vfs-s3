@@ -1,5 +1,6 @@
 package com.github.vfss3;
 
+import com.github.vfss3.parser.S3FileNameParser;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;

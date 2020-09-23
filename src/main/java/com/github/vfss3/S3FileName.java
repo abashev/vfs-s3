@@ -65,7 +65,7 @@ public class S3FileName extends AbstractFileName {
     private final String accessKey;
     private final String secretKey;
 
-    S3FileName(
+    public S3FileName(
             String endpoint,
             String urlPrefix, String pathPrefix,
             String bucket, String signingRegion,

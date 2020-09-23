@@ -1,4 +1,4 @@
-package com.github.vfss3;
+package com.github.vfss3.parser;
 
 import com.github.vfss3.operations.PlatformFeatures;
 

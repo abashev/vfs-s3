@@ -1,6 +1,7 @@
-package com.github.vfss3;
+package com.github.vfss3.parser;
 
 import com.amazonaws.regions.Regions;
+import com.github.vfss3.S3FileName;
 import com.github.vfss3.operations.PlatformFeatures;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
