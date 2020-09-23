@@ -37,9 +37,11 @@ public class S3FileNameParser extends AbstractFileNameParser {
     private static final Pattern YANDEX_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?storage\\.yandexcloud\\.net");
     private static final Pattern MAIL_RU_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?[ih]b\\.bizmrg\\.com");
     private static final Pattern ALIYUN_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?oss(-(?<region>[a-z0-9\\-]+))?\\.aliyuncs\\.com");
+    private static final Pattern ORACLE_HOST_PATTERN = compile(
+            "(?<bucket>[a-z0-9\\-]+)\\.compat\\.objectstorage\\.(?<region>[a-z0-9\\-]+)\\.oraclecloud\\.com"
+    );
 
     private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
-
 
     public S3FileNameParser() {
     }
@@ -139,7 +141,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
             S3FileName file = buildS3FileName(
                     host, null, bucket, bucket, region, key, accessKey, secretKey,
-                    new PlatformFeaturesImpl(true, true, true, true)
+                    new PlatformFeaturesImpl(true, true, true, true, true)
             );
 
             if (log.isDebugEnabled()) {
@@ -166,7 +168,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
             S3FileName file = buildS3FileName(
                     "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key, accessKey, secretKey,
-                    new PlatformFeaturesImpl(false, true, false, true)
+                    new PlatformFeaturesImpl(false, true, false, true, true)
             );
 
             if (log.isDebugEnabled()) {
@@ -193,7 +195,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
             S3FileName file = buildS3FileName(
                     "hb.bizmrg.com", null, bucket, bucket, "ru-msk", key, accessKey, secretKey,
-                    new PlatformFeaturesImpl(true, false, false, true)
+                    new PlatformFeaturesImpl(true, false, false, true, true)
             );
 
             if (log.isDebugEnabled()) {
@@ -233,7 +235,45 @@ public class S3FileNameParser extends AbstractFileNameParser {
                     key,
                     accessKey,
                     secretKey,
-                    new PlatformFeaturesImpl(true, false, true, false)
+                    new PlatformFeaturesImpl(true, false, true, false, true)
+            );
+
+            if (log.isDebugEnabled()) {
+                log.debug("From uri " + filename + " got " + file);
+            }
+
+            return file;
+        } else if ((hostNameMatcher = ORACLE_HOST_PATTERN.matcher(uri.getHost())).matches()) {
+            // Oracle cloud endpoint
+            region = (region == null) ? hostNameMatcher.group("region") : region;
+            String host = uri.getHost();
+
+            String namespace = hostNameMatcher.group("bucket");
+            String bucket, key;
+
+            if ((namespace == null) || (namespace.trim().length() == 0)) {
+                throw new FileSystemException("Virtual host style URLs are not supported on Oracle Cloud Storage Service  [" + filename + "]");
+            } else {
+                final Matcher pathMatcher = PATH.matcher(uri.getPath());
+
+                if (pathMatcher.matches()) {
+                    bucket = pathMatcher.group("bucket");
+                    key = pathMatcher.group("key");
+                } else {
+                    throw new FileSystemException("Not able to find bucket inside [" + filename + "]");
+                }
+            }
+
+            S3FileName file = buildS3FileName(
+                    host,
+                    null,
+                    bucket,
+                    bucket,
+                    region,
+                    key,
+                    accessKey,
+                    secretKey,
+                    new PlatformFeaturesImpl(false, false, false, false, false)
             );
 
             if (log.isDebugEnabled()) {
@@ -260,7 +300,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
                         (region != null) ? region : DEFAULT_SIGNING_REGION,
                         pathMatcher.group("key"),
                         accessKey, secretKey,
-                        new PlatformFeaturesImpl(true, true, false, true)
+                        new PlatformFeaturesImpl(true, true, false, true, true)
                 );
 
                 if (log.isDebugEnabled()) {

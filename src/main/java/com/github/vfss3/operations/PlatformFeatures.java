@@ -34,4 +34,10 @@ public interface PlatformFeatures extends FileOperation {
      * @return
      */
     boolean supportsAuthorizedGroup();
+
+    /**
+     * Does it support Acl for files.
+     * @return
+     */
+    boolean supportsAcl();
 }

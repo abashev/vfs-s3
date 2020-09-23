@@ -35,6 +35,10 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
     public void checkGet() throws FileSystemException {
         file = resolveFile(FOLDER + "/check_acl.zip");
 
+        if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
+            return;
+        }
+
         if (!file.exists()) {
             final File backupFile = binaryFile();
 
@@ -64,6 +68,10 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods = "checkGet")
     public void checkSet() throws FileSystemException {
+        if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
+            return;
+        }
+
         // Set allow read to Guest
         fileAcl.allow(EVERYONE, READ);
 
@@ -117,6 +125,10 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods = {"checkSet2"})
     public void checkDenyAllForFile() throws FileSystemException {
+        if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
+            return;
+        }
+
         // Set deny to all
         if (((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).allowDenyForOwner()) {
             fileAcl.denyAll();
@@ -146,6 +158,10 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
     public void checkDenyAllForFolder() throws FileSystemException {
         folder = resolveFile(FOLDER + "/check_acl/");
 
+        if (!((PlatformFeatures) folder.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
+            return;
+        }
+
         if (!folder.exists()) {
             folder.createFolder();
         }
@@ -173,6 +189,10 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
     @AfterClass
     public void restoreAcl() throws FileSystemException {
+        if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
+            return;
+        }
+
         assertTrue(resolveFile(FOLDER).deleteAll() > 0);
     }
 

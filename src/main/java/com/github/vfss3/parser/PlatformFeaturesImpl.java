@@ -12,15 +12,17 @@ class PlatformFeaturesImpl implements PlatformFeatures {
     private final boolean allowDenyForOwner;
     private final boolean supportsServerSideEncryption;
     private final boolean supportsAuthorizedGroup;
+    private final boolean supportsAcl;
 
     public PlatformFeaturesImpl(
-        boolean defaultAllowForOwner, boolean allowDenyForOwner, boolean supportsServerSideEncryption,
-        boolean supportsAuthorizedGroup
+            boolean defaultAllowForOwner, boolean allowDenyForOwner, boolean supportsServerSideEncryption,
+            boolean supportsAuthorizedGroup, boolean supportsAcl
     ) {
-      this.defaultAllowForOwner = defaultAllowForOwner;
-      this.allowDenyForOwner = allowDenyForOwner;
-      this.supportsServerSideEncryption = supportsServerSideEncryption;
-      this.supportsAuthorizedGroup = supportsAuthorizedGroup;
+        this.defaultAllowForOwner = defaultAllowForOwner;
+        this.allowDenyForOwner = allowDenyForOwner;
+        this.supportsServerSideEncryption = supportsServerSideEncryption;
+        this.supportsAuthorizedGroup = supportsAuthorizedGroup;
+        this.supportsAcl = supportsAcl;
     }
 
     @Override
@@ -41,6 +43,11 @@ class PlatformFeaturesImpl implements PlatformFeatures {
     @Override
     public boolean supportsAuthorizedGroup() {
       return supportsAuthorizedGroup;
+    }
+
+    @Override
+    public boolean supportsAcl() {
+        return supportsAcl;
     }
 
     @Override
