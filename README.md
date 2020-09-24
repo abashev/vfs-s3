@@ -14,7 +14,7 @@ For an artifact with embedded AWS SDK (an easiest way to bootstrap)
     <dependency>
         <groupId>com.github.abashev</groupId>
         <artifactId>vfs-s3</artifactId>
-        <version>4.3.2</version>
+        <version>4.3.3</version>
         <classifier>with-aws-sdk</classifier>
     </dependency>
 
@@ -23,13 +23,13 @@ For an artifact without dependencies
     <dependency>
         <groupId>com.github.abashev</groupId>
         <artifactId>vfs-s3</artifactId>
-        <version>4.3.2</version>
+        <version>4.3.3</version>
     </dependency>
 
 
 ### How to add as dependency into your Gradle build
     
-    implementation 'com.github.abashev:vfs-s3:4.3.2'
+    implementation 'com.github.abashev:vfs-s3:4.3.3'
 
 ### URL format
 
@@ -41,13 +41,14 @@ For an artifact without dependencies
 
 ### Supported providers
 
-Provider | URL
------ | -------
-Amazon S3 | https://aws.amazon.com/s3/ 
-Yandex Object Storage | https://cloud.yandex.ru/services/storage 
-Mail.ru Cloud Storage | https://mcs.mail.ru/storage/
-Alibaba Cloud Object Storage Service | https://www.alibabacloud.com/product/oss 
-
+Provider | URL | Example URL
+----- | ------- | -------
+Amazon S3 | https://aws.amazon.com/s3/ | s3://s3-tests.s3-eu-west-1.amazonaws.com
+Yandex Object Storage | https://cloud.yandex.ru/services/storage | s3://s3-tests.storage.yandexcloud.net/
+Mail.ru Cloud Storage | https://mcs.mail.ru/storage/ | s3://s3-tests.hb.bizmrg.com/
+Alibaba Cloud Object Storage Service | https://www.alibabacloud.com/product/oss | s3://s3-tests.oss-eu-central-1.aliyuncs.com/
+Oracle Cloud Object Storage | https://www.oracle.com/cloud/storage/object-storage.html | s3://frifqsbag2em.compat.objectstorage.eu-frankfurt-1.oraclecloud.com/s3-tests/
+DigitalOcean Spaces Object Storage | https://www.digitalocean.com/products/spaces/ | s3://s3-tests2.ams3.digitaloceanspaces.com
 
 ### Sample groovy scripts - https://github.com/abashev/vfs-s3/tree/branch-4.x.x/samples
 
