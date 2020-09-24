@@ -40,6 +40,9 @@ public class S3FileNameParser extends AbstractFileNameParser {
     private static final Pattern ORACLE_HOST_PATTERN = compile(
             "(?<bucket>[a-z0-9\\-]+)\\.compat\\.objectstorage\\.(?<region>[a-z0-9\\-]+)\\.oraclecloud\\.com"
     );
+    private static final Pattern DIGITAL_OCEAN_HOST_PATTERN = compile(
+            "(?<bucket>[a-z0-9\\-]+)\\.(?<region>[a-z0-9\\-]+)\\.digitaloceanspaces\\.com"
+    );
 
     private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
 
@@ -212,27 +215,22 @@ public class S3FileNameParser extends AbstractFileNameParser {
             // https://www.alibabacloud.com/help/doc-detail/64919.htm
 
             String bucket = hostNameMatcher.group("bucket");
-            final String pathPrefix;
 
             if ((bucket == null) || (bucket.trim().length() == 0)) {
                 throw new FileSystemException("Path-style URLs are not supported on Aliyun Object Storage Service  [" + filename + "]");
             } else {
-                // set the path prefix to null to enforce the pathStyleAccess to be false
-                pathPrefix = null;
                 // strip the bucket name from the host uri as it will be prepended
                 // again in the S3RequestEndpointResolver
-                host = host.substring(host.indexOf('.') + 1);
+                host = host.substring(bucket.length() + 2);
             }
-
-            String key = uri.getPath();
 
             S3FileName file = buildS3FileName(
                     host,
                     null,
-                    pathPrefix,
+                    null,
                     bucket,
                     (region != null) ? region : DEFAULT_ALIYUN_SIGNING_REGION,
-                    key,
+                    uri.getPath(),
                     accessKey,
                     secretKey,
                     new PlatformFeaturesImpl(true, false, true, false, true)
@@ -274,6 +272,38 @@ public class S3FileNameParser extends AbstractFileNameParser {
                     accessKey,
                     secretKey,
                     new PlatformFeaturesImpl(false, false, false, false, false)
+            );
+
+            if (log.isDebugEnabled()) {
+                log.debug("From uri " + filename + " got " + file);
+            }
+
+            return file;
+        } else if ((hostNameMatcher = DIGITAL_OCEAN_HOST_PATTERN.matcher(uri.getHost())).matches()) {
+            // Digital Ocean cloud endpoint
+            region = (region == null) ? hostNameMatcher.group("region") : region;
+            String host = uri.getHost();
+
+            String bucket = hostNameMatcher.group("bucket");
+
+            if ((bucket == null) || (bucket.trim().length() == 0)) {
+                throw new FileSystemException("Path-style URLs are not supported on Digital Ocean Spaces [" + filename + "]");
+            } else {
+                // strip the bucket name from the host uri as it will be prepended
+                // again in the S3RequestEndpointResolver
+                host = host.substring(bucket.length() + 1);
+            }
+
+            S3FileName file = buildS3FileName(
+                    host,
+                    null,
+                    null,
+                    bucket,
+                    region,
+                    uri.getPath(),
+                    accessKey,
+                    secretKey,
+                    new PlatformFeaturesImpl(true, true, false, true, true)
             );
 
             if (log.isDebugEnabled()) {

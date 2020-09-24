@@ -49,6 +49,11 @@ matrix:
         - BASE_URL=s3://frifqsbag2em.compat.objectstorage.eu-frankfurt-1.oraclecloud.com/s3-tests/
         - secure: "aCrBTAvUfiCnhNbdfcTD23+selW5sMXykGzIjcmg0g2wqkS5r1b24SCNQdOSjlylij8SY7pApDxcMFUaCPlR7ATgaEKnQRD0sSctBaYgnNbnimOLjvY1rEHGIPp3ivsVBajHfYizZQhRxSQEJzI4fjNwC5LwxnAXrEcqJ3cjiBk="
         - secure: "L0yNfxeWpq4TkfsJDffC4gBNchQGV/bCnyEeXCyTeM50PeZtcbeoE4iYajoMlPFZxjRszwNlcea/cQlF9t3VKnvIIWpB23kGsCt++njQ6B33djjlsidbOX47nyunrZzeKIVf1ondsV+jM7iHiXtj8OGRsPDvl6rpAbj6t4Z24To="
+    - jdk: openjdk8
+      env:
+        - BASE_URL=s3://s3-tests2.ams3.digitaloceanspaces.com
+        - secure: "iNLQVrbx4G38H149WEwkhO6T/7v8cfRAeXSUeHYruZjEp6bVEvuZJWKYHapRaRiXMFkJbNADEm/71Sr1JOHE4RcaLyjn6aJfmjWmhCIXyh43bZbA432qv3WxZLjjdt72bV3GMkd0vx25kbzzQPJLOPP8T2OHpg0l2XyTK2bm8WU="
+        - secure: "sBD5pvYQI5oDFIHXSW+NUNCPEj16w5T9nNZkdfXKCvwWTqA909TTFxBsg4mZfoy0i6pRrRwh4hNcF0xk5uWUyBjFPtYp8y3WdcK5x60FO4A9ZhlyG40qpKI2UeAYmDNLhQ3krdeDJxrFi2ShUHxmQNY4mJ8hWggdjuoBq/XX9MY="
 
     - jdk: openjdk11
       env:
@@ -95,6 +100,11 @@ matrix:
         - BASE_URL=s3://frifqsbag2em.compat.objectstorage.eu-frankfurt-1.oraclecloud.com/s3-tests/
         - secure: "aCrBTAvUfiCnhNbdfcTD23+selW5sMXykGzIjcmg0g2wqkS5r1b24SCNQdOSjlylij8SY7pApDxcMFUaCPlR7ATgaEKnQRD0sSctBaYgnNbnimOLjvY1rEHGIPp3ivsVBajHfYizZQhRxSQEJzI4fjNwC5LwxnAXrEcqJ3cjiBk="
         - secure: "L0yNfxeWpq4TkfsJDffC4gBNchQGV/bCnyEeXCyTeM50PeZtcbeoE4iYajoMlPFZxjRszwNlcea/cQlF9t3VKnvIIWpB23kGsCt++njQ6B33djjlsidbOX47nyunrZzeKIVf1ondsV+jM7iHiXtj8OGRsPDvl6rpAbj6t4Z24To="
+    - jdk: openjdk11
+      env:
+        - BASE_URL=s3://s3-tests2.ams3.digitaloceanspaces.com
+        - secure: "iNLQVrbx4G38H149WEwkhO6T/7v8cfRAeXSUeHYruZjEp6bVEvuZJWKYHapRaRiXMFkJbNADEm/71Sr1JOHE4RcaLyjn6aJfmjWmhCIXyh43bZbA432qv3WxZLjjdt72bV3GMkd0vx25kbzzQPJLOPP8T2OHpg0l2XyTK2bm8WU="
+        - secure: "sBD5pvYQI5oDFIHXSW+NUNCPEj16w5T9nNZkdfXKCvwWTqA909TTFxBsg4mZfoy0i6pRrRwh4hNcF0xk5uWUyBjFPtYp8y3WdcK5x60FO4A9ZhlyG40qpKI2UeAYmDNLhQ3krdeDJxrFi2ShUHxmQNY4mJ8hWggdjuoBq/XX9MY="
 
     - jdk: oraclejdk11
       env:
@@ -141,7 +151,11 @@ matrix:
         - BASE_URL=s3://frifqsbag2em.compat.objectstorage.eu-frankfurt-1.oraclecloud.com/s3-tests/
         - secure: "aCrBTAvUfiCnhNbdfcTD23+selW5sMXykGzIjcmg0g2wqkS5r1b24SCNQdOSjlylij8SY7pApDxcMFUaCPlR7ATgaEKnQRD0sSctBaYgnNbnimOLjvY1rEHGIPp3ivsVBajHfYizZQhRxSQEJzI4fjNwC5LwxnAXrEcqJ3cjiBk="
         - secure: "L0yNfxeWpq4TkfsJDffC4gBNchQGV/bCnyEeXCyTeM50PeZtcbeoE4iYajoMlPFZxjRszwNlcea/cQlF9t3VKnvIIWpB23kGsCt++njQ6B33djjlsidbOX47nyunrZzeKIVf1ondsV+jM7iHiXtj8OGRsPDvl6rpAbj6t4Z24To="
-
+    - jdk: oraclejdk11
+      env:
+        - BASE_URL=s3://s3-tests2.ams3.digitaloceanspaces.com
+        - secure: "iNLQVrbx4G38H149WEwkhO6T/7v8cfRAeXSUeHYruZjEp6bVEvuZJWKYHapRaRiXMFkJbNADEm/71Sr1JOHE4RcaLyjn6aJfmjWmhCIXyh43bZbA432qv3WxZLjjdt72bV3GMkd0vx25kbzzQPJLOPP8T2OHpg0l2XyTK2bm8WU="
+        - secure: "sBD5pvYQI5oDFIHXSW+NUNCPEj16w5T9nNZkdfXKCvwWTqA909TTFxBsg4mZfoy0i6pRrRwh4hNcF0xk5uWUyBjFPtYp8y3WdcK5x60FO4A9ZhlyG40qpKI2UeAYmDNLhQ3krdeDJxrFi2ShUHxmQNY4mJ8hWggdjuoBq/XX9MY="
 
 after_success:
   - mvn -V -B -e jacoco:report
