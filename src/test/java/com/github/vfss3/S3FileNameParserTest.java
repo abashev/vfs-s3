@@ -58,6 +58,12 @@ public class S3FileNameParserTest {
                 hasPathPrefix(null).
                 hasSigningRegion("cn-beijing").
                 hasType(IMAGINARY);
+
+        assertThat(parse("s3://s3-tests2.ams3.digitaloceanspaces.com/some file")).
+                hasEndpoint("ams3.digitaloceanspaces.com").
+                hasPathPrefix(null).
+                hasSigningRegion("ams3").
+                hasType(IMAGINARY);
     }
 
     @Test
@@ -99,6 +105,12 @@ public class S3FileNameParserTest {
                 hasPathPrefix("bucket").
                 hasType(IMAGINARY).
                 hasPath("/conc urrent");
+
+        assertThat(parse("s3://frifqsbag2em.compat.objectstorage.eu-frankfurt-1.oraclecloud.com/s3-tests//some file")).
+                hasEndpoint("frifqsbag2em.compat.objectstorage.eu-frankfurt-1.oraclecloud.com").
+                hasPathPrefix("s3-tests").
+                hasSigningRegion("eu-frankfurt-1").
+                hasType(IMAGINARY);
     }
 
     @Test(expectedExceptions = FileSystemException.class)

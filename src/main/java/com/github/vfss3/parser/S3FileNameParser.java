@@ -221,7 +221,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
             } else {
                 // strip the bucket name from the host uri as it will be prepended
                 // again in the S3RequestEndpointResolver
-                host = host.substring(bucket.length() + 2);
+                host = host.substring(bucket.length() + 1);
             }
 
             S3FileName file = buildS3FileName(
