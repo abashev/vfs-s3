@@ -43,6 +43,9 @@ public class S3FileNameParser extends AbstractFileNameParser {
     private static final Pattern DIGITAL_OCEAN_HOST_PATTERN = compile(
             "(?<bucket>[a-z0-9\\-]+)\\.(?<region>[a-z0-9\\-]+)\\.digitaloceanspaces\\.com"
     );
+    private static final Pattern SBER_CLOUD_HOST_PATTERN = compile(
+            "(?<bucket>[a-z0-9\\-]+)\\.obs\\.(?<region>[a-z0-9\\-]+)\\.hc\\.sbercloud\\.ru"
+    );
 
     private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
 
@@ -288,6 +291,38 @@ public class S3FileNameParser extends AbstractFileNameParser {
 
             if ((bucket == null) || (bucket.trim().length() == 0)) {
                 throw new FileSystemException("Path-style URLs are not supported on Digital Ocean Spaces [" + filename + "]");
+            } else {
+                // strip the bucket name from the host uri as it will be prepended
+                // again in the S3RequestEndpointResolver
+                host = host.substring(bucket.length() + 1);
+            }
+
+            S3FileName file = buildS3FileName(
+                    host,
+                    null,
+                    null,
+                    bucket,
+                    region,
+                    uri.getPath(),
+                    accessKey,
+                    secretKey,
+                    new PlatformFeaturesImpl(true, true, false, true, true)
+            );
+
+            if (log.isDebugEnabled()) {
+                log.debug("From uri " + filename + " got " + file);
+            }
+
+            return file;
+        } else if ((hostNameMatcher = SBER_CLOUD_HOST_PATTERN.matcher(uri.getHost())).matches()) {
+            // SberCloud endpoint
+            region = (region == null) ? hostNameMatcher.group("region") : region;
+            String host = uri.getHost();
+
+            String bucket = hostNameMatcher.group("bucket");
+
+            if ((bucket == null) || (bucket.trim().length() == 0)) {
+                throw new FileSystemException("Path-style URLs are not supported on SberCloud [" + filename + "]");
             } else {
                 // strip the bucket name from the host uri as it will be prepended
                 // again in the S3RequestEndpointResolver

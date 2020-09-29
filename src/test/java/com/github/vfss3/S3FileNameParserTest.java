@@ -64,6 +64,12 @@ public class S3FileNameParserTest {
                 hasPathPrefix(null).
                 hasSigningRegion("ams3").
                 hasType(IMAGINARY);
+
+        assertThat(parse("s3://s3-tests.obs.ru-moscow-1.hc.sbercloud.ru/some file")).
+                hasEndpoint("obs.ru-moscow-1.hc.sbercloud.ru").
+                hasPathPrefix(null).
+                hasSigningRegion("ru-moscow-1").
+                hasType(IMAGINARY);
     }
 
     @Test
