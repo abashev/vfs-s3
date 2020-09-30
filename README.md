@@ -14,7 +14,7 @@ For an artifact with embedded AWS SDK (an easiest way to bootstrap)
     <dependency>
         <groupId>com.github.abashev</groupId>
         <artifactId>vfs-s3</artifactId>
-        <version>4.3.3</version>
+        <version>4.3.4</version>
         <classifier>with-aws-sdk</classifier>
     </dependency>
 
@@ -23,13 +23,13 @@ For an artifact without dependencies
     <dependency>
         <groupId>com.github.abashev</groupId>
         <artifactId>vfs-s3</artifactId>
-        <version>4.3.3</version>
+        <version>4.3.4</version>
     </dependency>
 
 
 ### How to add as dependency into your Gradle build
     
-    implementation 'com.github.abashev:vfs-s3:4.3.3'
+    implementation 'com.github.abashev:vfs-s3:4.3.4'
 
 ### URL format
 
@@ -49,6 +49,7 @@ Mail.ru Cloud Storage | https://mcs.mail.ru/storage/ | s3://s3-tests.hb.bizmrg.c
 Alibaba Cloud Object Storage Service | https://www.alibabacloud.com/product/oss | s3://s3-tests.oss-eu-central-1.aliyuncs.com/
 Oracle Cloud Object Storage | https://www.oracle.com/cloud/storage/object-storage.html | s3://frifqsbag2em.compat.objectstorage.eu-frankfurt-1.oraclecloud.com/s3-tests/
 DigitalOcean Spaces Object Storage | https://www.digitalocean.com/products/spaces/ | s3://s3-tests2.ams3.digitaloceanspaces.com
+SberCloud Object Storage Service | https://sbercloud.ru/ru/products/object-storage-service | s3://s3-tests.obs.ru-moscow-1.hc.sbercloud.ru
 
 ### Sample groovy scripts - https://github.com/abashev/vfs-s3/tree/branch-4.x.x/samples
 
