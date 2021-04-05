@@ -29,7 +29,7 @@ class ObjectContentHolder implements Closeable {
     private final Log log = LogFactory.getLog(ObjectContentHolder.class);
 
     private Path file;
-    private boolean openForRead = false;
+    private int openForRead = 0;
     private boolean openForWrite = false;
     private String md5;
     private long contentLength;
@@ -100,8 +100,8 @@ class ObjectContentHolder implements Closeable {
             throw new FileSystemException("Content holder was closed");
         }
 
-        if (openForRead || openForWrite) {
-            throw new FileSystemException("Close stream before using it for read");
+        if (openForWrite) {
+            throw new FileSystemException("Close write stream before using it for read");
         }
 
         try {
@@ -118,7 +118,7 @@ class ObjectContentHolder implements Closeable {
             throw new FileSystemException("Content holder was closed");
         }
 
-        if (openForRead || openForWrite) {
+        if (openForRead > 0 || openForWrite) {
             throw new FileSystemException("Close stream before using it for write");
         }
 
@@ -194,14 +194,14 @@ class ObjectContentHolder implements Closeable {
         public UnlockOnCloseInputStream() throws IOException {
             super(Files.newInputStream(file));
 
-            openForRead = true;
+            openForRead++;
         }
 
         @Override
         protected void onClose() throws IOException {
             super.onClose();
 
-            openForRead = false;
+            openForRead--;
         }
     }
 }
