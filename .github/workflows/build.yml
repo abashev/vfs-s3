@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     strategy:
+      max-parallel: 1
       matrix:
         environment: [AWS-1, AWS-2, AWS-3, YANDEX-1, YANDEX-2]
         java-version: [8, 11]
