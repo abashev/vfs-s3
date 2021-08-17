@@ -176,3 +176,7 @@ matrix:
 after_success:
   - mvn -V -B -e jacoco:report
   - bash <(curl -s https://codecov.io/bash)
+
+cache:
+  directories:
+  - $HOME/.m2
