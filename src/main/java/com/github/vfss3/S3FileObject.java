@@ -344,6 +344,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
         if (objectContentHolder != null) {
             objectContentHolder.close();
+            objectContentHolder = null;
         }
     }
 
