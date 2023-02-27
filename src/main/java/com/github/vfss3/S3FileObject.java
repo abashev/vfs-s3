@@ -908,11 +908,10 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             );
         }
 
-        if (!md5.equalsIgnoreCase(newMetadata.getMD5Hash().orElse(null))) {
+        if ((md5 != null) && newMetadata.getMD5Hash().isPresent() && !md5.equalsIgnoreCase(newMetadata.getMD5Hash().get())) {
             throw new FileSystemException(
                     "Wrong MD5 for content after upload. Expected [" +
-                            md5 + "] but have [" + newMetadata.getMD5Hash() +
-                            "]"
+                            md5 + "] but have [" + newMetadata.getMD5Hash().get() + "]"
             );
         }
 
