@@ -1,4 +1,4 @@
-package com.intridea.io.vfs.provider.s3;
+package com.github.vfss3;
 
 import com.github.vfss3.operations.Acl;
 import com.github.vfss3.operations.Acl.Group;
@@ -6,25 +6,18 @@ import com.github.vfss3.operations.Acl.Permission;
 import com.github.vfss3.operations.IAclGetter;
 import com.github.vfss3.operations.IAclSetter;
 import com.github.vfss3.operations.PlatformFeatures;
-import com.intridea.io.vfs.support.AbstractS3FileSystemTest;
+import com.github.vfss3.support.BaseIntegrationTest;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.Selectors;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
-import java.io.File;
-
-import static com.github.vfss3.operations.Acl.Group.AUTHORIZED;
-import static com.github.vfss3.operations.Acl.Group.EVERYONE;
-import static com.github.vfss3.operations.Acl.Group.OWNER;
+import static com.github.vfss3.operations.Acl.Group.*;
 import static com.github.vfss3.operations.Acl.Permission.READ;
 import static com.github.vfss3.operations.Acl.Permission.WRITE;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.*;
 
-public class AclHandlingTest extends AbstractS3FileSystemTest {
+public class AclHandlingTest extends BaseIntegrationTest {
     private static final String FOLDER = "/acl";
 
     FileObject file;
@@ -33,20 +26,14 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
     @Test
     public void checkGet() throws FileSystemException {
-        file = resolveFile(FOLDER + "/check_acl.zip");
+        file = root.resolveFile(FOLDER + "/check_acl.zip");
 
         if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
             return;
         }
 
         if (!file.exists()) {
-            final File backupFile = binaryFile();
-
-            assertTrue(backupFile.exists(), "Backup file should exists");
-
-            FileObject src = vfs.resolveFile(backupFile.getAbsolutePath());
-
-            file.copyFrom(src, Selectors.SELECT_SELF);
+            file.copyFrom(binaryFile(), Selectors.SELECT_SELF);
         }
 
         // Get ACL
@@ -156,7 +143,7 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods = {"checkSet2"})
     public void checkDenyAllForFolder() throws FileSystemException {
-        folder = resolveFile(FOLDER + "/check_acl/");
+        folder = root.resolveFile(FOLDER + "/check_acl/");
 
         if (!((PlatformFeatures) folder.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
             return;
@@ -185,15 +172,6 @@ public class AclHandlingTest extends AbstractS3FileSystemTest {
             assertDenied(changedAcl, AUTHORIZED);
             assertDenied(changedAcl, EVERYONE);
         }
-    }
-
-    @AfterClass
-    public void restoreAcl() throws FileSystemException {
-        if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
-            return;
-        }
-
-        assertTrue(resolveFile(FOLDER).deleteAll() > 0);
     }
 
     private void setAcl(FileObject file, Acl acl) throws FileSystemException {

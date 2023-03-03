@@ -1,4 +1,4 @@
-package com.intridea.io.vfs.support;
+package com.github.vfss3.support;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

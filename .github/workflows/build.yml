@@ -33,9 +33,15 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
       env:
-        BASE_URL: ${{ secrets.BASE_URL }}
+        BASE_URL: ${{ vars.BASE_URL }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+
+    - name: Publish Unit Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        junit_files: "target/surefire-reports/junitreports/*.xml"
 
     - name: Run Jacoco reports
       run: mvn -V -B -e jacoco:report

@@ -1,4 +1,4 @@
-package com.intridea.io.vfs.support;
+package com.github.vfss3.support;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
@@ -12,33 +12,34 @@ import org.apache.commons.vfs2.FileSystemManager;
 import org.apache.commons.vfs2.VFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Consumer;
+import java.util.Random;
 
 import static com.amazonaws.SDKGlobalConfiguration.ACCESS_KEY_ENV_VAR;
 import static com.amazonaws.SDKGlobalConfiguration.SECRET_KEY_ENV_VAR;
 import static java.lang.Boolean.parseBoolean;
+import static java.util.stream.Collectors.joining;
+import static org.testng.Assert.assertTrue;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
-public abstract class AbstractS3FileSystemTest {
-    protected final Logger log = LoggerFactory.getLogger(AbstractS3FileSystemTest.class);
+public abstract class BaseIntegrationTest {
+    protected final Logger log = LoggerFactory.getLogger(BaseIntegrationTest.class);
 
     private static final String BASE_URL = "BASE_URL";
     private static final String USE_HTTP = "USE_HTTPS";
-    private static final String CREATE_BUCKET = "CREATE_BUCKET";
     private static final String DISABLE_CHUNKED_ENCODING = "DISABLE_CHUNKED_ENCODING";
 
-    protected FileSystemManager vfs;
+    protected FileObject root;
     protected S3FileSystemOptions options;
-    protected String baseUrl;
 
     @BeforeClass
-    public final void initVFS() throws IOException {
+    public final void initBucket() throws IOException {
         this.options = new S3FileSystemOptions();
 
         EnvironmentConfiguration configuration = new EnvironmentConfiguration();
@@ -62,25 +63,28 @@ public abstract class AbstractS3FileSystemTest {
         }
 
         configuration.computeIfPresent(USE_HTTP, v -> options.setUseHttps(parseBoolean(v)));
-        configuration.computeIfPresent(CREATE_BUCKET, v -> options.setCreateBucket(parseBoolean(v)));
         configuration.computeIfPresent(DISABLE_CHUNKED_ENCODING, v -> options.setDisableChunkedEncoding(parseBoolean(v)));
 
-        baseUrl = configuration.get(BASE_URL).
+        options.setCreateBucket(true);
+
+        String token = (new Random()).ints(3).mapToObj(Integer::toHexString).collect(joining());
+
+        String baseUrl = configuration.get(BASE_URL).
                 orElseThrow(() -> new IllegalStateException(BASE_URL + " should present in environment configuration"));
 
-        this.vfs = VFS.getManager();
+        assertTrue(baseUrl.contains("%s"), "BASE_URL should contain placeholder for token");
+
+        final FileSystemManager manager = VFS.getManager();
+
+        this.root = manager.resolveFile(String.format(baseUrl, token), options.toFileSystemOptions());
     }
 
-    public FileObject resolveFile(String path) throws FileSystemException {
-        return vfs.resolveFile(baseUrl + path, options.toFileSystemOptions());
-    }
-
-    public FileObject resolveFile(String path, Consumer<S3FileSystemOptions> optionsConsumer) throws FileSystemException {
-        S3FileSystemOptions newOptions = new S3FileSystemOptions(options.toFileSystemOptions());
-
-        optionsConsumer.accept(newOptions);
-
-        return vfs.resolveFile(baseUrl + path, newOptions.toFileSystemOptions());
+    @AfterClass
+    public final void deleteBucket() throws IOException {
+        if (root != null) {
+            root.refresh();
+            root.deleteAll();
+        }
     }
 
     /**
@@ -88,8 +92,12 @@ public abstract class AbstractS3FileSystemTest {
      *
      * @return
      */
-    public File binaryFile() {
-        return new File("src/test/resources/backup.zip");
+    public FileObject binaryFile() throws FileSystemException {
+        File backupFile = new File("src/test/resources/backup.zip");
+
+        assertTrue(backupFile.exists(), "Backup file should exists");
+
+        return VFS.getManager().resolveFile(backupFile.getAbsolutePath());
     }
 
     /**
@@ -97,7 +105,9 @@ public abstract class AbstractS3FileSystemTest {
      *
      * @return
      */
-    public String bigFile() {
-        return "http://archive.ubuntu.com/ubuntu/dists/xenial-updates/main/installer-i386/current/images/netboot/mini.iso";
+    public FileObject bigFile() throws FileSystemException {
+        return VFS.getManager().resolveFile(
+                "http://archive.ubuntu.com/ubuntu/dists/xenial-updates/main/installer-i386/current/images/netboot/mini.iso"
+        );
     }
 }

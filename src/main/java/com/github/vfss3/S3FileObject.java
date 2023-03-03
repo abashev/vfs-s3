@@ -181,13 +181,18 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     @Override
     protected void doDelete() throws Exception {
         final String bucket = getBucketName();
-        final String key = getName().getS3Key().orElseThrow(() -> new FileSystemException("Can't delete whole bucket"));
 
-        if (log.isDebugEnabled()) {
-            log.debug("Delete object [bucket=" + bucket + ",name=" + key + "]");
+        if (getName().getS3Key().isPresent()) {
+            final String key = getName().getS3Key().orElseThrow(() -> new IllegalStateException("No value after isPresent"));
+
+            if (log.isDebugEnabled()) {
+                log.debug("Delete object [bucket=" + bucket + ",name=" + key + "]");
+            }
+
+            getService().deleteObject(bucket, key);
+        } else {
+            getService().deleteBucket(bucket);
         }
-
-        getService().deleteObject(bucket, key);
     }
 
     @Override

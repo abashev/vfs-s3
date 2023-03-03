@@ -1,4 +1,4 @@
-package com.intridea.io.vfs.operations.acl;
+package com.github.vfss3;
 
 import com.github.vfss3.operations.Acl;
 import org.testng.Assert;

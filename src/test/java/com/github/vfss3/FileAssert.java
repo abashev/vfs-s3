@@ -1,4 +1,4 @@
-package com.intridea.io.vfs;
+package com.github.vfss3;
 
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;

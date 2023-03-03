@@ -1,10 +1,9 @@
-package com.intridea.io.vfs.provider.s3;
+package com.github.vfss3;
 
-import com.intridea.io.vfs.support.AbstractS3FileSystemTest;
+import com.github.vfss3.support.BaseIntegrationTest;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.Selectors;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -18,21 +17,18 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.*;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
-public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
+public class ConcurrentAccessTest extends BaseIntegrationTest {
     @BeforeClass
     public void setUp() throws IOException {
-        resolveFile("/concurrent/").createFolder();
-        resolveFile("/read-deadlock/").createFolder();
-        resolveFile("/read-deadlock/file1").createFile();
-        resolveFile("/read-deadlock/file2").createFile();
+        root.resolveFile("/concurrent/").createFolder();
+        root.resolveFile("/read-deadlock/").createFolder();
+        root.resolveFile("/read-deadlock/file1").createFile();
+        root.resolveFile("/read-deadlock/file2").createFile();
     }
 
     @Test(invocationCount = 200, threadPoolSize = 10)
@@ -41,7 +37,7 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
         // so added thread id into the mix
         String fileName = "folder-" + Thread.currentThread().getId() + "-" + (new Random()).nextInt(1000) + "/";
 
-        FileObject parent = resolveFile("/concurrent/");
+        FileObject parent = root.resolveFile("/concurrent/");
         FileObject file = parent.resolveFile(fileName);
 
         file.createFolder();
@@ -60,7 +56,7 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
 
     @Test(invocationCount = 200, threadPoolSize = 10)
     public void checkReadDeadlock() throws FileSystemException {
-        FileObject file = resolveFile("/read-deadlock");
+        FileObject file = root.resolveFile("/read-deadlock");
 
         assertNotNull(file.getParent());
 
@@ -73,7 +69,7 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
 
     @Test
     public void testGetChildrenGetParentDeadlock() throws FileSystemException, InterruptedException {
-        final FileObject parent = resolveFile("/concurrent/");
+        final FileObject parent = root.resolveFile("/concurrent/");
         parent.delete(Selectors.EXCLUDE_SELF);
 
         final int childCount = Integer.parseUnsignedInt(System.getProperty("ConcurrentAccessTest.deadlockTestChildCount", "10"));
@@ -128,7 +124,7 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
                 public void run() {
                     while (!stopFlag.get()) {
                         try {
-                            final FileObject parent = resolveFile("/concurrent/");
+                            final FileObject parent = root.resolveFile("/concurrent/");
                             int count = parent.getChildren().length;
 
                             if (count != childCount) {
@@ -187,15 +183,9 @@ public class ConcurrentAccessTest extends AbstractS3FileSystemTest {
 
             }
 
-            resolveFile("/concurrent/").delete(Selectors.SELECT_CHILDREN);
+            root.resolveFile("/concurrent/").delete(Selectors.SELECT_CHILDREN);
         }
 
         assertEquals(wrongResults.get(), 0, "Number of wrong calculations should be zero");
-    }
-
-    @AfterClass
-    public void tearDown() throws FileSystemException {
-        resolveFile("/concurrent/").deleteAll();
-        resolveFile("/read-deadlock/").deleteAll();
     }
 }

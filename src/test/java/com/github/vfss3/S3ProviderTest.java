@@ -1,91 +1,66 @@
-package com.intridea.io.vfs.provider.s3;
+package com.github.vfss3;
 
 import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
-import com.github.vfss3.S3FileObject;
 import com.github.vfss3.operations.IMD5HashGetter;
 import com.github.vfss3.operations.IPublicUrlsGetter;
-import com.github.vfss3.operations.ServerSideEncryption;
-import com.intridea.io.vfs.support.AbstractS3FileSystemTest;
+import com.github.vfss3.support.BaseIntegrationTest;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.Selectors;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 import java.util.Random;
 
-import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
-import static com.intridea.io.vfs.FileAssert.assertHasChildren;
+import static com.github.vfss3.FileAssert.assertHasChildren;
 import static java.nio.file.Files.readAllBytes;
 import static java.time.Instant.ofEpochMilli;
 import static java.time.ZoneOffset.UTC;
-import static java.util.Optional.empty;
+import static org.apache.commons.vfs2.FileType.FILE;
 import static org.apache.commons.vfs2.Selectors.SELECT_ALL;
+import static org.apache.commons.vfs2.Selectors.SELECT_SELF;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.testng.Assert.*;
 import static org.testng.internal.junit.ArrayAsserts.assertArrayEquals;
 
-public class S3ProviderTest extends AbstractS3FileSystemTest {
+public class S3ProviderTest extends BaseIntegrationTest {
     private static final String BIG_FILE = "big_file.iso";
 
-    private String fileName, encryptedFileName, dirName;
+    private String fileName, dirName;
     private FileObject file, dir;
 
     @BeforeClass
     public void setUp() {
         Random r = new Random();
-        encryptedFileName = "vfs-encrypted-file" + r.nextInt(1000);
         fileName = "vfs-file" + r.nextInt(1000);
         dirName = "vfs-dir" + r.nextInt(1000);
     }
 
     @Test
     public void createFileOk() throws FileSystemException {
-        file = resolveFile("/test-place/" + fileName);
+        file = root.resolveFile("/test-place/" + fileName);
         file.createFile();
         assertTrue(file.exists());
 
-        FileObject f1 = resolveFile("/test-place/name with space");
+        FileObject f1 = root.resolveFile("/test-place/name with space");
         f1.createFile();
         assertTrue(f1.exists());
 
-        FileObject f2 = resolveFile("/test-place/folder with space");
+        FileObject f2 = root.resolveFile("/test-place/folder with space");
         f2.createFolder();
         assertTrue(f2.exists());
     }
 
-    @Test(dependsOnMethods = {"createFileOk"})
-    public void createEncryptedFileOk() throws FileSystemException {
-        file = resolveFile("/test-place/" + encryptedFileName, o -> o.setServerSideEncryption(true));
-
-        file.createFile();
-
-        assertTrue(file.exists());
-        assertAES256Encryption(file);
-    }
-
     @Test(dependsOnMethods = {"createFileOk"}, expectedExceptions = { FileSystemException.class })
     public void checkLastModified() throws FileSystemException {
-        file = resolveFile("/test-place/" + fileName);
+        file = root.resolveFile("/test-place/" + fileName);
 
         assertTrue(file.exists());
 
@@ -94,35 +69,23 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         file.getContent().setLastModifiedTime(111L);
     }
 
-    @Test(expectedExceptions = { FileSystemException.class })
-    public void createFileFailed() throws FileSystemException {
-        FileObject tmpFile = vfs.resolveFile("s3://../new-mpoint/vfs-bad-file");
-        tmpFile.createFile();
-    }
-
     /**
      * Create folder on already existed file
      * @throws FileSystemException
      */
-    @Test(expectedExceptions={FileSystemException.class}, dependsOnMethods={"createFileOk"})
+    @Test(expectedExceptions = FileSystemException.class, dependsOnMethods = "createFileOk")
     public void createFileFailed2() throws FileSystemException {
-        FileObject tmpFile = resolveFile("/test-place/" + fileName);
+        FileObject tmpFile = root.resolveFile("/test-place/" + fileName);
         tmpFile.createFolder();
     }
 
     @Test
     public void createDirOk() throws FileSystemException {
-        dir = resolveFile("/test-place/" + dirName);
+        dir = root.resolveFile("/test-place/" + dirName);
         dir.createFolder();
 
         assertTrue(dir.exists());
         assertEquals(dir.getName().getType(), FileType.FOLDER);
-    }
-
-    @Test(expectedExceptions={FileSystemException.class})
-    public void createDirFailed() throws FileSystemException {
-        FileObject tmpFile = vfs.resolveFile("s3://../new-mpoint/vfs-bad-dir");
-        tmpFile.createFolder();
     }
 
     /**
@@ -131,32 +94,28 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
      */
     @Test(expectedExceptions = FileSystemException.class, dependsOnMethods = "createDirOk")
     public void createDirFailed2() throws FileSystemException {
-        FileObject tmpFile = resolveFile("/test-place/" + dirName);
+        FileObject tmpFile = root.resolveFile("/test-place/" + dirName);
         tmpFile.createFile();
     }
 
     @Test(dependsOnMethods={"upload"})
     public void exists() throws IOException {
         // Existed dir
-        FileObject existedDir = resolveFile("/test-place");
+        FileObject existedDir = root.resolveFile("/test-place");
         assertTrue(existedDir.exists());
 
-        // Non-existed dir
-        FileObject nonExistedDir = vfs.resolveFile(existedDir, "path/to/non/existed/dir");
-        Assert.assertFalse(nonExistedDir.exists());
-
         // Existed file
-        FileObject existedFile = resolveFile("/test-place/backup.zip");
+        FileObject existedFile = root.resolveFile("/test-place/backup.zip");
         assertTrue(existedFile.exists());
 
         // Non-existed file
-        FileObject nonExistedFile = resolveFile("/ne/bыlo/i/net");
+        FileObject nonExistedFile = root.resolveFile("/ne/bыlo/i/net");
         Assert.assertFalse(nonExistedFile.exists());
     }
 
     @Test(dependsOnMethods={"createFileOk"})
     public void upload() throws IOException {
-        FileObject dest = resolveFile("/test-place/backup.zip");
+        FileObject dest = root.resolveFile("/test-place/backup.zip");
 
         // Delete file if exists
         if (dest.exists()) {
@@ -164,65 +123,31 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         }
 
         // Copy data
-        final File backupFile = binaryFile();
+        dest.copyFrom(binaryFile(), SELECT_SELF);
 
-        assertTrue(backupFile.exists(), "Backup file should exists");
-
-        FileObject src = vfs.resolveFile(backupFile.getAbsolutePath());
-        dest.copyFrom(src, Selectors.SELECT_SELF);
-
-        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
-        assertNoEncryption(dest);
-    }
-
-    @Test(dependsOnMethods = {"createEncryptedFileOk"})
-    public void uploadEncrypted() throws IOException {
-        FileObject dest = resolveFile("/test-place/backup.zip", o -> o.setServerSideEncryption(true));
-
-        // Delete file if exists
-        if (dest.exists()) {
-            dest.delete();
-        }
-
-        // Copy data
-        final File backupFile = binaryFile();
-
-        assertTrue(backupFile.exists(), "Backup file should exists");
-
-        FileObject src = vfs.resolveFile(backupFile.getAbsolutePath());
-        dest.copyFrom(src, Selectors.SELECT_SELF);
-
-        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
-        assertAES256Encryption(dest);
+        assertTrue(dest.exists() && dest.getType().equals(FILE));
     }
 
     @Test(dependsOnMethods={"createFileOk"})
     public void uploadMultiple() throws Exception {
-        FileObject dest = resolveFile("/test-place/backup.zip");
+        FileObject dest = root.resolveFile("/test-place/backup.zip");
 
         // Delete file if exists
         if (dest.exists()) {
             dest.delete();
         }
 
-        // Copy data
-        final File backupFile = binaryFile();
-
-        assertTrue(backupFile.exists(), "Backup file should exists");
-
-        FileObject src = vfs.resolveFile(backupFile.getAbsolutePath());
-
         // copy twice
-        dest.copyFrom(src, Selectors.SELECT_SELF);
+        dest.copyFrom(binaryFile(), SELECT_SELF);
         Thread.sleep(2000L);
-        dest.copyFrom(src, Selectors.SELECT_SELF);
+        dest.copyFrom(binaryFile(), SELECT_SELF);
 
-        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
+        assertTrue(dest.exists() && dest.getType().equals(FILE));
     }
 
     @Test(dependsOnMethods={"createFileOk"})
     public void uploadBigFile() throws IOException {
-        FileObject dest = resolveFile("/" + BIG_FILE);
+        FileObject dest = root.resolveFile("/" + BIG_FILE);
 
         // Delete file if exists
         if (dest.exists()) {
@@ -230,23 +155,23 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         }
 
         // Copy data
-        FileObject src = vfs.resolveFile(bigFile());
+        FileObject src = bigFile();
 
         assertTrue(src.exists(), "Big file should exists");
 
         assertTrue(src.getContent().getSize() > (new TransferManagerConfiguration()).getMultipartUploadThreshold());
 
-        dest.copyFrom(src, Selectors.SELECT_SELF);
+        dest.copyFrom(src, SELECT_SELF);
 
         assertTrue(dest.exists(), "Destination file should be on place");
-        assertEquals(dest.getType(), FileType.FILE);
+        assertEquals(dest.getType(), FILE);
         assertEquals(src.getContent().getSize(), dest.getContent().getSize());
         assertEquals(63963136, dest.getContent().getSize());
     }
 
     @Test(dependsOnMethods={"createFileOk"})
     public void outputStream() throws IOException {
-        FileObject dest = resolveFile("/test-place/output.txt");
+        FileObject dest = root.resolveFile("/test-place/output.txt");
 
         // Delete file if exists
         if (dest.exists()) {
@@ -254,46 +179,14 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         }
 
         // Copy data
-        final byte[] bytes = readAllBytes(binaryFile().toPath());
+        final byte[] bytes = readAllBytes(binaryFile().getPath());
 
         try (OutputStream os = dest.getContent().getOutputStream()) {
             os.write(bytes);
         }
 
-        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
-        assertEquals(dest.getContent().getSize(), binaryFile().length());
-        assertEquals(((S3FileObject) dest).getSSEAlgorithm(), empty());
-
-        try (InputStream in = dest.getContent().getInputStream()) {
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-
-            IOUtils.copy(in, buffer);
-
-            assertArrayEquals(bytes, buffer.toByteArray());
-        }
-
-        dest.delete();
-    }
-
-    @Test(dependsOnMethods = {"createEncryptedFileOk"})
-    public void outputStreamEncrypted() throws IOException {
-        FileObject dest = resolveFile("/test-place/output.txt", o -> o.setServerSideEncryption(true));
-
-        // Delete file if exists
-        if (dest.exists()) {
-            dest.delete();
-        }
-
-        // Copy data
-        final byte[] bytes = readAllBytes(binaryFile().toPath());
-
-        try (OutputStream os = dest.getContent().getOutputStream()) {
-            os.write(bytes);
-        }
-
-        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
-        assertEquals(dest.getContent().getSize(), binaryFile().length());
-        assertAES256Encryption(dest);
+        assertTrue(dest.exists() && dest.getType().equals(FILE));
+        assertEquals(dest.getContent().getSize(), binaryFile().getPath().toFile().length());
 
         try (InputStream in = dest.getContent().getInputStream()) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -308,7 +201,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods={"getSize"})
     public void download() throws IOException {
-        FileObject typica = resolveFile("/test-place/backup.zip");
+        FileObject typica = root.resolveFile("/test-place/backup.zip");
         File localCache =  File.createTempFile("vfs.", ".s3-test");
 
         // Copy from S3 to localfs
@@ -326,8 +219,8 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         FileObject baseDir = dir.resolveFile("list-children-test");
         baseDir.createFolder();
 
-        for (int i=0; i<5; i++) {
-            FileObject tmpFile = vfs.resolveFile(baseDir, i + ".tmp");
+        for (int i = 0; i < 5; i++) {
+            FileObject tmpFile = baseDir.resolveFile(i + ".tmp");
             tmpFile.createFile();
         }
 
@@ -337,23 +230,23 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods = {"createFileOk", "createDirOk", "uploadBigFile"})
     public void listChildrenRoot() throws FileSystemException {
-        assertHasChildren(resolveFile("/"), "test-place", BIG_FILE);
+        assertHasChildren(root.resolveFile("/"), "test-place", BIG_FILE);
         assertHasChildren(
-                resolveFile("/test-place/"),
-                "backup.zip", dirName, encryptedFileName, "folder with space", "name with space"
+                root.resolveFile("/test-place/"),
+                "backup.zip", dirName, "folder with space", "name with space"
         );
         assertHasChildren(
-                resolveFile("/test-place"),
-                "backup.zip", dirName, encryptedFileName, "folder with space", "name with space"
+                root.resolveFile("/test-place"),
+                "backup.zip", dirName, "folder with space", "name with space"
         );
 
-        final FileObject destFile = resolveFile("/test-place-2");
+        final FileObject destFile = root.resolveFile("/test-place-2");
 
-        destFile.copyFrom(resolveFile("/test-place"), SELECT_ALL);
+        destFile.copyFrom(root.resolveFile("/test-place"), SELECT_ALL);
 
         assertHasChildren(
                 destFile,
-                "backup.zip", dirName, encryptedFileName, "folder with space", "name with space"
+                "backup.zip", dirName, "folder with space", "name with space"
         );
     }
 
@@ -363,12 +256,12 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         baseDir.createFolder();
 
         // Create files and dirs
-        vfs.resolveFile(baseDir, "child-file.tmp").createFile();
-        vfs.resolveFile(baseDir, "child-file2.tmp").createFile();
-        vfs.resolveFile(baseDir, "child-dir").createFolder();
-        vfs.resolveFile(baseDir, "child-dir/descendant.tmp").createFile();
-        vfs.resolveFile(baseDir, "child-dir/descendant2.tmp").createFile();
-        vfs.resolveFile(baseDir, "child-dir/descendant-dir").createFolder();
+        baseDir.resolveFile("child-file.tmp").createFile();
+        baseDir.resolveFile("child-file2.tmp").createFile();
+        baseDir.resolveFile("child-dir").createFolder();
+        baseDir.resolveFile("child-dir/descendant.tmp").createFile();
+        baseDir.resolveFile("child-dir/descendant2.tmp").createFile();
+        baseDir.resolveFile("child-dir/descendant-dir").createFolder();
 
         FileObject[] files;
         files = baseDir.findFiles(Selectors.SELECT_CHILDREN);
@@ -383,8 +276,8 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods={"createFileOk"})
     public void renameAndMove() throws FileSystemException {
-        FileObject sourceFile = resolveFile("/test-place/" + fileName);
-        FileObject targetFile = resolveFile("/test-place/rename-target");
+        FileObject sourceFile = root.resolveFile("/test-place/" + fileName);
+        FileObject targetFile = root.resolveFile("/test-place/rename-target");
 
         assertTrue(sourceFile.exists());
 
@@ -419,7 +312,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
         assertEquals(imagine.getType(), FileType.IMAGINARY);
         assertEquals(dir.getType(), FileType.FOLDER);
-        assertEquals(file.getType(), FileType.FILE);
+        assertEquals(file.getType(), FILE);
     }
 
     @Test(dependsOnMethods={"createFileOk", "createDirOk"})
@@ -427,14 +320,9 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         FileObject dest = dir.resolveFile("type-tests/sub1/sub2/backup.zip");
 
         // Copy data
-        final File backupFile = binaryFile();
+        dest.copyFrom(binaryFile(), SELECT_SELF);
 
-        assertTrue(backupFile.exists(), "Backup file should exists");
-
-        FileObject src = vfs.resolveFile(backupFile.getAbsolutePath());
-        dest.copyFrom(src, Selectors.SELECT_SELF);
-
-        assertTrue(dest.exists() && dest.getType().equals(FileType.FILE));
+        assertTrue(dest.exists() && dest.getType().equals(FILE));
 
         FileObject sub1 = dir.resolveFile("type-tests/sub1");
         assertTrue(sub1.exists());
@@ -447,20 +335,20 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods={"upload"})
     public void getContentType() throws FileSystemException {
-        FileObject backup = resolveFile("/test-place/backup.zip");
+        FileObject backup = root.resolveFile("/test-place/backup.zip");
         assertEquals(backup.getContent().getContentInfo().getContentType(), "application/zip");
     }
 
     @Test(dependsOnMethods={"upload"})
     public void getSize() throws FileSystemException {
-        FileObject backup = resolveFile("/test-place/backup.zip");
+        FileObject backup = root.resolveFile("/test-place/backup.zip");
 
         assertEquals(backup.getContent().getSize(), 996166);
     }
 
     @Test(dependsOnMethods = {"createFileOk", "upload"})
     public void getUrls() throws FileSystemException {
-        FileObject backup = resolveFile("/test-place/backup.zip");
+        FileObject backup = root.resolveFile("/test-place/backup.zip");
 
         assertTrue(backup.getFileOperations().hasOperation(IPublicUrlsGetter.class));
         assertNotNull(backup.getFileOperations().getOperation(IPublicUrlsGetter.class));
@@ -486,7 +374,7 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
     @Test(dependsOnMethods = {"createFileOk", "upload"})
     public void getMD5Hash() throws NoSuchAlgorithmException, IOException {
-        FileObject backup = resolveFile("/test-place/backup.zip");
+        FileObject backup = root.resolveFile("/test-place/backup.zip");
 
         assertTrue(backup.getFileOperations().hasOperation(IMD5HashGetter.class));
 
@@ -496,18 +384,14 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
 
         Assert.assertNotNull(md5Remote);
 
-        final File backupFile = binaryFile();
-
-        assertTrue(backupFile.exists(), "Backup file should exists");
-
-        String md5Local = toHex(computeMD5Hash(new FileInputStream(backupFile)));
+        String md5Local = toHex(computeMD5Hash(binaryFile().getContent().getInputStream()));
 
         assertTrue(md5Remote.equalsIgnoreCase(md5Local), "Local and remote md5 should be equal");
     }
 
     @Test(dependsOnMethods = "upload")
     public void getLastModified() throws FileSystemException {
-        FileObject backup = resolveFile("/test-place/backup.zip");
+        FileObject backup = root.resolveFile("/test-place/backup.zip");
 
         assertTrue(ofEpochMilli(backup.getContent().getLastModifiedTime()).atZone(UTC).getYear() > 2010);
     }
@@ -520,13 +404,6 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
         // Only tests dir must remains
         FileObject[] files = testsDir.findFiles(SELECT_ALL);
         assertEquals(files.length, 1);
-    }
-
-    @AfterClass
-    public void tearDown() throws FileSystemException {
-        resolveFile("/" + BIG_FILE).delete();
-        resolveFile("/test-place").deleteAll();
-        resolveFile("/test-place-2").deleteAll();
     }
 
     /**
@@ -568,21 +445,5 @@ public class S3ProviderTest extends AbstractS3FileSystemTest {
                 System.err.println("Unable to close input stream of hash candidate: " + e);
             }
         }
-    }
-
-    private void assertNoEncryption(FileObject file) throws FileSystemException {
-        ServerSideEncryption sse = (ServerSideEncryption) file.getFileOperations().getOperation(ServerSideEncryption.class);
-
-        sse.process();
-
-        assertTrue(sse.noEncryption());
-    }
-
-    private void assertAES256Encryption(FileObject file) throws FileSystemException {
-        ServerSideEncryption sse = (ServerSideEncryption) file.getFileOperations().getOperation(ServerSideEncryption.class);
-
-        sse.process();
-
-        assertTrue(sse.encryptedWith(AES_256_SERVER_SIDE_ENCRYPTION));
     }
 }

@@ -15,9 +15,9 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 /**
- * Unit test for vfs-s3
+ * Unit test for accessing public buckets.
  */
-public class VfsS3Test {
+public class PublicAccessBucketTest {
 
     @Test
     public void testCreate() throws Exception {

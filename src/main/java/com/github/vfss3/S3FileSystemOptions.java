@@ -10,7 +10,7 @@ import org.apache.commons.vfs2.FileSystemOptions;
  *
  * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */
-public class S3FileSystemOptions {
+public class S3FileSystemOptions implements Cloneable {
     /**
      * Configuration prefix
      */
@@ -156,6 +156,12 @@ public class S3FileSystemOptions {
      */
     public FileSystemOptions toFileSystemOptions() {
         return (FileSystemOptions) options.clone();
+    }
+
+    @SuppressWarnings({"MethodDoesntCallSuperMethod", "CloneDoesntDeclareCloneNotSupportedException"})
+    @Override
+    public S3FileSystemOptions clone() {
+        return new S3FileSystemOptions(options);
     }
 
     @Override
