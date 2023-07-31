@@ -1,8 +1,18 @@
 package com.github.vfss3.parser;
 
-import com.amazonaws.regions.Regions;
-import com.github.vfss3.S3FileName;
-import com.github.vfss3.operations.PlatformFeatures;
+import static java.util.Objects.requireNonNull;
+import static java.util.regex.Pattern.compile;
+import static org.apache.commons.vfs2.FileName.ROOT_PATH;
+import static org.apache.commons.vfs2.FileType.FOLDER;
+import static org.apache.commons.vfs2.FileType.IMAGINARY;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.FileName;
@@ -12,16 +22,9 @@ import org.apache.commons.vfs2.provider.AbstractFileNameParser;
 import org.apache.commons.vfs2.provider.UriParser;
 import org.apache.commons.vfs2.provider.VfsComponentContext;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static java.util.Objects.requireNonNull;
-import static java.util.regex.Pattern.compile;
-import static org.apache.commons.vfs2.FileName.ROOT_PATH;
-import static org.apache.commons.vfs2.FileType.FOLDER;
-import static org.apache.commons.vfs2.FileType.IMAGINARY;
+import com.amazonaws.regions.Regions;
+import com.github.vfss3.S3FileName;
+import com.github.vfss3.operations.PlatformFeatures;
 
 /**
  * @author Matthias L. Jugel
@@ -66,8 +69,9 @@ public class S3FileNameParser extends AbstractFileNameParser {
         URI uri;
 
         try {
-            uri = new URI(filename.replace(" ", "%20"));
-        } catch (URISyntaxException e) {
+        	String encodedFileName = URLEncoder.encode(filename, "UTF-8").replace("%3A", ":").replace("%2F", "/").replace("+", "%20");
+            uri = new URI(encodedFileName);
+        } catch (URISyntaxException | UnsupportedEncodingException e) {
             throw new FileSystemException(e);
         }
 
