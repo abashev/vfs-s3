@@ -21,6 +21,7 @@ import java.util.Random;
 
 import static com.amazonaws.SDKGlobalConfiguration.ACCESS_KEY_ENV_VAR;
 import static com.amazonaws.SDKGlobalConfiguration.SECRET_KEY_ENV_VAR;
+import static com.amazonaws.services.s3.model.ownership.ObjectOwnership.ObjectWriter;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.stream.Collectors.joining;
 import static org.testng.Assert.assertTrue;
@@ -66,6 +67,7 @@ public abstract class BaseIntegrationTest {
         configuration.computeIfPresent(DISABLE_CHUNKED_ENCODING, v -> options.setDisableChunkedEncoding(parseBoolean(v)));
 
         options.setCreateBucket(true);
+        options.setObjectOwnership(ObjectWriter);
 
         String token = (new Random()).ints(3).mapToObj(Integer::toHexString).collect(joining());
 
