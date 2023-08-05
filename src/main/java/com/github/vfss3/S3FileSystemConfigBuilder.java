@@ -3,6 +3,8 @@ package com.github.vfss3;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.ownership.ObjectOwnership;
 import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemConfigBuilder;
 import org.apache.commons.vfs2.FileSystemOptions;
@@ -20,6 +22,8 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final String USE_HTTPS                = "useHttps";               // Useful for localstack
     private static final String CREATE_BUCKET            = "createBucket";
     private static final String CREDENTIALS_PROVIDER     = "credentialsProvider";
+    private static final String OBJECT_OWNERSHIP         = "objectOwnership";
+    private static final String CANNED_ACL               = "cannedAcl";
 
     private static final int DEFAULT_MAX_ERROR_RETRY = 8;
 
@@ -190,5 +194,43 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
 
         builder.setOption(opts, CREDENTIALS_PROVIDER, provider);
+    }
+
+    /*
+     * Get ObjectOwnership parameter for new buckets
+     *
+     * @return
+     */
+    public ObjectOwnership getObjectOwnership(FileSystemOptions opts) {
+        S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        return (ObjectOwnership) builder.getOption(opts, OBJECT_OWNERSHIP);
+    }
+
+    /**
+     * Set ObjectOwnership parameter for new buckets
+     */
+    public void setObjectOwnership(FileSystemOptions opts, ObjectOwnership ownership) {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        builder.setOption(opts, OBJECT_OWNERSHIP, ownership);
+    }
+
+    /*
+     * Get CannedAccessControlList object for new buckets.
+     */
+    public CannedAccessControlList getCannedAcl(FileSystemOptions opts) {
+        S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        return (CannedAccessControlList) builder.getOption(opts, CANNED_ACL);
+    }
+
+    /**
+     * Set CannedAccessControlList object for new buckets.
+     */
+    public void setCannedAcl(FileSystemOptions opts, CannedAccessControlList acl) {
+        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+
+        builder.setOption(opts, CANNED_ACL, acl);
     }
 }

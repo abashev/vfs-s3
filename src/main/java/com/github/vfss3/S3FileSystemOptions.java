@@ -2,6 +2,8 @@ package com.github.vfss3;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.ownership.ObjectOwnership;
 import org.apache.commons.vfs2.FileSystemOptions;
 
 /**
@@ -133,8 +135,6 @@ public class S3FileSystemOptions implements Cloneable {
 
     /**
      * Get credentials provider for a file system - DefaultAWSCredentialsProviderChain by default
-     *
-     * @return
      */
     public AWSCredentialsProvider getCredentialsProvider() {
         return S3FileSystemConfigBuilder.getInstance().getCredentialsProvider(options);
@@ -142,11 +142,38 @@ public class S3FileSystemOptions implements Cloneable {
 
     /**
      * Set credentials provider for a file system
-     *
-     * @param provider
      */
     public void setCredentialsProvider(AWSCredentialsProvider provider) {
         S3FileSystemConfigBuilder.getInstance().setCredentialsProvider(options, provider);
+    }
+
+    /**
+     * Object ownership for new buckets.
+     */
+    public ObjectOwnership getObjectOwnership() {
+        return S3FileSystemConfigBuilder.getInstance().getObjectOwnership(options);
+    }
+
+    /**
+     * Set parameter 'Object ownership' for new buckets.
+     * @param ownership
+     */
+    public void setObjectOwnership(ObjectOwnership ownership) {
+        S3FileSystemConfigBuilder.getInstance().setObjectOwnership(options, ownership);
+    }
+
+    /**
+     * CannedAccessControlList for new buckets.
+     */
+    public CannedAccessControlList getCannedAcl() {
+        return S3FileSystemConfigBuilder.getInstance().getCannedAcl(options);
+    }
+
+    /**
+     * Set CannedAccessControlList for new buckets.
+     */
+    public void setCannedAcl(CannedAccessControlList acl) {
+        S3FileSystemConfigBuilder.getInstance().setCannedAcl(options, acl);
     }
 
     /**

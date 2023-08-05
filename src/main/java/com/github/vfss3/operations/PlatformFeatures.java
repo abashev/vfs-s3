@@ -3,7 +3,7 @@ package com.github.vfss3.operations;
 import org.apache.commons.vfs2.operations.FileOperation;
 
 /**
- * Different S3 implementations have slightly different behaviour and we need to control it on code side
+ * Different S3 implementations have slightly different behaviour, and we need to control it on code side
  *
  * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */

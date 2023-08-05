@@ -3,6 +3,7 @@ package com.github.vfss3;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -13,9 +14,8 @@ import org.apache.commons.vfs2.FileSystemException;
 
 import java.util.Collection;
 
-import static com.amazonaws.services.s3.internal.Constants.BUCKET_ACCESS_FORBIDDEN_STATUS_CODE;
-import static com.amazonaws.services.s3.internal.Constants.BUCKET_REDIRECT_STATUS_CODE;
-import static com.amazonaws.services.s3.internal.Constants.NO_SUCH_BUCKET_STATUS_CODE;
+import static com.amazonaws.services.s3.internal.Constants.*;
+import static java.util.Optional.ofNullable;
 
 /**
  * An S3 file system.
@@ -45,7 +45,13 @@ public class S3FileSystem extends AbstractFileSystem {
 
         try {
             if (options.isCreateBucket() && !doesBucketExist(rootName.getBucket())) {
-                bucket = service.createBucket(rootName.getBucket());
+                CreateBucketRequest createBucketRequest = new CreateBucketRequest(rootName.getBucket());
+
+                ofNullable(options.getObjectOwnership()).ifPresent(createBucketRequest::setObjectOwnership);
+                ofNullable(options.getCannedAcl()).ifPresent(createBucketRequest::setCannedAcl);
+
+                // Send the request to Amazon S3
+                bucket = service.createBucket(createBucketRequest);
 
                 if (log.isInfoEnabled()) {
                     log.info("Created new bucket [" + bucket + "]");
