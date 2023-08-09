@@ -3,8 +3,6 @@ name: Build with integration tests and code coverage
 on:
   push:
     branches: [ branch-4.x.x ]
-  pull_request:
-    branches: [ branch-4.x.x ]
 
 permissions:
   checks: write
@@ -13,34 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  dependabot:
-    runs-on: ubuntu-latest
-    if: ${{ github.actor == 'dependabot[bot]' }}
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          java-version: 11
-          distribution: 'liberica'
-          cache: 'maven'
-
-      - name: Build with Maven
-        run: mvn -B verify
-        env:
-          BASE_URL: 's3://s3.eu-central-1.amazonaws.com/s3-tests-%s'
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-
-      - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          junit_files: "target/surefire-reports/junitreports/*.xml"
-
   full-build:
-    if: ${{ github.actor != 'dependabot[bot]' }}
     strategy:
       matrix:
         environment: [AWS-1, YANDEX-1, YANDEX-2]
@@ -57,11 +28,8 @@ jobs:
         distribution: 'liberica'
         cache: 'maven'
 
-    - name: Submit Dependency Snapshot
-      uses: advanced-security/maven-dependency-submission-action@v3
-
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn -B package
       env:
         BASE_URL: ${{ vars.BASE_URL }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

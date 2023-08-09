@@ -1,0 +1,37 @@
+name: Build pull request with simple check
+
+on:
+  pull_request:
+    branches: [ branch-4.x.x ]
+
+permissions:
+  checks: write
+  pull-requests: write
+  repository-projects: write
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: 8
+          distribution: 'liberica'
+          cache: 'maven'
+
+      - name: Build with Maven
+        run: mvn -B verify
+        env:
+          BASE_URL: 's3://s3.eu-central-1.amazonaws.com/s3-tests-%s'
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          junit_files: "target/surefire-reports/junitreports/*.xml"
