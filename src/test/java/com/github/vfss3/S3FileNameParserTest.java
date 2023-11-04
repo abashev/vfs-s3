@@ -22,18 +22,18 @@ public class S3FileNameParserTest {
                 hasPathPrefix("bucket").
                 hasType(FOLDER);
 
-        assertThat(parse("s3://bucket.s3-eu-west-1.amazonaws.com")).
-                hasEndpoint("s3-eu-west-1.amazonaws.com").
+        assertThat(parse("s3://bucket.s3.eu-west-1.amazonaws.com")).
+                hasEndpoint("s3.eu-west-1.amazonaws.com").
                 hasPathPrefix("bucket").
                 hasType(FOLDER);
 
-        assertThat(parse("s3://bucket.s3-eu-west-1.amazonaws.com/some_file")).
-                hasEndpoint("s3-eu-west-1.amazonaws.com").
+        assertThat(parse("s3://bucket.s3.eu-west-1.amazonaws.com/some_file")).
+                hasEndpoint("s3.eu-west-1.amazonaws.com").
                 hasPathPrefix("bucket").
                 hasType(IMAGINARY);
 
-        assertThat(parse("s3://bucket.s3-eu-west-1.amazonaws.com/some file")).
-                hasEndpoint("s3-eu-west-1.amazonaws.com").
+        assertThat(parse("s3://bucket.s3.eu-west-1.amazonaws.com/some file")).
+                hasEndpoint("s3.eu-west-1.amazonaws.com").
                 hasPathPrefix("bucket").
                 hasType(IMAGINARY);
 
@@ -78,8 +78,8 @@ public class S3FileNameParserTest {
                 hasEndpoint("s3.amazonaws.com").
                 hasPathPrefix("bucket");
 
-        assertThat(parse("s3://s3-eu-west-1.amazonaws.com/bucket")).
-                hasEndpoint("s3-eu-west-1.amazonaws.com").
+        assertThat(parse("s3://s3.eu-west-1.amazonaws.com/bucket")).
+                hasEndpoint("s3.eu-west-1.amazonaws.com").
                 hasPathPrefix("bucket").
                 hasType(FOLDER);
 
@@ -88,14 +88,14 @@ public class S3FileNameParserTest {
                 hasPathPrefix("bucket").
                 hasType(FOLDER);
 
-        assertThat(parse("s3://s3-eu-west-1.amazonaws.com/bucket/gggg")).
-                hasEndpoint("s3-eu-west-1.amazonaws.com").
+        assertThat(parse("s3://s3.eu-west-1.amazonaws.com/bucket/gggg")).
+                hasEndpoint("s3.eu-west-1.amazonaws.com").
                 hasPathPrefix("bucket").
                 hasType(IMAGINARY).
                 hasPath("/gggg");
 
-        assertThat(parse("s3://s3-eu-west-1.amazonaws.com/bucket/concurrent/")).
-                hasEndpoint("s3-eu-west-1.amazonaws.com").
+        assertThat(parse("s3://s3.eu-west-1.amazonaws.com/bucket/concurrent/")).
+                hasEndpoint("s3.eu-west-1.amazonaws.com").
                 hasPathPrefix("bucket").
                 hasType(IMAGINARY).
                 hasPath("/concurrent");
@@ -133,13 +133,13 @@ public class S3FileNameParserTest {
 
     @Test
     public void checkRegionParsing() throws FileSystemException {
-        assertThat(parse("s3://s3-eu-west-1.amazonaws.com/bucket")).
+        assertThat(parse("s3://s3.eu-west-1.amazonaws.com/bucket")).
                 hasSigningRegion("eu-west-1");
 
         assertThat(parse("s3://s3.amazonaws.com/bucket")).
                 hasSigningRegion("us-east-1");
 
-        assertThat(parse("s3://bucket.s3-eu-west-1.amazonaws.com")).
+        assertThat(parse("s3://bucket.s3.eu-west-1.amazonaws.com")).
                 hasSigningRegion("eu-west-1");
 
         assertThat(parse("s3://s3-tests.storage.yandexcloud.net")).
@@ -151,13 +151,13 @@ public class S3FileNameParserTest {
 
     @Test
     public void checkBrokenUrls() throws FileSystemException {
-        assertThat(parse("s3://s3-eu-west-1.amazonaws.com/s3-tests//big_file.iso")).
-                hasEndpoint("s3-eu-west-1.amazonaws.com").
+        assertThat(parse("s3://s3.eu-west-1.amazonaws.com/s3-tests//big_file.iso")).
+                hasEndpoint("s3.eu-west-1.amazonaws.com").
                 hasPathPrefix("s3-tests").
                 hasPath("/big_file.iso");
 
-        assertThat(parse("s3://s3-eu-west-1.amazonaws.com///////s3-tests///////big_file.iso")).
-                hasEndpoint("s3-eu-west-1.amazonaws.com").
+        assertThat(parse("s3://s3.eu-west-1.amazonaws.com///////s3-tests///////big_file.iso")).
+                hasEndpoint("s3.eu-west-1.amazonaws.com").
                 hasPathPrefix("s3-tests").
                 hasPath("/big_file.iso");
 
@@ -202,7 +202,7 @@ public class S3FileNameParserTest {
                 hasType(FOLDER);
 
         assertThat(parse("s3://access:secret:cn-north-1@bucket.s3.amazonaws.com")).
-                hasEndpoint("s3-cn-north-1.amazonaws.com").
+                hasEndpoint("s3.cn-north-1.amazonaws.com").
                 hasPathPrefix("bucket").
                 hasType(FOLDER).
                 hasSigningRegion("cn-north-1");

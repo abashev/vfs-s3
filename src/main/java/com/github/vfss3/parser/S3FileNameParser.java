@@ -119,7 +119,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
             if ((bucket != null) && (bucket.trim().length() > 0)) {
                 // Has bucket inside URL
                 if ((region != null) && (region.trim().length() > 0)) {
-                    host = "s3-" + region + ".amazonaws.com";
+                    host = "s3." + region + ".amazonaws.com";
                 } else {
                     host = "s3.amazonaws.com";
                 }
