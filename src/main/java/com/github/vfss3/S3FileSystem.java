@@ -44,7 +44,7 @@ public class S3FileSystem extends AbstractFileSystem {
         }
 
         try {
-            if (options.isCreateBucket() && !doesBucketExist(rootName.getBucket())) {
+            if (!doesBucketExist(rootName.getBucket()) && options.isCreateBucket()) {
                 CreateBucketRequest createBucketRequest = new CreateBucketRequest(rootName.getBucket());
 
                 ofNullable(options.getObjectOwnership()).ifPresent(createBucketRequest::setObjectOwnership);
