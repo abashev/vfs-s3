@@ -30,26 +30,6 @@ abstract class AbstractVfsComponent implements VfsComponent {
     private Log log;
 
     /**
-     * Sets the Logger to use for the component.
-     *
-     * @param log The Log to use.
-     */
-    @Override
-    public final void setLogger(final Log log) {
-        this.log = log;
-    }
-
-    /**
-     * Sets the context for this file system provider.
-     *
-     * @param context The VfsComponentContext.
-     */
-    @Override
-    public final void setContext(final VfsComponentContext context) {
-        this.context = context;
-    }
-
-    /**
      * Initializes the component. This implementation does nothing.
      *
      * @throws FileSystemException if an error occurs.
@@ -77,11 +57,31 @@ abstract class AbstractVfsComponent implements VfsComponent {
     }
 
     /**
+     * Sets the Logger to use for the component.
+     *
+     * @param log The Log to use.
+     */
+    @Override
+    public final void setLogger(final Log log) {
+        this.log = log;
+    }
+
+    /**
      * Returns the context for this provider.
      *
      * @return provider context
      */
     protected final VfsComponentContext getContext() {
         return context;
+    }
+
+    /**
+     * Sets the context for this file system provider.
+     *
+     * @param context The VfsComponentContext.
+     */
+    @Override
+    public final void setContext(final VfsComponentContext context) {
+        this.context = context;
     }
 }

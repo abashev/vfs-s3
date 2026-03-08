@@ -1,14 +1,13 @@
 package com.github.vfss3.operations;
 
+import static java.util.Objects.requireNonNull;
+
 import com.github.vfss3.S3FileObject;
+import java.util.Collection;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.operations.FileOperation;
 import org.apache.commons.vfs2.operations.FileOperationProvider;
-
-import java.util.Collection;
-
-import static java.util.Objects.requireNonNull;
 
 public class S3FileOperationsProvider implements FileOperationProvider {
     @Override
@@ -24,7 +23,8 @@ public class S3FileOperationsProvider implements FileOperationProvider {
     }
 
     @Override
-    public FileOperation getOperation(FileObject file, Class<? extends FileOperation> operationClass) throws FileSystemException {
+    public FileOperation getOperation(FileObject file, Class<? extends FileOperation> operationClass)
+            throws FileSystemException {
         requireNonNull(file);
         requireNonNull(operationClass);
 
@@ -55,7 +55,6 @@ public class S3FileOperationsProvider implements FileOperationProvider {
         }
 
         throw new FileSystemException(
-                "Operation " + operationClass.getName() + " is not provided for file " + file.getName()
-        );
+                "Operation " + operationClass.getName() + " is not provided for file " + file.getName());
     }
 }

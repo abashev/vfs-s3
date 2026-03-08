@@ -17,6 +17,5 @@ class MockServerSideEncryption implements ServerSideEncryption {
     }
 
     @Override
-    public void process() {
-    }
+    public void process() {}
 }

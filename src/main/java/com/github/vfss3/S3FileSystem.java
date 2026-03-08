@@ -1,21 +1,20 @@
 package com.github.vfss3;
 
+import static com.amazonaws.services.s3.internal.Constants.*;
+import static java.util.Optional.ofNullable;
+
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.transfer.TransferManager;
+import java.util.Collection;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.Capability;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
-
-import java.util.Collection;
-
-import static com.amazonaws.services.s3.internal.Constants.*;
-import static java.util.Optional.ofNullable;
 
 /**
  * An S3 file system.
@@ -26,14 +25,12 @@ import static java.util.Optional.ofNullable;
  */
 public class S3FileSystem extends AbstractFileSystem {
     private final Log log = LogFactory.getLog(getClass());
-
+    private final Bucket bucket;
     private AmazonS3 service;
     private TransferManager transferManager;
-    private final Bucket bucket;
 
-    S3FileSystem(
-            S3FileName rootName, S3FileSystemOptions options, TransferManager transferManager
-    ) throws FileSystemException {
+    S3FileSystem(S3FileName rootName, S3FileSystemOptions options, TransferManager transferManager)
+            throws FileSystemException {
         super(rootName, null, options.toFileSystemOptions());
 
         this.transferManager = transferManager;

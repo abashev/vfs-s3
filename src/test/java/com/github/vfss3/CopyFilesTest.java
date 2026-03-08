@@ -1,16 +1,15 @@
 package com.github.vfss3;
 
+import static org.apache.commons.vfs2.FileType.FOLDER;
+import static org.apache.commons.vfs2.Selectors.*;
+import static org.testng.Assert.*;
+
 import com.github.vfss3.support.BaseIntegrationTest;
+import java.util.Arrays;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.Selectors;
 import org.testng.annotations.Test;
-
-import java.util.Arrays;
-
-import static org.apache.commons.vfs2.FileType.FOLDER;
-import static org.apache.commons.vfs2.Selectors.*;
-import static org.testng.Assert.*;
 
 /**
  * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
@@ -56,8 +55,8 @@ public class CopyFilesTest extends BaseIntegrationTest {
         FileObject[] files = testsDir.findFiles(SELECT_SELF_AND_CHILDREN);
         FileObject[] filesCopy = testsDirCopy.findFiles(SELECT_SELF_AND_CHILDREN);
 
-        assertEquals(files.length, filesCopy.length,
-                Arrays.deepToString(files) + " vs. " + Arrays.deepToString(filesCopy));
+        assertEquals(
+                files.length, filesCopy.length, Arrays.deepToString(files) + " vs. " + Arrays.deepToString(filesCopy));
     }
 
     @Test(dependsOnMethods = "copyInsideBucket")

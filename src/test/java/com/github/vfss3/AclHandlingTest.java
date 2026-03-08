@@ -1,5 +1,10 @@
 package com.github.vfss3;
 
+import static com.github.vfss3.operations.Acl.Group.*;
+import static com.github.vfss3.operations.Acl.Permission.READ;
+import static com.github.vfss3.operations.Acl.Permission.WRITE;
+import static org.testng.Assert.*;
+
 import com.github.vfss3.operations.Acl;
 import com.github.vfss3.operations.Acl.Group;
 import com.github.vfss3.operations.Acl.Permission;
@@ -11,11 +16,6 @@ import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.Selectors;
 import org.testng.annotations.Test;
-
-import static com.github.vfss3.operations.Acl.Group.*;
-import static com.github.vfss3.operations.Acl.Permission.READ;
-import static com.github.vfss3.operations.Acl.Permission.WRITE;
-import static org.testng.Assert.*;
 
 public class AclHandlingTest extends BaseIntegrationTest {
     private static final String FOLDER = "/acl";
@@ -62,7 +62,7 @@ public class AclHandlingTest extends BaseIntegrationTest {
         // Set allow read to Guest
         fileAcl.allow(EVERYONE, READ);
 
-//        setAcl(file, fileAcl);
+        //        setAcl(file, fileAcl);
 
         // Verify
         file.refresh();
@@ -70,7 +70,7 @@ public class AclHandlingTest extends BaseIntegrationTest {
         Acl changedAcl = getAcl(file);
 
         // Guest can read
-//        assertAllowed(changedAcl, EVERYONE, READ);
+        //        assertAllowed(changedAcl, EVERYONE, READ);
 
         // Write rules for guest not changed
         assertSameAllowed(changedAcl, fileAcl, EVERYONE, WRITE);
@@ -83,13 +83,14 @@ public class AclHandlingTest extends BaseIntegrationTest {
 
     @Test(dependsOnMethods = "checkGet")
     public void checkSet2() throws FileSystemException {
-        if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAuthorizedGroup()) {
+        if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class))
+                .supportsAuthorizedGroup()) {
             // Doesn't support authorized group
             return;
         }
 
         // Set allow all to Authorized
-//        fileAcl.allow(AUTHORIZED);
+        //        fileAcl.allow(AUTHORIZED);
 
         setAcl(file, fileAcl);
 
@@ -99,7 +100,7 @@ public class AclHandlingTest extends BaseIntegrationTest {
         Acl changedAcl = getAcl(file);
 
         // Authorized can do everything
-//        assertAllowed(changedAcl, AUTHORIZED);
+        //        assertAllowed(changedAcl, AUTHORIZED);
 
         // All other rules not changed
         assertSameAllowed(changedAcl, fileAcl, EVERYONE, READ);
@@ -204,9 +205,6 @@ public class AclHandlingTest extends BaseIntegrationTest {
     }
 
     private void assertSameAllowed(Acl actual, Acl expected, Group group, Permission permission) {
-        assertEquals(
-                actual.isAllowed(group, permission),
-                expected.isAllowed(group, permission)
-        );
+        assertEquals(actual.isAllowed(group, permission), expected.isAllowed(group, permission));
     }
 }

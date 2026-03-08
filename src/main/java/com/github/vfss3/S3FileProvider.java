@@ -1,20 +1,19 @@
 package com.github.vfss3;
 
+import static com.amazonaws.services.s3.transfer.TransferManagerBuilder.standard;
+
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.github.vfss3.parser.S3FileNameParser;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs2.*;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-
-import static com.amazonaws.services.s3.transfer.TransferManagerBuilder.standard;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.vfs2.*;
 
 /**
  * An S3 file provider. Create an S3 file system out of an S3 file name. Also
@@ -25,18 +24,16 @@ import static com.amazonaws.services.s3.transfer.TransferManagerBuilder.standard
  * @author Moritz Siuts
  */
 public class S3FileProvider extends CachingFileProvider {
+    static final Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
+            Capability.CREATE,
+            Capability.DELETE,
+            Capability.GET_TYPE,
+            Capability.GET_LAST_MODIFIED,
+            Capability.LIST_CHILDREN,
+            Capability.READ_CONTENT,
+            Capability.URI,
+            Capability.WRITE_CONTENT));
     private final Log log = LogFactory.getLog(getClass());
-
-    final static Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
-        Capability.CREATE,
-        Capability.DELETE,
-        Capability.GET_TYPE,
-        Capability.GET_LAST_MODIFIED,
-        Capability.LIST_CHILDREN,
-        Capability.READ_CONTENT,
-        Capability.URI,
-        Capability.WRITE_CONTENT
-    ));
 
     public S3FileProvider() {
         setFileNameParser(new S3FileNameParser());
@@ -51,19 +48,17 @@ public class S3FileProvider extends CachingFileProvider {
      * @throws FileSystemException if the file system cannot be created
      */
     @Override
-    protected FileSystem doCreateFileSystem(
-            FileName fileName, FileSystemOptions fileSystemOptions
-    ) throws FileSystemException {
+    protected FileSystem doCreateFileSystem(FileName fileName, FileSystemOptions fileSystemOptions)
+            throws FileSystemException {
         final S3FileName root = (S3FileName) fileName;
         final S3FileSystemOptions options = new S3FileSystemOptions(fileSystemOptions);
 
-        final AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().
-                withClientConfiguration(options.getClientConfiguration());
+        final AmazonS3ClientBuilder clientBuilder =
+                AmazonS3ClientBuilder.standard().withClientConfiguration(options.getClientConfiguration());
 
         if (root.hasCredentials()) {
-            clientBuilder.withCredentials(
-                    new AWSStaticCredentialsProvider(new BasicAWSCredentials(root.getAccessKey(), root.getSecretKey()))
-            );
+            clientBuilder.withCredentials(new AWSStaticCredentialsProvider(
+                    new BasicAWSCredentials(root.getAccessKey(), root.getSecretKey())));
         } else {
             clientBuilder.withCredentials(options.getCredentialsProvider());
         }
@@ -94,11 +89,11 @@ public class S3FileProvider extends CachingFileProvider {
             log.debug("Endpoint configuration [endpoint=" + endpoint + ",region=" + root.getSigningRegion() + "]");
         }
 
-        clientBuilder.withEndpointConfiguration(new EndpointConfiguration(endpoint.toString(), root.getSigningRegion()));
+        clientBuilder.withEndpointConfiguration(
+                new EndpointConfiguration(endpoint.toString(), root.getSigningRegion()));
 
-        TransferManager transferManager = standard().
-                withS3Client(clientBuilder.build()).
-                build();
+        TransferManager transferManager =
+                standard().withS3Client(clientBuilder.build()).build();
 
         return (new S3FileSystem(root, options, transferManager));
     }

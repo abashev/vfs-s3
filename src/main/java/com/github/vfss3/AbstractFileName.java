@@ -16,11 +16,7 @@
  */
 package com.github.vfss3;
 
-import org.apache.commons.vfs2.FileName;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileType;
-import org.apache.commons.vfs2.NameScope;
-import org.apache.commons.vfs2.VFS;
+import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.provider.UriParser;
 
 /**
@@ -40,7 +36,7 @@ abstract class AbstractFileName implements FileName {
     // Since : and / occur before the path, only chars after path are escaped (i.e., # and ?)
     // ? is a reserved filesystem character for Windows and Unix, so can't be part of a file name.
     // Therefore only # is a reserved char in a URI as part of the path that can be in the file name.
-    private static final char[] RESERVED_URI_CHARS = { '#' };
+    private static final char[] RESERVED_URI_CHARS = {'#'};
 
     private final String scheme;
     private final String absPath;
@@ -68,6 +64,51 @@ abstract class AbstractFileName implements FileName {
         } else {
             this.absPath = ROOT_PATH;
         }
+    }
+
+    /**
+     * Checks whether a path fits in a particular scope of another path.
+     *
+     * @param basePath An absolute, normalised path.
+     * @param path An absolute, normalised path.
+     * @param scope The NameScope.
+     * @return true if the path fits in the scope, false otherwise.
+     */
+    public static boolean checkName(final String basePath, final String path, final NameScope scope) {
+        if (scope == NameScope.FILE_SYSTEM) {
+            // All good
+            return true;
+        }
+
+        if (!path.startsWith(basePath)) {
+            return false;
+        }
+
+        int baseLen = basePath.length();
+        if (VFS.isUriStyle()) {
+            // strip the trailing "/"
+            baseLen--;
+        }
+
+        if (scope == NameScope.CHILD) {
+            if (path.length() == baseLen
+                    || baseLen > 1 && path.charAt(baseLen) != SEPARATOR_CHAR
+                    || path.indexOf(SEPARATOR_CHAR, baseLen + 1) != -1) {
+                return false;
+            }
+        } else if (scope == NameScope.DESCENDENT) {
+            if (path.length() == baseLen || baseLen > 1 && path.charAt(baseLen) != SEPARATOR_CHAR) {
+                return false;
+            }
+        } else if (scope == NameScope.DESCENDENT_OR_SELF) {
+            if (baseLen > 1 && path.length() > baseLen && path.charAt(baseLen) != SEPARATOR_CHAR) {
+                return false;
+            }
+        } else if (scope != NameScope.FILE_SYSTEM) {
+            throw new IllegalArgumentException();
+        }
+
+        return true;
     }
 
     @Override
@@ -311,8 +352,7 @@ abstract class AbstractFileName implements FileName {
 
         final int maxlen = Math.min(basePathLen, pathLen);
         int pos = 0;
-        for (; pos < maxlen && getPath().charAt(pos) == path.charAt(pos); pos++) {
-        }
+        for (; pos < maxlen && getPath().charAt(pos) == path.charAt(pos); pos++) {}
 
         if (pos == basePathLen && pos == pathLen) {
             // Same names
@@ -484,49 +524,5 @@ abstract class AbstractFileName implements FileName {
         }
 
         this.type = type;
-    }
-
-    /**
-     * Checks whether a path fits in a particular scope of another path.
-     *
-     * @param basePath An absolute, normalised path.
-     * @param path An absolute, normalised path.
-     * @param scope The NameScope.
-     * @return true if the path fits in the scope, false otherwise.
-     */
-    public static boolean checkName(final String basePath, final String path, final NameScope scope) {
-        if (scope == NameScope.FILE_SYSTEM) {
-            // All good
-            return true;
-        }
-
-        if (!path.startsWith(basePath)) {
-            return false;
-        }
-
-        int baseLen = basePath.length();
-        if (VFS.isUriStyle()) {
-            // strip the trailing "/"
-            baseLen--;
-        }
-
-        if (scope == NameScope.CHILD) {
-            if (path.length() == baseLen || baseLen > 1 && path.charAt(baseLen) != SEPARATOR_CHAR
-                    || path.indexOf(SEPARATOR_CHAR, baseLen + 1) != -1) {
-                return false;
-            }
-        } else if (scope == NameScope.DESCENDENT) {
-            if (path.length() == baseLen || baseLen > 1 && path.charAt(baseLen) != SEPARATOR_CHAR) {
-                return false;
-            }
-        } else if (scope == NameScope.DESCENDENT_OR_SELF) {
-            if (baseLen > 1 && path.length() > baseLen && path.charAt(baseLen) != SEPARATOR_CHAR) {
-                return false;
-            }
-        } else if (scope != NameScope.FILE_SYSTEM) {
-            throw new IllegalArgumentException();
-        }
-
-        return true;
     }
 }

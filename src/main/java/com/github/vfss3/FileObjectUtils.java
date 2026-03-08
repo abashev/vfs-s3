@@ -24,6 +24,8 @@ import org.apache.commons.vfs2.impl.DecoratedFileObject;
  * Utility methods for {@link FileObject}.
  */
 final class FileObjectUtils {
+    private FileObjectUtils() {}
+
     /**
      * Null-safe call to {@link FileObject#exists()}.
      *
@@ -56,7 +58,8 @@ final class FileObjectUtils {
             return null;
         }
 
-        throw new FileSystemException("vfs.util/find-abstract-file-object.error",
+        throw new FileSystemException(
+                "vfs.util/find-abstract-file-object.error",
                 fileObject == null ? "null" : fileObject.getClass().getName());
     }
 
@@ -82,9 +85,8 @@ final class FileObjectUtils {
             return searchObject;
         }
 
-        throw new FileSystemException("vfs.util/find-abstract-file-object.error", fileObject.getClass().getName());
-    }
-
-    private FileObjectUtils() {
+        throw new FileSystemException(
+                "vfs.util/find-abstract-file-object.error",
+                fileObject.getClass().getName());
     }
 }

@@ -16,21 +16,15 @@
  */
 package com.github.vfss3;
 
+import static java.util.Objects.requireNonNull;
+
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs2.CacheStrategy;
-import org.apache.commons.vfs2.Capability;
-import org.apache.commons.vfs2.FileListener;
-import org.apache.commons.vfs2.FileName;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSelector;
-import org.apache.commons.vfs2.FileSystem;
-import org.apache.commons.vfs2.FileSystemConfigBuilder;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemManager;
-import org.apache.commons.vfs2.FileSystemOptions;
-import org.apache.commons.vfs2.FilesCache;
-import org.apache.commons.vfs2.VfsLog;
+import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.cache.OnCallRefreshFileObject;
 import org.apache.commons.vfs2.events.AbstractFileChangeEvent;
 import org.apache.commons.vfs2.events.ChangedEvent;
@@ -39,18 +33,6 @@ import org.apache.commons.vfs2.events.DeleteEvent;
 import org.apache.commons.vfs2.impl.DefaultFileSystemConfigBuilder;
 import org.apache.commons.vfs2.util.FileObjectUtils;
 import org.apache.commons.vfs2.util.Messages;
-
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * A partial {@link org.apache.commons.vfs2.FileSystem} implementation.
@@ -71,23 +53,20 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
     private final String rootURI;
 
     private final Collection<Capability> caps = new HashSet<>();
-
-    private FileObject parentLayer;
-
     /**
      * Map from FileName to an ArrayList of listeners for that file.
      */
     private final Map<FileName, ArrayList<FileListener>> listenerMap = new HashMap<>();
-
     /**
      * FileSystemOptions used for configuration
      */
     private final FileSystemOptions fileSystemOptions;
-
     /**
      * open streams counter for this file system
      */
     private final AtomicInteger openStreams = new AtomicInteger(0);
+
+    private FileObject parentLayer;
 
     protected AbstractFileSystem(FileName rootName, FileObject parentLayer, FileSystemOptions fileSystemOptions) {
         this.parentLayer = parentLayer;
@@ -288,8 +267,8 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
     @Override
     public FileObject resolveFile(final FileName name) throws FileSystemException {
         if (!rootName.getRootURI().equals(name.getRootURI())) {
-            throw new FileSystemException("vfs.provider/mismatched-fs-for-name.error", name, rootName,
-                    name.getRootURI());
+            throw new FileSystemException(
+                    "vfs.provider/mismatched-fs-for-name.error", name, rootName, name.getRootURI());
         }
 
         FileObject file;
@@ -312,11 +291,13 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
 
         if (getFileSystemManager().getFileObjectDecoratorConst() != null) {
             try {
-                file = (FileObject) getFileSystemManager().getFileObjectDecoratorConst()
-                        .newInstance(new Object[] { file });
+                file = (FileObject)
+                        getFileSystemManager().getFileObjectDecoratorConst().newInstance(new Object[] {file});
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                throw new FileSystemException("vfs.impl/invalid-decorator.error",
-                        getFileSystemManager().getFileObjectDecorator().getName(), e);
+                throw new FileSystemException(
+                        "vfs.impl/invalid-decorator.error",
+                        getFileSystemManager().getFileObjectDecorator().getName(),
+                        e);
             }
         }
 
@@ -503,12 +484,9 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
         }
     }
 
-    void fileObjectHanded(final FileObject fileObject) {
-    }
+    void fileObjectHanded(final FileObject fileObject) {}
 
-    void fileObjectDestroyed(final FileObject fileObject) {
-
-    }
+    void fileObjectDestroyed(final FileObject fileObject) {}
 
     void streamOpened() {
         openStreams.incrementAndGet();
@@ -541,8 +519,7 @@ abstract class AbstractFileSystem extends AbstractVfsComponent implements FileSy
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AbstractFileSystem that = (AbstractFileSystem) o;
-        return rootName.equals(that.rootName) &&
-                fileSystemOptions.equals(that.fileSystemOptions);
+        return rootName.equals(that.rootName) && fileSystemOptions.equals(that.fileSystemOptions);
     }
 
     @Override

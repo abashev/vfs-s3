@@ -1,18 +1,14 @@
 package com.github.vfss3;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.AnonymousAWSCredentials;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemManager;
-import org.apache.commons.vfs2.FileSystemOptions;
-import org.apache.commons.vfs2.VFS;
-import org.apache.commons.vfs2.util.DelegatingFileSystemOptionsBuilder;
-import org.testng.annotations.Test;
-
 import static com.github.vfss3.S3FileSystemOptions.PREFIX;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.AnonymousAWSCredentials;
+import org.apache.commons.vfs2.*;
+import org.apache.commons.vfs2.util.DelegatingFileSystemOptionsBuilder;
+import org.testng.annotations.Test;
 
 /**
  * Unit test for accessing public buckets.
@@ -39,7 +35,8 @@ public class PublicAccessBucketTest {
 
         String bucket = "s3://osm-pds.s3.amazonaws.com/";
 
-        final FileObject[] children = manager.resolveFile(bucket, options.toFileSystemOptions()).getChildren();
+        final FileObject[] children =
+                manager.resolveFile(bucket, options.toFileSystemOptions()).getChildren();
 
         assertNotNull(children, "Public bucket " + bucket + " is not resolved");
         assertTrue(children.length > 0, "Public bucket " + bucket + " is not resolved");
@@ -54,7 +51,8 @@ public class PublicAccessBucketTest {
 
         String bucket = "s3://s3.amazonaws.com/osm-pds";
 
-        final FileObject[] children = manager.resolveFile(bucket, options.toFileSystemOptions()).getChildren();
+        final FileObject[] children =
+                manager.resolveFile(bucket, options.toFileSystemOptions()).getChildren();
 
         assertNotNull(children, "Public bucket " + bucket + " is not resolved");
         assertTrue(children.length > 0, "Public bucket " + bucket + " is not resolved");

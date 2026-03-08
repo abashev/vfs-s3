@@ -1,10 +1,9 @@
 package com.github.vfss3;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.util.MonitorInputStream;
-import org.apache.commons.vfs2.util.MonitorOutputStream;
+import static java.nio.channels.Channels.newChannel;
+import static java.nio.channels.FileChannel.open;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.Objects.requireNonNull;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -14,11 +13,11 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static java.nio.channels.Channels.newChannel;
-import static java.nio.channels.FileChannel.open;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static java.util.Objects.requireNonNull;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.util.MonitorInputStream;
+import org.apache.commons.vfs2.util.MonitorOutputStream;
 
 /**
  * Special container to keep input and output streams inside temporary file.
@@ -48,8 +47,7 @@ class ObjectContentHolder implements Closeable {
         populateData(
                 data,
                 metadata.getContentLength(),
-                metadata.getMD5Hash().orElseThrow(() -> new FileSystemException("Empty MD5 for the object"))
-        );
+                metadata.getMD5Hash().orElseThrow(() -> new FileSystemException("Empty MD5 for the object")));
     }
 
     /**
@@ -85,14 +83,14 @@ class ObjectContentHolder implements Closeable {
      *
      * @return
      */
-    public boolean sameData(ObjectMetadataHolder metadata) throws IOException{
+    public boolean sameData(ObjectMetadataHolder metadata) throws IOException {
         if (file == null) {
             throw new FileSystemException("Content holder was closed");
         }
 
-        return (metadata.getContentLength() == contentLength) &&
-                (md5 != null) &&
-                (md5.equalsIgnoreCase(metadata.getMD5Hash().orElse(null)));
+        return (metadata.getContentLength() == contentLength)
+                && (md5 != null)
+                && (md5.equalsIgnoreCase(metadata.getMD5Hash().orElse(null)));
     }
 
     public InputStream getInputStream() throws FileSystemException {

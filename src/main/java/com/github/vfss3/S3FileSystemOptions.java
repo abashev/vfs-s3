@@ -48,15 +48,6 @@ public class S3FileSystemOptions implements Cloneable {
     }
 
     /**
-     * use server-side encryption.
-     *
-     * @param serverSideEncryption true if server-side encryption should be used.
-     */
-    public void setServerSideEncryption(boolean serverSideEncryption) {
-        S3FileSystemConfigBuilder.getInstance().setServerSideEncryption(options, serverSideEncryption);
-    }
-
-    /**
      * @return true if server-side encryption is being used.
      * @see #setServerSideEncryption(boolean)
      */
@@ -65,11 +56,12 @@ public class S3FileSystemOptions implements Cloneable {
     }
 
     /**
-     * @param clientConfiguration The AWS ClientConfiguration object to
-     *                            use when creating the connection.
+     * use server-side encryption.
+     *
+     * @param serverSideEncryption true if server-side encryption should be used.
      */
-    public void setClientConfiguration(ClientConfiguration clientConfiguration) {
-        S3FileSystemConfigBuilder.getInstance().setClientConfiguration(options, clientConfiguration);
+    public void setServerSideEncryption(boolean serverSideEncryption) {
+        S3FileSystemConfigBuilder.getInstance().setServerSideEncryption(options, serverSideEncryption);
     }
 
     /**
@@ -86,12 +78,11 @@ public class S3FileSystemOptions implements Cloneable {
     }
 
     /**
-     * Set option to disable chunked encoding
-     *
-     * @param disableChunkedEncoding
+     * @param clientConfiguration The AWS ClientConfiguration object to
+     *                            use when creating the connection.
      */
-    public void setDisableChunkedEncoding(boolean disableChunkedEncoding) {
-        S3FileSystemConfigBuilder.getInstance().setDisableChunkedEncoding(options, disableChunkedEncoding);
+    public void setClientConfiguration(ClientConfiguration clientConfiguration) {
+        S3FileSystemConfigBuilder.getInstance().setClientConfiguration(options, clientConfiguration);
     }
 
     /**
@@ -101,6 +92,15 @@ public class S3FileSystemOptions implements Cloneable {
      */
     public boolean isDisableChunkedEncoding() {
         return S3FileSystemConfigBuilder.getInstance().getDisableChunkedEncoding(options);
+    }
+
+    /**
+     * Set option to disable chunked encoding
+     *
+     * @param disableChunkedEncoding
+     */
+    public void setDisableChunkedEncoding(boolean disableChunkedEncoding) {
+        S3FileSystemConfigBuilder.getInstance().setDisableChunkedEncoding(options, disableChunkedEncoding);
     }
 
     /**

@@ -16,11 +16,10 @@
  */
 package com.github.vfss3;
 
-import org.apache.commons.vfs2.FileSystemOptions;
+import static java.util.Objects.requireNonNull;
 
 import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
+import org.apache.commons.vfs2.FileSystemOptions;
 
 /**
  * Used to identify a file system
@@ -70,8 +69,7 @@ class FileSystemKey implements Comparable<FileSystemKey> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FileSystemKey that = (FileSystemKey) o;
-        return key.equals(that.key) &&
-                fileSystemOptions.equals(that.fileSystemOptions);
+        return key.equals(that.key) && fileSystemOptions.equals(that.fileSystemOptions);
     }
 
     @Override

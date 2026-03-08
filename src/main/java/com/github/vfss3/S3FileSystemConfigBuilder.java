@@ -1,5 +1,8 @@
 package com.github.vfss3;
 
+import static com.github.vfss3.S3FileSystemOptions.PREFIX;
+import static java.util.Objects.requireNonNull;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -9,37 +12,34 @@ import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemConfigBuilder;
 import org.apache.commons.vfs2.FileSystemOptions;
 
-import static com.github.vfss3.S3FileSystemOptions.PREFIX;
-import static java.util.Objects.requireNonNull;
-
 /**
  * The config builder for various AWS S3 configuration options.
  */
 public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
-    private static final String SERVER_SIDE_ENCRYPTION   = "serverSideEncryption";
-    private static final String CLIENT_CONFIGURATION     = "clientConfiguration";
+    private static final String SERVER_SIDE_ENCRYPTION = "serverSideEncryption";
+    private static final String CLIENT_CONFIGURATION = "clientConfiguration";
     private static final String DISABLE_CHUNKED_ENCODING = "disableChunkedEncoding"; // Useful for localstack
-    private static final String USE_HTTPS                = "useHttps";               // Useful for localstack
-    private static final String CREATE_BUCKET            = "createBucket";
-    private static final String CREDENTIALS_PROVIDER     = "credentialsProvider";
-    private static final String OBJECT_OWNERSHIP         = "objectOwnership";
-    private static final String CANNED_ACL               = "cannedAcl";
+    private static final String USE_HTTPS = "useHttps"; // Useful for localstack
+    private static final String CREATE_BUCKET = "createBucket";
+    private static final String CREDENTIALS_PROVIDER = "credentialsProvider";
+    private static final String OBJECT_OWNERSHIP = "objectOwnership";
+    private static final String CANNED_ACL = "cannedAcl";
 
     private static final int DEFAULT_MAX_ERROR_RETRY = 8;
 
     private static final S3FileSystemConfigBuilder BUILDER = new S3FileSystemConfigBuilder();
+
+    private S3FileSystemConfigBuilder() {
+        super(PREFIX + ".");
+    }
 
     /**
      * Gets the singleton builder.
      *
      * @return the singleton builder.
      */
-    public static S3FileSystemConfigBuilder getInstance(){
+    public static S3FileSystemConfigBuilder getInstance() {
         return BUILDER;
-    }
-
-    private S3FileSystemConfigBuilder() {
-        super(PREFIX + ".");
     }
 
     @Override

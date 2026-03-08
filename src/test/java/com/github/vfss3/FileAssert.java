@@ -1,14 +1,14 @@
 package com.github.vfss3;
 
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
+import static java.util.Arrays.sort;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.fail;
 
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
-
-import static java.util.Arrays.sort;
-import static org.testng.Assert.*;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
 
 /**
  * A bunch of asserts for checking file operations.
@@ -16,13 +16,15 @@ import static org.testng.Assert.*;
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
 public final class FileAssert {
+    private FileAssert() {}
+
     /**
      * Check list of children for file object. Number of children and names should exactly as `children` param.
      *
      * @param file
      * @param children
      */
-    public static void assertHasChildren(FileObject file, String ... children) {
+    public static void assertHasChildren(FileObject file, String... children) {
         assertNotNull(file, "Source file object is null");
 
         FileObject[] siblings = null;
@@ -42,26 +44,19 @@ public final class FileAssert {
         }
 
         if (names.size() != children.length) {
-            fail(
-                    "Wrong number of children for " + file +
-                            ". Expected <" + Arrays.toString(children) +
-                            "> but was <" + names.toString() + ">"
-            );
+            fail("Wrong number of children for " + file + ". Expected <"
+                    + Arrays.toString(children) + "> but was <"
+                    + names.toString() + ">");
         }
 
         int i = 0;
 
         for (String name : names) {
             if (!name.equals(children[i++])) {
-                fail(
-                        "Wrong list of children for " + file +
-                        ". Expected <" + Arrays.toString(children) +
-                        "> but was <" + names.toString() + ">"
-                );
+                fail("Wrong list of children for " + file + ". Expected <"
+                        + Arrays.toString(children) + "> but was <"
+                        + names.toString() + ">");
             }
         }
-    }
-
-    private FileAssert() {
     }
 }

@@ -16,11 +16,10 @@
  */
 package com.github.vfss3;
 
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.RandomAccessContent;
-
 import java.io.InputStream;
 import java.util.ArrayList;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.RandomAccessContent;
 
 /**
  * Holds the data which needs to be local to the current thread
@@ -33,8 +32,7 @@ class FileContentThreadData {
     private final ArrayList<RandomAccessContent> randomAccessContentList = new ArrayList<>();
     private DefaultFileContent.FileContentOutputStream outputStream;
 
-    FileContentThreadData() {
-    }
+    FileContentThreadData() {}
 
     /*
      * int getState() { return state; }
@@ -46,12 +44,12 @@ class FileContentThreadData {
         this.inputStreamList.add(inputStream);
     }
 
-    void setOutstr(final DefaultFileContent.FileContentOutputStream outputStream) {
-        this.outputStream = outputStream;
-    }
-
     DefaultFileContent.FileContentOutputStream getOutstr() {
         return this.outputStream;
+    }
+
+    void setOutstr(final DefaultFileContent.FileContentOutputStream outputStream) {
+        this.outputStream = outputStream;
     }
 
     void addRastr(final RandomAccessContent randomAccessContent) {

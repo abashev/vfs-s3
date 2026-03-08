@@ -1,8 +1,18 @@
 package com.github.vfss3.parser;
 
+import static java.util.Objects.requireNonNull;
+import static java.util.regex.Pattern.compile;
+import static org.apache.commons.vfs2.FileName.ROOT_PATH;
+import static org.apache.commons.vfs2.FileType.FOLDER;
+import static org.apache.commons.vfs2.FileType.IMAGINARY;
+
 import com.amazonaws.regions.Regions;
 import com.github.vfss3.S3FileName;
 import com.github.vfss3.operations.PlatformFeatures;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.FileName;
@@ -12,17 +22,6 @@ import org.apache.commons.vfs2.provider.AbstractFileNameParser;
 import org.apache.commons.vfs2.provider.UriParser;
 import org.apache.commons.vfs2.provider.VfsComponentContext;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static java.util.Objects.requireNonNull;
-import static java.util.regex.Pattern.compile;
-import static org.apache.commons.vfs2.FileName.ROOT_PATH;
-import static org.apache.commons.vfs2.FileType.FOLDER;
-import static org.apache.commons.vfs2.FileType.IMAGINARY;
-
 /**
  * @author Matthias L. Jugel
  * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
@@ -30,35 +29,29 @@ import static org.apache.commons.vfs2.FileType.IMAGINARY;
 public class S3FileNameParser extends AbstractFileNameParser {
     private static final String DEFAULT_SIGNING_REGION = "us-east-1";
     private static final String DEFAULT_ALIYUN_SIGNING_REGION = "cn-hangzhou";
-
+    private static final Pattern AWS_HOST_PATTERN =
+            compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3[-.]((?<region>[a-z0-9\\-]+)\\.)?amazonaws\\.com");
+    private static final Pattern YANDEX_HOST_PATTERN =
+            compile("((?<bucket>[a-z0-9\\-]+)\\.)?storage\\.yandexcloud\\.net");
+    private static final Pattern MAIL_RU_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?[ih]b\\.bizmrg\\.com");
+    private static final Pattern ALIYUN_HOST_PATTERN =
+            compile("((?<bucket>[a-z0-9\\-]+)\\.)?oss(-(?<region>[a-z0-9\\-]+))?\\.aliyuncs\\.com");
+    private static final Pattern ORACLE_HOST_PATTERN =
+            compile("(?<bucket>[a-z0-9\\-]+)\\.compat\\.objectstorage\\.(?<region>[a-z0-9\\-]+)\\.oraclecloud\\.com");
+    private static final Pattern DIGITAL_OCEAN_HOST_PATTERN =
+            compile("(?<bucket>[a-z0-9\\-]+)\\.(?<region>[a-z0-9\\-]+)\\.digitaloceanspaces\\.com");
+    private static final Pattern SBER_CLOUD_HOST_PATTERN =
+            compile("(?<bucket>[a-z0-9\\-]+)\\.obs\\.(?<region>[a-z0-9\\-]+)\\.hc\\.sbercloud\\.ru");
+    private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
     private final Log log = LogFactory.getLog(S3FileNameParser.class);
 
-    private static final Pattern AWS_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?s3[-.]((?<region>[a-z0-9\\-]+)\\.)?amazonaws\\.com");
-    private static final Pattern YANDEX_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?storage\\.yandexcloud\\.net");
-    private static final Pattern MAIL_RU_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?[ih]b\\.bizmrg\\.com");
-    private static final Pattern ALIYUN_HOST_PATTERN = compile("((?<bucket>[a-z0-9\\-]+)\\.)?oss(-(?<region>[a-z0-9\\-]+))?\\.aliyuncs\\.com");
-    private static final Pattern ORACLE_HOST_PATTERN = compile(
-            "(?<bucket>[a-z0-9\\-]+)\\.compat\\.objectstorage\\.(?<region>[a-z0-9\\-]+)\\.oraclecloud\\.com"
-    );
-    private static final Pattern DIGITAL_OCEAN_HOST_PATTERN = compile(
-            "(?<bucket>[a-z0-9\\-]+)\\.(?<region>[a-z0-9\\-]+)\\.digitaloceanspaces\\.com"
-    );
-    private static final Pattern SBER_CLOUD_HOST_PATTERN = compile(
-            "(?<bucket>[a-z0-9\\-]+)\\.obs\\.(?<region>[a-z0-9\\-]+)\\.hc\\.sbercloud\\.ru"
-    );
-
-    private static final Pattern PATH = compile("^/+(?<bucket>[^/]+)/*(?<key>/.*)?");
-
-    public S3FileNameParser() {
-    }
+    public S3FileNameParser() {}
 
     /**
      * Parses URI and constructs S3 file name.
      */
     @Override
-    public FileName parseUri(
-            VfsComponentContext context, FileName base, String filename
-    ) throws FileSystemException {
+    public FileName parseUri(VfsComponentContext context, FileName base, String filename) throws FileSystemException {
         if (log.isDebugEnabled()) {
             log.debug("Parse uri [base=" + base + ",filename=" + filename + "]");
         }
@@ -146,9 +139,15 @@ public class S3FileNameParser extends AbstractFileNameParser {
             }
 
             S3FileName file = buildS3FileName(
-                    host, null, bucket, bucket, region, key, accessKey, secretKey,
-                    new PlatformFeaturesImpl(true, true, true, true, true)
-            );
+                    host,
+                    null,
+                    bucket,
+                    bucket,
+                    region,
+                    key,
+                    accessKey,
+                    secretKey,
+                    new PlatformFeaturesImpl(true, true, true, true, true));
 
             if (log.isDebugEnabled()) {
                 log.debug("From uri " + filename + " got " + file);
@@ -173,9 +172,15 @@ public class S3FileNameParser extends AbstractFileNameParser {
             }
 
             S3FileName file = buildS3FileName(
-                    "storage.yandexcloud.net", bucket, null, bucket, "ru-central1", key, accessKey, secretKey,
-                    new PlatformFeaturesImpl(false, true, false, true, true)
-            );
+                    "storage.yandexcloud.net",
+                    bucket,
+                    null,
+                    bucket,
+                    "ru-central1",
+                    key,
+                    accessKey,
+                    secretKey,
+                    new PlatformFeaturesImpl(false, true, false, true, true));
 
             if (log.isDebugEnabled()) {
                 log.debug("From uri " + filename + " got " + file);
@@ -200,9 +205,15 @@ public class S3FileNameParser extends AbstractFileNameParser {
             }
 
             S3FileName file = buildS3FileName(
-                    "hb.bizmrg.com", null, bucket, bucket, "ru-msk", key, accessKey, secretKey,
-                    new PlatformFeaturesImpl(true, false, false, true, true)
-            );
+                    "hb.bizmrg.com",
+                    null,
+                    bucket,
+                    bucket,
+                    "ru-msk",
+                    key,
+                    accessKey,
+                    secretKey,
+                    new PlatformFeaturesImpl(true, false, false, true, true));
 
             if (log.isDebugEnabled()) {
                 log.debug("From uri " + filename + " got " + file);
@@ -220,7 +231,8 @@ public class S3FileNameParser extends AbstractFileNameParser {
             String bucket = hostNameMatcher.group("bucket");
 
             if ((bucket == null) || (bucket.trim().length() == 0)) {
-                throw new FileSystemException("Path-style URLs are not supported on Aliyun Object Storage Service  [" + filename + "]");
+                throw new FileSystemException(
+                        "Path-style URLs are not supported on Aliyun Object Storage Service  [" + filename + "]");
             } else {
                 // strip the bucket name from the host uri as it will be prepended
                 // again in the S3RequestEndpointResolver
@@ -236,8 +248,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
                     uri.getPath(),
                     accessKey,
                     secretKey,
-                    new PlatformFeaturesImpl(true, false, true, false, true)
-            );
+                    new PlatformFeaturesImpl(true, false, true, false, true));
 
             if (log.isDebugEnabled()) {
                 log.debug("From uri " + filename + " got " + file);
@@ -253,7 +264,9 @@ public class S3FileNameParser extends AbstractFileNameParser {
             String bucket, key;
 
             if ((namespace == null) || (namespace.trim().length() == 0)) {
-                throw new FileSystemException("Virtual host style URLs are not supported on Oracle Cloud Storage Service  [" + filename + "]");
+                throw new FileSystemException(
+                        "Virtual host style URLs are not supported on Oracle Cloud Storage Service  [" + filename
+                                + "]");
             } else {
                 final Matcher pathMatcher = PATH.matcher(uri.getPath());
 
@@ -274,8 +287,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
                     key,
                     accessKey,
                     secretKey,
-                    new PlatformFeaturesImpl(false, false, false, false, false)
-            );
+                    new PlatformFeaturesImpl(false, false, false, false, false));
 
             if (log.isDebugEnabled()) {
                 log.debug("From uri " + filename + " got " + file);
@@ -290,7 +302,8 @@ public class S3FileNameParser extends AbstractFileNameParser {
             String bucket = hostNameMatcher.group("bucket");
 
             if ((bucket == null) || (bucket.trim().length() == 0)) {
-                throw new FileSystemException("Path-style URLs are not supported on Digital Ocean Spaces [" + filename + "]");
+                throw new FileSystemException(
+                        "Path-style URLs are not supported on Digital Ocean Spaces [" + filename + "]");
             } else {
                 // strip the bucket name from the host uri as it will be prepended
                 // again in the S3RequestEndpointResolver
@@ -306,8 +319,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
                     uri.getPath(),
                     accessKey,
                     secretKey,
-                    new PlatformFeaturesImpl(true, true, false, true, true)
-            );
+                    new PlatformFeaturesImpl(true, true, false, true, true));
 
             if (log.isDebugEnabled()) {
                 log.debug("From uri " + filename + " got " + file);
@@ -338,8 +350,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
                     uri.getPath(),
                     accessKey,
                     secretKey,
-                    new PlatformFeaturesImpl(true, true, false, true, true)
-            );
+                    new PlatformFeaturesImpl(true, true, false, true, true));
 
             if (log.isDebugEnabled()) {
                 log.debug("From uri " + filename + " got " + file);
@@ -364,9 +375,9 @@ public class S3FileNameParser extends AbstractFileNameParser {
                         pathMatcher.group("bucket"),
                         (region != null) ? region : DEFAULT_SIGNING_REGION,
                         pathMatcher.group("key"),
-                        accessKey, secretKey,
-                        new PlatformFeaturesImpl(true, true, false, true, true)
-                );
+                        accessKey,
+                        secretKey,
+                        new PlatformFeaturesImpl(true, true, false, true, true));
 
                 if (log.isDebugEnabled()) {
                     log.debug("From uri " + filename + " got " + file);
@@ -400,12 +411,16 @@ public class S3FileNameParser extends AbstractFileNameParser {
     }
 
     private S3FileName buildS3FileName(
-            String endpoint, String urlPrefix, String pathPrefix,
-            String bucket, String signingRegion,
+            String endpoint,
+            String urlPrefix,
+            String pathPrefix,
+            String bucket,
+            String signingRegion,
             String key,
-            String accessKey, String secretKey,
-            PlatformFeatures features
-    ) throws FileSystemException {
+            String accessKey,
+            String secretKey,
+            PlatformFeatures features)
+            throws FileSystemException {
         if ((key == null) || (key.trim().length() == 0)) {
             key = ROOT_PATH;
         }
@@ -422,7 +437,6 @@ public class S3FileNameParser extends AbstractFileNameParser {
         FileType type = (ROOT_PATH.equals(key)) ? FOLDER : IMAGINARY;
 
         return (new S3FileName(
-                endpoint, urlPrefix, pathPrefix, bucket, signingRegion, key, type, accessKey, secretKey, features
-        ));
+                endpoint, urlPrefix, pathPrefix, bucket, signingRegion, key, type, accessKey, secretKey, features));
     }
 }

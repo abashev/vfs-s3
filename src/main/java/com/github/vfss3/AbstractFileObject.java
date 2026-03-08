@@ -16,28 +16,8 @@
  */
 package com.github.vfss3;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs2.Capability;
-import org.apache.commons.vfs2.FileContent;
-import org.apache.commons.vfs2.FileContentInfoFactory;
-import org.apache.commons.vfs2.FileName;
-import org.apache.commons.vfs2.FileNotFolderException;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSelector;
-import org.apache.commons.vfs2.FileSystem;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileType;
-import org.apache.commons.vfs2.FileUtil;
-import org.apache.commons.vfs2.NameScope;
-import org.apache.commons.vfs2.RandomAccessContent;
-import org.apache.commons.vfs2.Selectors;
-import org.apache.commons.vfs2.VFS;
-import org.apache.commons.vfs2.operations.DefaultFileOperations;
-import org.apache.commons.vfs2.operations.FileOperations;
-import org.apache.commons.vfs2.provider.DefaultURLStreamHandler;
-import org.apache.commons.vfs2.provider.UriParser;
-import org.apache.commons.vfs2.util.RandomAccessMode;
+import static org.apache.commons.vfs2.FileType.FILE;
+import static org.apache.commons.vfs2.FileType.FOLDER;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -49,15 +29,15 @@ import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.cert.Certificate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.commons.vfs2.FileType.FILE;
-import static org.apache.commons.vfs2.FileType.FOLDER;
+import java.util.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.vfs2.*;
+import org.apache.commons.vfs2.operations.DefaultFileOperations;
+import org.apache.commons.vfs2.operations.FileOperations;
+import org.apache.commons.vfs2.provider.DefaultURLStreamHandler;
+import org.apache.commons.vfs2.provider.UriParser;
+import org.apache.commons.vfs2.util.RandomAccessMode;
 
 /**
  * A partial file object implementation.
@@ -65,7 +45,7 @@ import static org.apache.commons.vfs2.FileType.FOLDER;
  * @param <AFS> An AbstractFileSystem subclass
  */
 abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements FileObject {
-    private final Log log = LogFactory.getLog(AbstractFileObject.class);
+    private static final FileName[] EMPTY_FILE_ARRAY = {};
 
     /*
      * TODO - Chop this class up - move all the protected methods to several interfaces, so that structure and content
@@ -76,16 +56,47 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      * support listing children', vs 'this is not a folder')
      * </p>
      */
-
-    private static final FileName[] EMPTY_FILE_ARRAY = {};
-
     private static final int INITIAL_LIST_SIZE = 5;
+    private final Log log = LogFactory.getLog(AbstractFileObject.class);
+    private final AFS fileSystem;
+    private AbstractFileName fileName;
+    private FileContent content;
+    // Cached info
+    private boolean attached;
+    private FileType type;
+    private FileObject parent;
+    // Changed to hold only the name of the children and let the object
+    // go into the global files cache
+    // private FileObject[] children;
+    private FileName[] children;
+    private List<Object> objects;
+    /**
+     * FileServices instance.
+     */
+    private FileOperations operations;
+
+    /**
+     *
+     * @param name the file name - muse be an instance of {@link AbstractFileName}
+     * @param fileSystem the file system
+     * @throws ClassCastException if {@code name} is not an instance of {@link AbstractFileName}
+     */
+    protected AbstractFileObject(AbstractFileName name, AFS fileSystem) {
+        this.fileName = name;
+        this.fileSystem = fileSystem;
+
+        fileSystem.fileObjectHanded(this);
+    }
 
     /**
      * Traverses a file.
      */
-    private static void traverse(final DefaultFileSelectorInfo fileInfo, final FileSelector selector,
-            final boolean depthwise, final List<FileObject> selected) throws Exception {
+    private static void traverse(
+            final DefaultFileSelectorInfo fileInfo,
+            final FileSelector selector,
+            final boolean depthwise,
+            final List<FileObject> selected)
+            throws Exception {
         // Check the file itself
         final FileObject file = fileInfo.getFile();
         final int index = selected.size();
@@ -116,41 +127,6 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
                 selected.add(index, file);
             }
         }
-    }
-
-    private AbstractFileName fileName;
-
-    private final AFS fileSystem;
-    private FileContent content;
-    // Cached info
-    private boolean attached;
-
-    private FileType type;
-    private FileObject parent;
-
-    // Changed to hold only the name of the children and let the object
-    // go into the global files cache
-    // private FileObject[] children;
-    private FileName[] children;
-
-    private List<Object> objects;
-
-    /**
-     * FileServices instance.
-     */
-    private FileOperations operations;
-
-    /**
-     *
-     * @param name the file name - muse be an instance of {@link AbstractFileName}
-     * @param fileSystem the file system
-     * @throws ClassCastException if {@code name} is not an instance of {@link AbstractFileName}
-     */
-    protected AbstractFileObject(AbstractFileName name, AFS fileSystem) {
-        this.fileName = name;
-        this.fileSystem = fileSystem;
-
-        fileSystem.fileObjectHanded(this);
     }
 
     /**
@@ -1385,8 +1361,13 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
                 @Override
                 public URL run() throws MalformedURLException, FileSystemException {
                     final StringBuilder buf = new StringBuilder();
-                    final String scheme = UriParser.extractScheme(VFS.getManager().getSchemes(), fileName.getURI(), buf);
-                    return new URL(scheme, "", -1, buf.toString(),
+                    final String scheme =
+                            UriParser.extractScheme(VFS.getManager().getSchemes(), fileName.getURI(), buf);
+                    return new URL(
+                            scheme,
+                            "",
+                            -1,
+                            buf.toString(),
                             new DefaultURLStreamHandler(fileSystem.getContext(), fileSystem.getFileSystemOptions()));
                 }
             });
@@ -1668,7 +1649,9 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
     public void moveTo(final FileObject destFile) throws FileSystemException {
         if (canRenameTo(destFile)) {
             if (!getParent().isWriteable()) {
-                throw new FileSystemException("vfs.provider/rename-parent-read-only.error", getName(),
+                throw new FileSystemException(
+                        "vfs.provider/rename-parent-read-only.error",
+                        getName(),
                         getParent().getName());
             }
         } else {
@@ -1705,16 +1688,15 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
             destFile.copyFrom(this, Selectors.SELECT_SELF);
 
             if ((destFile.getType().hasContent()
-                    && destFile.getFileSystem().hasCapability(Capability.SET_LAST_MODIFIED_FILE)
-                    || destFile.getType().hasChildren()
-                            && destFile.getFileSystem().hasCapability(Capability.SET_LAST_MODIFIED_FOLDER))
+                                    && destFile.getFileSystem().hasCapability(Capability.SET_LAST_MODIFIED_FILE)
+                            || destFile.getType().hasChildren()
+                                    && destFile.getFileSystem().hasCapability(Capability.SET_LAST_MODIFIED_FOLDER))
                     && fileSystem.hasCapability(Capability.GET_LAST_MODIFIED)) {
                 destFile.getContent().setLastModifiedTime(this.getContent().getLastModifiedTime());
             }
 
             deleteSelf();
         }
-
     }
 
     /**

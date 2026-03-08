@@ -64,8 +64,7 @@ public class DepthFileSelector implements FileSelector {
     }
 
     @Override
-    public boolean traverseDescendents(FileSelectInfo fileSelectInfo)
-            throws Exception {
+    public boolean traverseDescendents(FileSelectInfo fileSelectInfo) throws Exception {
         return fileSelectInfo.getDepth() < maxDepth;
     }
 }

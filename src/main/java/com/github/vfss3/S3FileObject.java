@@ -1,20 +1,5 @@
 package com.github.vfss3;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.*;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.github.vfss3.operations.Acl;
-import com.github.vfss3.operations.IAclGetter;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs2.*;
-
-import java.io.*;
-import java.net.URISyntaxException;
-import java.util.*;
-
 import static com.github.vfss3.operations.Acl.Permission.READ;
 import static com.github.vfss3.operations.Acl.Permission.WRITE;
 import static java.util.Calendar.SECOND;
@@ -25,6 +10,20 @@ import static org.apache.commons.vfs2.FileName.SEPARATOR;
 import static org.apache.commons.vfs2.FileType.*;
 import static org.apache.commons.vfs2.NameScope.CHILD;
 import static org.apache.commons.vfs2.NameScope.DESCENDENT_OR_SELF;
+
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.github.vfss3.operations.Acl;
+import com.github.vfss3.operations.IAclGetter;
+import java.io.*;
+import java.net.URISyntaxException;
+import java.util.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.vfs2.*;
 
 /**
  * Implementation of the virtual S3 file system object using the AWS-SDK.
@@ -117,12 +116,11 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             // Do, we have subordinate objects
             String candidateKey = getName().getS3KeyAs(FOLDER);
 
-            ObjectListing listing = getService().listObjects(
-                    new ListObjectsRequest().
-                            withBucketName(getBucketName()).
-                            withPrefix(candidateKey).
-                            withMaxKeys(1)
-            );
+            ObjectListing listing = getService()
+                    .listObjects(new ListObjectsRequest()
+                            .withBucketName(getBucketName())
+                            .withPrefix(candidateKey)
+                            .withMaxKeys(1));
 
             if (!listing.getObjectSummaries().isEmpty()) {
                 // subordinate objects so we need to pretend there is a directory
@@ -164,7 +162,8 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         }
     }
 
-    // avoid calling internally because it only partially detaches and is not thread safe by itself, call detachInternal() instead
+    // avoid calling internally because it only partially detaches and is not thread safe by itself, call
+    // detachInternal() instead
     @Override
     protected void doDetach() throws FileSystemException {
         if (objectMetadataHolder == null) {
@@ -183,7 +182,8 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         final String bucket = getBucketName();
 
         if (getName().getS3Key().isPresent()) {
-            final String key = getName().getS3Key().orElseThrow(() -> new IllegalStateException("No value after isPresent"));
+            final String key =
+                    getName().getS3Key().orElseThrow(() -> new IllegalStateException("No value after isPresent"));
 
             if (log.isDebugEnabled()) {
                 log.debug("Delete object [bucket=" + bucket + ",name=" + key + "]");
@@ -225,9 +225,11 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             objectContentHolder = new ObjectContentHolder();
         }
 
-        final String objectPath = getName().getS3Key().orElseThrow(() -> new FileSystemException("Not able to get object path"));
+        final String objectPath =
+                getName().getS3Key().orElseThrow(() -> new FileSystemException("Not able to get object path"));
 
-        if ((objectMetadataHolder.getContentLength() == 0) || (!objectMetadataHolder.getMD5Hash().isPresent())) {
+        if ((objectMetadataHolder.getContentLength() == 0)
+                || (!objectMetadataHolder.getMD5Hash().isPresent())) {
             if (log.isWarnEnabled()) {
                 log.warn("Try to get input stream from empty object [" + objectPath + "]. Return empty stream");
             }
@@ -272,12 +274,11 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
         final String path = getName().getS3Key().orElse("");
 
-        ObjectListing listing = getService().listObjects(
-                new ListObjectsRequest().
-                        withBucketName(getBucketName()).
-                        withDelimiter(SEPARATOR).
-                        withPrefix(path)
-        );
+        ObjectListing listing = getService()
+                .listObjects(new ListObjectsRequest()
+                        .withBucketName(getBucketName())
+                        .withDelimiter(SEPARATOR)
+                        .withPrefix(path));
 
         final List<S3ObjectSummary> summaries = new ArrayList<>(listing.getObjectSummaries());
         final Set<String> commonPrefixes = new TreeSet<>(listing.getCommonPrefixes());
@@ -466,7 +467,6 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                     myAcl.allow(Acl.Group.OWNER, rights);
                 }
             }
-
         }
 
         return myAcl;
@@ -567,11 +567,15 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         cal.add(SECOND, expireInSeconds);
 
         try {
-            return getService().generatePresignedUrl(
-                    getBucketName(),
-                    getName().getS3Key().orElseThrow(() -> new FileSystemException("Not able get presigned url for a bucket")),
-                    cal.getTime()
-            ).toString();
+            return getService()
+                    .generatePresignedUrl(
+                            getBucketName(),
+                            getName()
+                                    .getS3Key()
+                                    .orElseThrow(
+                                            () -> new FileSystemException("Not able get presigned url for a bucket")),
+                            cal.getTime())
+                    .toString();
         } catch (AmazonServiceException e) {
             throw new FileSystemException(e);
         }
@@ -626,7 +630,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         }
     }
 
-    protected void assertType(FileType ... types) throws FileSystemException {
+    protected void assertType(FileType... types) throws FileSystemException {
         final FileType type = getType();
         boolean val = false;
 
@@ -698,13 +702,11 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             final FileObject unwrappedDestFile = FileObjectUtils.unwrap(destFile);
 
             if (!allowS3Copy(unwrappedSrcFile, unwrappedDestFile)) {
-                log.warn(
-                        "One of files don't allow S3 copy - fallback to default implementation [from=" +
-                                unwrappedSrcFile +
-                                ",to=" +
-                                unwrappedDestFile +
-                                "]"
-                );
+                log.warn("One of files don't allow S3 copy - fallback to default implementation [from="
+                        + unwrappedSrcFile
+                        + ",to="
+                        + unwrappedDestFile
+                        + "]");
 
                 super.copyFrom(file, selector);
 
@@ -735,7 +737,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             return true;
         } else if ((fromFile instanceof S3FileObject) && (((S3FileObject) fromFile).sameFileSystem(toFile))) {
             return true;
-        } else if (fromFile.getType().hasContent() && fromFile.getURL().getProtocol().equals("file") && (toFile instanceof S3FileObject)) {
+        } else if (fromFile.getType().hasContent()
+                && fromFile.getURL().getProtocol().equals("file")
+                && (toFile instanceof S3FileObject)) {
             try {
                 fromFile.getURL().toURI();
 
@@ -785,7 +789,10 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 // do server side copy if both source and dest are in same file system
 
                 String srcBucketName = s3SrcFile.getBucketName();
-                String srcFileName = s3SrcFile.getName().getS3Key().orElseThrow(() -> new FileSystemException("Not able to copy whole bucket"));
+                String srcFileName = s3SrcFile
+                        .getName()
+                        .getS3Key()
+                        .orElseThrow(() -> new FileSystemException("Not able to copy whole bucket"));
                 String destBucketName = s3DestFile.getBucketName();
                 String destFileName = s3DestFile.getName().getS3KeyAs(FILE); // Because target could be not exists
 
@@ -797,7 +804,8 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                     s3DestFile.createFile();
                 }
 
-                CopyObjectRequest copy = new CopyObjectRequest(srcBucketName, srcFileName, destBucketName, destFileName);
+                CopyObjectRequest copy =
+                        new CopyObjectRequest(srcBucketName, srcFileName, destBucketName, destFileName);
 
                 if (s3SrcFile.getType() == FILE) {
                     if (s3SrcFile.objectMetadataHolder.isVirtual()) {
@@ -809,11 +817,16 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                         throw new FileSystemException("Not able to fetch real metadata from " + getName());
                     }
 
-                    s3SrcFile.objectMetadataHolder.withServerSideEncryption(getServerSideEncryption()).sendWith(copy);
+                    s3SrcFile
+                            .objectMetadataHolder
+                            .withServerSideEncryption(getServerSideEncryption())
+                            .sendWith(copy);
                 }
 
                 getService().copyObject(copy);
-            } else if (fromFile.getType().hasContent() && fromFile.getURL().getProtocol().equals("file") && (toFile instanceof S3FileObject)) {
+            } else if (fromFile.getType().hasContent()
+                    && fromFile.getURL().getProtocol().equals("file")
+                    && (toFile instanceof S3FileObject)) {
                 // do direct upload from file to avoid overhead of making a copy of the file
                 S3FileObject s3DestFile = (S3FileObject) toFile;
 
@@ -845,11 +858,9 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
         final S3FileName destFile = ((S3FileObject) toFile).getName();
 
-        return (
-                Objects.equals(getName().getEndpoint(), destFile.getEndpoint()) &&
-                Objects.equals(getName().getAccessKey(), destFile.getAccessKey()) &&
-                Objects.equals(getName().getSecretKey(), destFile.getSecretKey())
-        );
+        return (Objects.equals(getName().getEndpoint(), destFile.getEndpoint())
+                && Objects.equals(getName().getAccessKey(), destFile.getAccessKey())
+                && Objects.equals(getName().getSecretKey(), destFile.getSecretKey()));
     }
 
     /**
@@ -860,30 +871,27 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
      * @throws IOException if the upload failed
      */
     String upload(File file) throws IOException {
-        final String key = (getType() == IMAGINARY) ?
-                getName().getS3KeyAs(FILE) :
-                getName().getS3Key().orElseThrow(() -> new FileSystemException("Not able to copy whole bucket"));
+        final String key = (getType() == IMAGINARY)
+                ? getName().getS3KeyAs(FILE)
+                : getName().getS3Key().orElseThrow(() -> new FileSystemException("Not able to copy whole bucket"));
 
         PutObjectRequest request = new PutObjectRequest(getBucketName(), key, file);
 
-        new ObjectMetadataHolder().
-                withContentLength(file.length()).
-                withContentType(getName().getBaseName()).
-                withServerSideEncryption(getServerSideEncryption()).
-                sendWith(request);
+        new ObjectMetadataHolder()
+                .withContentLength(file.length())
+                .withContentType(getName().getBaseName())
+                .withServerSideEncryption(getServerSideEncryption())
+                .sendWith(request);
 
         if (log.isDebugEnabled()) {
-            log.debug(
-                    "Upload request [file=" +
-                    file +
-                    ",key=" +
-                    key +
-                    ",length=" +
-                    file.length() +
-                    ",type=" +
-                    getName().getBaseName() +
-                    "]"
-            );
+            log.debug("Upload request [file=" + file
+                    + ",key="
+                    + key
+                    + ",length="
+                    + file.length()
+                    + ",type="
+                    + getName().getBaseName()
+                    + "]");
         }
 
         String md5;
@@ -900,24 +908,22 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
         // Assert submitted data and update metadata
         try {
-            newMetadata = new ObjectMetadataHolder(getService().getObjectMetadata(getBucketName(), getName().getS3KeyAs(FILE)));
+            newMetadata = new ObjectMetadataHolder(
+                    getService().getObjectMetadata(getBucketName(), getName().getS3KeyAs(FILE)));
         } catch (AmazonS3Exception e) {
             throw new IOException(e);
         }
 
         if (newMetadata.getContentLength() != file.length()) {
-            throw new FileSystemException(
-                    "Wrong content length after upload. Expected [" +
-                            file.length() + "] but have [" + newMetadata.getContentLength() +
-                    "]"
-            );
+            throw new FileSystemException("Wrong content length after upload. Expected [" + file.length()
+                    + "] but have [" + newMetadata.getContentLength() + "]");
         }
 
-        if ((md5 != null) && newMetadata.getMD5Hash().isPresent() && !md5.equalsIgnoreCase(newMetadata.getMD5Hash().get())) {
-            throw new FileSystemException(
-                    "Wrong MD5 for content after upload. Expected [" +
-                            md5 + "] but have [" + newMetadata.getMD5Hash().get() + "]"
-            );
+        if ((md5 != null)
+                && newMetadata.getMD5Hash().isPresent()
+                && !md5.equalsIgnoreCase(newMetadata.getMD5Hash().get())) {
+            throw new FileSystemException("Wrong MD5 for content after upload. Expected [" + md5 + "] but have ["
+                    + newMetadata.getMD5Hash().get() + "]");
         }
 
         objectMetadataHolder = null;

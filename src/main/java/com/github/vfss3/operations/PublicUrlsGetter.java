@@ -17,9 +17,12 @@ class PublicUrlsGetter implements IPublicUrlsGetter {
 
     @Override
     public String getHttpUrl() {
-        final S3FileSystemOptions options = new S3FileSystemOptions(file.getFileSystem().getFileSystemOptions());
+        final S3FileSystemOptions options =
+                new S3FileSystemOptions(file.getFileSystem().getFileSystemOptions());
 
-        return file.getName().getURI().replaceFirst("^" + S3FileName.SCHEME + "://", options.isUseHttps() ? "https://" : "http://");
+        return file.getName()
+                .getURI()
+                .replaceFirst("^" + S3FileName.SCHEME + "://", options.isUseHttps() ? "https://" : "http://");
     }
 
     @Override

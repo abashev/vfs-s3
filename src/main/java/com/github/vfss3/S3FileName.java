@@ -15,16 +15,15 @@
  */
 package com.github.vfss3;
 
-import com.github.vfss3.operations.PlatformFeatures;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileType;
-
-import java.util.Optional;
-
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
 import static org.apache.commons.vfs2.FileType.FILE;
 import static org.apache.commons.vfs2.FileType.FOLDER;
+
+import com.github.vfss3.operations.PlatformFeatures;
+import java.util.Optional;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileType;
 
 public class S3FileName extends AbstractFileName {
     public static final String SCHEME = "s3";
@@ -63,21 +62,28 @@ public class S3FileName extends AbstractFileName {
      * Force access key and secret key for the url
      */
     private final String accessKey;
+
     private final String secretKey;
 
     public S3FileName(
             String endpoint,
-            String urlPrefix, String pathPrefix,
-            String bucket, String signingRegion,
-            String path, FileType type,
-            String accessKey, String secretKey,
-            PlatformFeatures platformFeatures
-    ) {
+            String urlPrefix,
+            String pathPrefix,
+            String bucket,
+            String signingRegion,
+            String path,
+            FileType type,
+            String accessKey,
+            String secretKey,
+            PlatformFeatures platformFeatures) {
         super(SCHEME, path, type);
 
         this.endpoint = requireNonNull(endpoint);
 
-        if ((bucket != null) && (bucket.contains("/") || bucket.contains(" ") || (bucket.trim().length() == 0))) {
+        if ((bucket != null)
+                && (bucket.contains("/")
+                        || bucket.contains(" ")
+                        || (bucket.trim().length() == 0))) {
             throw new IllegalArgumentException("Bucket name [" + bucket + "] has to be valid bucket name");
         }
 
@@ -93,9 +99,16 @@ public class S3FileName extends AbstractFileName {
     @Override
     public S3FileName createName(String absPath, FileType type) {
         return new S3FileName(
-                endpoint, urlPrefix, pathPrefix, bucket, signingRegion,
-                absPath, type, accessKey, secretKey, platformFeatures
-        );
+                endpoint,
+                urlPrefix,
+                pathPrefix,
+                bucket,
+                signingRegion,
+                absPath,
+                type,
+                accessKey,
+                secretKey,
+                platformFeatures);
     }
 
     @Override
@@ -198,15 +211,14 @@ public class S3FileName extends AbstractFileName {
 
     @Override
     public String toString() {
-        return "S3FileName{" +
-                "endpoint='" + endpoint + '\'' +
-                ", urlPrefix='" + urlPrefix + '\'' +
-                ", pathPrefix='" + pathPrefix + '\'' +
-                ", bucket='" + bucket + '\'' +
-                ", signingRegion='" + signingRegion + '\'' +
-                ", platformFeatures=" + platformFeatures +
-                ", accessKey='" + accessKey + '\'' +
-                ", secretKey='" + ((secretKey != null) ? "***secret***" : "null") + '\'' +
-                '}';
+        return "S3FileName{" + "endpoint='"
+                + endpoint + '\'' + ", urlPrefix='"
+                + urlPrefix + '\'' + ", pathPrefix='"
+                + pathPrefix + '\'' + ", bucket='"
+                + bucket + '\'' + ", signingRegion='"
+                + signingRegion + '\'' + ", platformFeatures="
+                + platformFeatures + ", accessKey='"
+                + accessKey + '\'' + ", secretKey='"
+                + ((secretKey != null) ? "***secret***" : "null") + '\'' + '}';
     }
 }

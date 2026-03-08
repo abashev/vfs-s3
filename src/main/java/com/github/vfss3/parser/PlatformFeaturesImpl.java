@@ -1,7 +1,6 @@
 package com.github.vfss3.parser;
 
 import com.github.vfss3.operations.PlatformFeatures;
-
 import java.util.Objects;
 
 /**
@@ -15,9 +14,11 @@ class PlatformFeaturesImpl implements PlatformFeatures {
     private final boolean supportsAcl;
 
     public PlatformFeaturesImpl(
-            boolean defaultAllowForOwner, boolean allowDenyForOwner, boolean supportsServerSideEncryption,
-            boolean supportsAuthorizedGroup, boolean supportsAcl
-    ) {
+            boolean defaultAllowForOwner,
+            boolean allowDenyForOwner,
+            boolean supportsServerSideEncryption,
+            boolean supportsAuthorizedGroup,
+            boolean supportsAcl) {
         this.defaultAllowForOwner = defaultAllowForOwner;
         this.allowDenyForOwner = allowDenyForOwner;
         this.supportsServerSideEncryption = supportsServerSideEncryption;
@@ -42,7 +43,7 @@ class PlatformFeaturesImpl implements PlatformFeatures {
 
     @Override
     public boolean supportsAuthorizedGroup() {
-      return supportsAuthorizedGroup;
+        return supportsAuthorizedGroup;
     }
 
     @Override
@@ -60,9 +61,9 @@ class PlatformFeaturesImpl implements PlatformFeatures {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PlatformFeaturesImpl that = (PlatformFeaturesImpl) o;
-        return defaultAllowForOwner == that.defaultAllowForOwner &&
-                allowDenyForOwner == that.allowDenyForOwner &&
-                supportsServerSideEncryption == that.supportsServerSideEncryption;
+        return defaultAllowForOwner == that.defaultAllowForOwner
+                && allowDenyForOwner == that.allowDenyForOwner
+                && supportsServerSideEncryption == that.supportsServerSideEncryption;
     }
 
     @Override
@@ -72,11 +73,10 @@ class PlatformFeaturesImpl implements PlatformFeatures {
 
     @Override
     public String toString() {
-        return "PlatformFeaturesImpl{" +
-            "defaultAllowForOwner=" + defaultAllowForOwner +
-            ", allowDenyForOwner=" + allowDenyForOwner +
-            ", supportsServerSideEncryption=" + supportsServerSideEncryption +
-            ", supportsAuthorizedGroup=" + supportsAuthorizedGroup +
-            '}';
+        return "PlatformFeaturesImpl{" + "defaultAllowForOwner="
+                + defaultAllowForOwner + ", allowDenyForOwner="
+                + allowDenyForOwner + ", supportsServerSideEncryption="
+                + supportsServerSideEncryption + ", supportsAuthorizedGroup="
+                + supportsAuthorizedGroup + '}';
     }
 }

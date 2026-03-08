@@ -16,17 +16,6 @@
  */
 package com.github.vfss3;
 
-import org.apache.commons.vfs2.FileContent;
-import org.apache.commons.vfs2.FileContentInfo;
-import org.apache.commons.vfs2.FileContentInfoFactory;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.RandomAccessContent;
-import org.apache.commons.vfs2.util.MonitorInputStream;
-import org.apache.commons.vfs2.util.MonitorOutputStream;
-import org.apache.commons.vfs2.util.MonitorRandomAccessContent;
-import org.apache.commons.vfs2.util.RandomAccessMode;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,6 +23,11 @@ import java.security.cert.Certificate;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.vfs2.*;
+import org.apache.commons.vfs2.util.MonitorInputStream;
+import org.apache.commons.vfs2.util.MonitorOutputStream;
+import org.apache.commons.vfs2.util.MonitorRandomAccessContent;
+import org.apache.commons.vfs2.util.RandomAccessMode;
 
 /**
  * The content of a file.
@@ -54,12 +48,11 @@ final class DefaultFileContent implements FileContent {
     private static final int WRITE_BUFFER_SIZE = 4096;
 
     private final AbstractFileObject fileObject;
+    private final FileContentInfoFactory fileContentInfoFactory;
+    private final ThreadLocal<FileContentThreadData> threadLocal = new ThreadLocal<>();
     private Map<String, Object> attrs;
     private Map<String, Object> roAttrs;
     private FileContentInfo fileContentInfo;
-    private final FileContentInfoFactory fileContentInfoFactory;
-
-    private final ThreadLocal<FileContentThreadData> threadLocal = new ThreadLocal<>();
     private boolean resetAttributes;
 
     /**
@@ -444,20 +437,19 @@ final class DefaultFileContent implements FileContent {
 
             // Close the input stream
             while (fileContentThreadData.getInstrsSize() > 0) {
-                final FileContentInputStream inputStream = (FileContentInputStream) fileContentThreadData
-                        .removeInstr(0);
+                final FileContentInputStream inputStream =
+                        (FileContentInputStream) fileContentThreadData.removeInstr(0);
                 try {
                     inputStream.close();
                 } catch (final FileSystemException ex) {
                     caught = ex;
-
                 }
             }
 
             // Close the randomAccess stream
             while (fileContentThreadData.getRastrsSize() > 0) {
-                final FileRandomAccessContent randomAccessContent = (FileRandomAccessContent) fileContentThreadData
-                        .removeRastr(0);
+                final FileRandomAccessContent randomAccessContent =
+                        (FileRandomAccessContent) fileContentThreadData.removeRastr(0);
                 try {
                     randomAccessContent.close();
                 } catch (final FileSystemException ex) {
@@ -494,9 +486,9 @@ final class DefaultFileContent implements FileContent {
         // Get the raw input stream
         final InputStream inputStream = fileObject.getInputStream();
 
-        final InputStream wrappedInputStream = bufferSize == 0 ?
-            new FileContentInputStream(fileObject, inputStream) :
-            new FileContentInputStream(fileObject, inputStream, bufferSize);
+        final InputStream wrappedInputStream = bufferSize == 0
+                ? new FileContentInputStream(fileObject, inputStream)
+                : new FileContentInputStream(fileObject, inputStream, bufferSize);
 
         getOrCreateThreadData().addInstr(wrappedInputStream);
         streamOpened();
@@ -518,9 +510,9 @@ final class DefaultFileContent implements FileContent {
         final OutputStream outstr = fileObject.getOutputStream(bAppend);
 
         // Create and set wrapper
-        final FileContentOutputStream wrapped = bufferSize == 0 ?
-            new FileContentOutputStream(fileObject, outstr) :
-            new FileContentOutputStream(fileObject, outstr, bufferSize);
+        final FileContentOutputStream wrapped = bufferSize == 0
+                ? new FileContentOutputStream(fileObject, outstr)
+                : new FileContentOutputStream(fileObject, outstr, bufferSize);
         streams.setOutstr(wrapped);
         streamOpened();
 
@@ -601,6 +593,92 @@ final class DefaultFileContent implements FileContent {
         synchronized (this) {
             return openStreams > 0;
         }
+    }
+
+    /**
+     * Gets the FileContentInfo which describes the content-type, content-encoding
+     *
+     * @return The FileContentInfo.
+     * @throws FileSystemException if an error occurs.
+     */
+    @Override
+    public FileContentInfo getContentInfo() throws FileSystemException {
+        if (fileContentInfo == null) {
+            fileContentInfo = fileContentInfoFactory.create(this);
+        }
+
+        return fileContentInfo;
+    }
+
+    /**
+     * Writes this content to another FileContent.
+     *
+     * @param fileContent The target FileContent.
+     * @return the total number of bytes written
+     * @throws IOException if an error occurs writing the content.
+     * @since 2.1
+     */
+    @Override
+    public long write(final FileContent fileContent) throws IOException {
+        final OutputStream output = fileContent.getOutputStream();
+        try {
+            return this.write(output);
+        } finally {
+            output.close();
+        }
+    }
+
+    /**
+     * Writes this content to another FileObject.
+     *
+     * @param file The target FileObject.
+     * @return the total number of bytes written
+     * @throws IOException if an error occurs writing the content.
+     * @since 2.1
+     */
+    @Override
+    public long write(final FileObject file) throws IOException {
+        return write(file.getContent());
+    }
+
+    /**
+     * Writes this content to an OutputStream.
+     *
+     * @param output The target OutputStream.
+     * @return the total number of bytes written
+     * @throws IOException if an error occurs writing the content.
+     * @since 2.1
+     */
+    @Override
+    public long write(final OutputStream output) throws IOException {
+        return write(output, WRITE_BUFFER_SIZE);
+    }
+
+    /**
+     * Writes this content to an OutputStream.
+     *
+     * @param output The target OutputStream.
+     * @param bufferSize The buffer size to write data chunks.
+     * @return the total number of bytes written
+     * @throws IOException if an error occurs writing the file.
+     * @since 2.1
+     */
+    @Override
+    public long write(final OutputStream output, final int bufferSize) throws IOException {
+        final InputStream input = this.getInputStream();
+        long count = 0;
+        try {
+            // This read/write code from Apache Commons IO
+            final byte[] buffer = new byte[bufferSize];
+            int n = 0;
+            while (-1 != (n = input.read(buffer))) {
+                output.write(buffer, 0, n);
+                count += n;
+            }
+        } finally {
+            input.close();
+        }
+        return count;
     }
 
     /**
@@ -723,91 +801,5 @@ final class DefaultFileContent implements FileContent {
                 }
             }
         }
-    }
-
-    /**
-     * Gets the FileContentInfo which describes the content-type, content-encoding
-     *
-     * @return The FileContentInfo.
-     * @throws FileSystemException if an error occurs.
-     */
-    @Override
-    public FileContentInfo getContentInfo() throws FileSystemException {
-        if (fileContentInfo == null) {
-            fileContentInfo = fileContentInfoFactory.create(this);
-        }
-
-        return fileContentInfo;
-    }
-
-    /**
-     * Writes this content to another FileContent.
-     *
-     * @param fileContent The target FileContent.
-     * @return the total number of bytes written
-     * @throws IOException if an error occurs writing the content.
-     * @since 2.1
-     */
-    @Override
-    public long write(final FileContent fileContent) throws IOException {
-        final OutputStream output = fileContent.getOutputStream();
-        try {
-            return this.write(output);
-        } finally {
-            output.close();
-        }
-    }
-
-    /**
-     * Writes this content to another FileObject.
-     *
-     * @param file The target FileObject.
-     * @return the total number of bytes written
-     * @throws IOException if an error occurs writing the content.
-     * @since 2.1
-     */
-    @Override
-    public long write(final FileObject file) throws IOException {
-        return write(file.getContent());
-    }
-
-    /**
-     * Writes this content to an OutputStream.
-     *
-     * @param output The target OutputStream.
-     * @return the total number of bytes written
-     * @throws IOException if an error occurs writing the content.
-     * @since 2.1
-     */
-    @Override
-    public long write(final OutputStream output) throws IOException {
-        return write(output, WRITE_BUFFER_SIZE);
-    }
-
-    /**
-     * Writes this content to an OutputStream.
-     *
-     * @param output The target OutputStream.
-     * @param bufferSize The buffer size to write data chunks.
-     * @return the total number of bytes written
-     * @throws IOException if an error occurs writing the file.
-     * @since 2.1
-     */
-    @Override
-    public long write(final OutputStream output, final int bufferSize) throws IOException {
-        final InputStream input = this.getInputStream();
-        long count = 0;
-        try {
-            // This read/write code from Apache Commons IO
-            final byte[] buffer = new byte[bufferSize];
-            int n = 0;
-            while (-1 != (n = input.read(buffer))) {
-                output.write(buffer, 0, n);
-                count += n;
-            }
-        } finally {
-            input.close();
-        }
-        return count;
     }
 }

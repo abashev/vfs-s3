@@ -16,16 +16,7 @@
  */
 package com.github.vfss3;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.vfs2.FileName;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystem;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileSystemOptions;
-import org.apache.commons.vfs2.provider.AbstractFileProvider;
-import org.apache.commons.vfs2.provider.FileProvider;
-import org.apache.commons.vfs2.provider.VfsComponent;
+import static org.apache.commons.vfs2.FileName.ROOT_PATH;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -34,8 +25,12 @@ import java.util.TreeMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static org.apache.commons.vfs2.FileName.ROOT_PATH;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.vfs2.*;
+import org.apache.commons.vfs2.provider.AbstractFileProvider;
+import org.apache.commons.vfs2.provider.FileProvider;
+import org.apache.commons.vfs2.provider.VfsComponent;
 
 /**
  * A {@link FileProvider} that handles physical files, such as the files in a local fs, or on an FTP server. An
@@ -61,9 +56,8 @@ abstract class CachingFileProvider extends AbstractFileProvider {
      * @return The FileSystem.
      * @throws FileSystemException if an error occurs.
      */
-    protected abstract FileSystem doCreateFileSystem(
-            FileName rootName, FileSystemOptions fileSystemOptions
-    ) throws FileSystemException;
+    protected abstract FileSystem doCreateFileSystem(FileName rootName, FileSystemOptions fileSystemOptions)
+            throws FileSystemException;
 
     /**
      * Locates a file object, by absolute URI.
@@ -75,9 +69,8 @@ abstract class CachingFileProvider extends AbstractFileProvider {
      * @throws FileSystemException if an error occurs.
      */
     @Override
-    public FileObject findFile(
-            FileObject baseFile, String uri, FileSystemOptions fileSystemOptions
-    ) throws FileSystemException {
+    public FileObject findFile(FileObject baseFile, String uri, FileSystemOptions fileSystemOptions)
+            throws FileSystemException {
         // Parse the URI
         final FileName name;
 
@@ -114,7 +107,8 @@ abstract class CachingFileProvider extends AbstractFileProvider {
 
                 if (fs == null) {
                     if (log.isDebugEnabled()) {
-                        log.debug("Create new file system for [key=" + rootName + ",options=" + fileSystemOptions + "]");
+                        log.debug(
+                                "Create new file system for [key=" + rootName + ",options=" + fileSystemOptions + "]");
                     }
 
                     // Need to create the file system, and cache it
@@ -193,4 +187,3 @@ abstract class CachingFileProvider extends AbstractFileProvider {
         }
     }
 }
-

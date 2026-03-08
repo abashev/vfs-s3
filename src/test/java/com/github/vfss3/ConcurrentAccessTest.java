@@ -1,12 +1,8 @@
 package com.github.vfss3;
 
-import com.github.vfss3.support.BaseIntegrationTest;
-import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.Selectors;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import static org.testng.Assert.*;
 
+import com.github.vfss3.support.BaseIntegrationTest;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
@@ -16,8 +12,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.testng.Assert.*;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.Selectors;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
@@ -72,9 +71,12 @@ public class ConcurrentAccessTest extends BaseIntegrationTest {
         final FileObject parent = root.resolveFile("/concurrent/");
         parent.delete(Selectors.EXCLUDE_SELF);
 
-        final int childCount = Integer.parseUnsignedInt(System.getProperty("ConcurrentAccessTest.deadlockTestChildCount", "10"));
-        final int duration = Integer.parseUnsignedInt(System.getProperty("ConcurrentAccessTest.deadlockTestDuration", "5"));
-        final long interval = Integer.parseUnsignedInt(System.getProperty("ConcurrentAccessTest.deadlockCheckInterval", "1000"));
+        final int childCount =
+                Integer.parseUnsignedInt(System.getProperty("ConcurrentAccessTest.deadlockTestChildCount", "10"));
+        final int duration =
+                Integer.parseUnsignedInt(System.getProperty("ConcurrentAccessTest.deadlockTestDuration", "5"));
+        final long interval =
+                Integer.parseUnsignedInt(System.getProperty("ConcurrentAccessTest.deadlockCheckInterval", "1000"));
 
         // create a bunch of files
         for (int i = 0; i < childCount; i++) {
@@ -91,55 +93,59 @@ public class ConcurrentAccessTest extends BaseIntegrationTest {
 
         List<Thread> threads = new ArrayList<>();
 
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while(!stopFlag.get()) {
-                    for (int i = 0; i < childCount; i++) {
-                        String fileName = "deadlock-" + i;
+        Thread thread = new Thread(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        while (!stopFlag.get()) {
+                            for (int i = 0; i < childCount; i++) {
+                                String fileName = "deadlock-" + i;
 
-                        try {
-                            FileObject file = parent.resolveFile(fileName);
-                            FileObject p = file.getParent();
+                                try {
+                                    FileObject file = parent.resolveFile(fileName);
+                                    FileObject p = file.getParent();
 
-                            if (p == null) {
-                                wrongResults.incrementAndGet();
+                                    if (p == null) {
+                                        wrongResults.incrementAndGet();
 
-                                log.error("Parent is null");
+                                        log.error("Parent is null");
+                                    }
+                                } catch (FileSystemException e) {
+                                    log.error("Not able to get parent for {}", fileName, e);
+                                }
                             }
-                        } catch (FileSystemException e) {
-                            log.error("Not able to get parent for {}", fileName, e);
                         }
                     }
-                }
-            }
-        }, "getParent");
+                },
+                "getParent");
         thread.setDaemon(true);
         threads.add(thread);
         thread.start();
 
         for (int i = 0; i < 3; i++) {
-            thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    while (!stopFlag.get()) {
-                        try {
-                            final FileObject parent = root.resolveFile("/concurrent/");
-                            int count = parent.getChildren().length;
+            thread = new Thread(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            while (!stopFlag.get()) {
+                                try {
+                                    final FileObject parent = root.resolveFile("/concurrent/");
+                                    int count = parent.getChildren().length;
 
-                            if (count != childCount) {
-                                wrongResults.incrementAndGet();
+                                    if (count != childCount) {
+                                        wrongResults.incrementAndGet();
 
-                                log.error("Wrong number of children - {}", count);
+                                        log.error("Wrong number of children - {}", count);
+                                    }
+
+                                    parent.refresh();
+                                } catch (FileSystemException e) {
+                                    log.error("Not able to get children for /concurrent/", e);
+                                }
                             }
-
-                            parent.refresh();
-                        } catch (FileSystemException e) {
-                            log.error("Not able to get children for /concurrent/", e);
                         }
-                    }
-                }
-            }, "getChildren" + i);
+                    },
+                    "getChildren" + i);
             thread.setDaemon(true);
             threads.add(thread);
             thread.start();
@@ -154,7 +160,8 @@ public class ConcurrentAccessTest extends BaseIntegrationTest {
                 if (deadlockedThreads != null) {
                     System.err.printf("Deadlock detected\n\n");
                     for (ThreadInfo threadInfo : threadMXBean.getThreadInfo(deadlockedThreads, true, true)) {
-                        System.err.printf("'%s\n   java.lang.Thread.State: %s\n",
+                        System.err.printf(
+                                "'%s\n   java.lang.Thread.State: %s\n",
                                 threadInfo.getThreadName(),
                                 threadInfo.getThreadState().toString());
                         final StackTraceElement[] stackTraceElements = threadInfo.getStackTrace();
@@ -167,8 +174,12 @@ public class ConcurrentAccessTest extends BaseIntegrationTest {
                         // at least make an attempt at killing the deadlocked threads
                         t.stop();
                     }
-                    // clear the cache because there are locked file objects in there and may block when we try to delete them
-                    parent.getFileSystem().getFileSystemManager().getFilesCache().clear(parent.getFileSystem());
+                    // clear the cache because there are locked file objects in there and may block when we try to
+                    // delete them
+                    parent.getFileSystem()
+                            .getFileSystemManager()
+                            .getFilesCache()
+                            .clear(parent.getFileSystem());
                     throw new AssertionError("threads are deadlocked");
                 }
             }
@@ -180,7 +191,6 @@ public class ConcurrentAccessTest extends BaseIntegrationTest {
                     t.join(1000);
                 } catch (InterruptedException ignored) {
                 }
-
             }
 
             root.resolveFile("/concurrent/").delete(Selectors.SELECT_CHILDREN);

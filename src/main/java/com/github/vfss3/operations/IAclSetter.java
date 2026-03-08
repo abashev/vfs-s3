@@ -22,5 +22,4 @@ public interface IAclSetter extends FileOperation {
      */
     @Override
     void process() throws FileSystemException;
-
 }

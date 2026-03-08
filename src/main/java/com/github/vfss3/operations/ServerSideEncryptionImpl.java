@@ -24,6 +24,5 @@ class ServerSideEncryptionImpl implements ServerSideEncryption {
     }
 
     @Override
-    public void process() throws FileSystemException {
-    }
+    public void process() throws FileSystemException {}
 }

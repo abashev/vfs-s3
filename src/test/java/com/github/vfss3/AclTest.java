@@ -6,7 +6,7 @@ import org.testng.annotations.Test;
 
 public class AclTest {
     @Test
-    public void testOperations () {
+    public void testOperations() {
         Acl acl = new Acl();
         acl.denyAll();
 
