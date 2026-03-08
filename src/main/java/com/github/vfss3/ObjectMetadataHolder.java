@@ -1,21 +1,20 @@
 package com.github.vfss3;
 
-import com.amazonaws.services.s3.internal.Mimetypes;
-import com.amazonaws.services.s3.model.CopyObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
 import static com.amazonaws.services.s3.Headers.ETAG;
 import static com.amazonaws.services.s3.model.ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION;
 import static com.amazonaws.util.DateUtils.cloneDate;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
+
+import com.amazonaws.services.s3.internal.Mimetypes;
+import com.amazonaws.services.s3.model.CopyObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Build class for S3 ObjectMetadata

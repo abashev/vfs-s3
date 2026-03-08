@@ -1,8 +1,6 @@
 package com.github.vfss3.support;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testng.internal.collections.Pair;
+import static java.nio.file.Files.exists;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,8 +15,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.nio.file.Files.exists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.internal.collections.Pair;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
@@ -50,11 +49,10 @@ class EnvironmentConfiguration {
         if (!exists(envFile)) {
             log.info("No {} file for loading credentials", configFile);
         } else {
-            //read file into stream, try-with-resources
+            // read file into stream, try-with-resources
             try (Stream<String> stream = Files.lines(envFile)) {
 
-                result = stream.
-                        map(s -> {
+                result = stream.map(s -> {
                             Matcher m = ENV_PATTERN.matcher(s);
 
                             if (m.matches()) {
@@ -62,9 +60,9 @@ class EnvironmentConfiguration {
                             } else {
                                 return null;
                             }
-                        }).
-                        filter(p -> (p != null)).
-                        collect(Collectors.toMap(Pair::first, Pair::second));
+                        })
+                        .filter(p -> (p != null))
+                        .collect(Collectors.toMap(Pair::first, Pair::second));
             } catch (IOException e) {
                 log.warn("Not able to read file " + envFile, e);
             }

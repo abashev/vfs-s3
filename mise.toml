@@ -1,3 +1,11 @@
 [tools]
 java = "liberica-17"
 maven = "3.9.12"
+
+[tasks.format]
+description = "Format Java sources with Palantir Java Format"
+run = "mvn spotless:apply"
+
+[tasks."format.check"]
+description = "Check Java formatting (fails if unformatted)"
+run = "mvn spotless:check"
