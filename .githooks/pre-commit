@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+FORMATTER_VERSION="2.89.0"
+CACHE_DIR="${HOME}/.cache/palantir-java-format"
+BINARY="${CACHE_DIR}/palantir-java-format-${FORMATTER_VERSION}"
+BASE_URL="https://repo1.maven.org/maven2/com/palantir/javaformat/palantir-java-format-native/${FORMATTER_VERSION}"
+
+# Collect staged Java files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM -- '*.java' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+# Download native binary if not cached
+if [ ! -x "$BINARY" ]; then
+    OS=$(uname -s)
+    ARCH=$(uname -m)
+
+    case "${OS}-${ARCH}" in
+        Linux-x86_64)  SUFFIX="linux-glibc_x86-64" ;;
+        Linux-aarch64) SUFFIX="linux-glibc_aarch64" ;;
+        Darwin-arm64)  SUFFIX="macos_aarch64" ;;
+        *)
+            echo "ERROR: No palantir-java-format native binary for ${OS}-${ARCH}."
+            echo "       Supported: Linux x86_64, Linux aarch64, macOS aarch64."
+            exit 1
+            ;;
+    esac
+
+    ARTIFACT="palantir-java-format-native-${FORMATTER_VERSION}-nativeImage-${SUFFIX}.bin"
+    DOWNLOAD_URL="${BASE_URL}/${ARTIFACT}"
+
+    echo "Downloading palantir-java-format ${FORMATTER_VERSION} (${SUFFIX})..."
+    mkdir -p "$CACHE_DIR"
+
+    if ! curl -sSfL -o "$BINARY" "$DOWNLOAD_URL"; then
+        rm -f "$BINARY"
+        echo "ERROR: Failed to download palantir-java-format from:"
+        echo "       $DOWNLOAD_URL"
+        exit 1
+    fi
+
+    chmod +x "$BINARY"
+fi
+
+# Check formatting
+UNFORMATTED=()
+for FILE in $STAGED_FILES; do
+    if [ -f "$FILE" ]; then
+        if ! "$BINARY" --palantir --dry-run --set-exit-if-changed "$FILE" > /dev/null 2>&1; then
+            UNFORMATTED+=("$FILE")
+        fi
+    fi
+done
+
+if [ ${#UNFORMATTED[@]} -gt 0 ]; then
+    echo ""
+    echo "ERROR: The following files are not formatted with palantir-java-format:"
+    echo ""
+    for FILE in "${UNFORMATTED[@]}"; do
+        echo "  $FILE"
+    done
+    echo ""
+    echo "Run the following command to fix:"
+    echo ""
+    echo "  $BINARY --palantir --replace ${UNFORMATTED[*]}"
+    echo ""
+    exit 1
+fi

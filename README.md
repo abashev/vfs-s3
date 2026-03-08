@@ -1,6 +1,14 @@
 Amazon S3 driver for VFS (Apache Commons Virtual File System)
 =============================================================
 
+## Roadmap for 5.x.x
+
+- [ ] Migrate to Java 17, Gradle, and Palantir code style
+- [ ] Update all dependencies and set up local testing with LocalStack and MinIO
+- [ ] Split into multi-module project: native filesystem, Spring integration, Commons VFS adapter
+- [ ] Make the project AI-native — bots and tooling for fast contribution acceptance
+- [ ] Shade AWS SDK to avoid version conflicts with consumer projects
+
 ## Latest branch 4.x.x
 
 [![vfs-s3](https://maven-badges.herokuapp.com/maven-central/com.github.abashev/vfs-s3/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.abashev/vfs-s3)
