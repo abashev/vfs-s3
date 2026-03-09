@@ -3,14 +3,14 @@
 This project uses Maven with the `mise` tool manager.
 
 - Always run `mise trust` at the start of a session before building.
-- Use `mise exec -- ./mvnw <args>` instead of `mvn` or `./mvnw` directly.
+- Use `mise exec -- mvn <args>` instead of `mvn` directly. There is no Maven wrapper (`mvnw`) in this project.
 
 Examples:
 
 ```sh
-mise exec -- ./mvnw compile
-mise exec -- ./mvnw test -pl <module>
-mise exec -- ./mvnw test -pl <module> -am
+mise exec -- mvn compile
+mise exec -- mvn test -pl <module>
+mise exec -- mvn test -pl <module> -am
 ```
 
 # Java Style

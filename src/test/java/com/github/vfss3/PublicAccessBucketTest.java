@@ -23,7 +23,9 @@ public class PublicAccessBucketTest {
 
         builder.setConfigString(options, PREFIX, "serverSideEncryption", "true");
 
-        options.clone();
+        var cloned = options.clone();
+
+        assertNotNull(cloned);
     }
 
     @Test(description = "Test how VFS-S3 plugin can access public OSM bucket, see https://registry.opendata.aws/osm/")
