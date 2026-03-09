@@ -1,7 +1,7 @@
 Amazon S3 driver for VFS (Apache Commons Virtual File System)
 =============================================================
 
-## Roadmap for 5.x.x
+## Roadmap for 17.x.x
 
 - [ ] Migrate to Java 17, Gradle, and Palantir code style
 - [ ] Update all dependencies and set up local testing with LocalStack and MinIO
