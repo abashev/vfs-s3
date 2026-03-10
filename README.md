@@ -88,6 +88,16 @@ SberCloud Object Storage Service | https://sbercloud.ru/ru/products/object-stora
 	dest.copyFrom(src, Selectors.SELECT_SELF);
     
 
+### Local Development
+
+This project uses [mise](https://mise.jdx.dev/) to manage Java and Maven versions locally.
+
+    mise trust
+    mise exec -- mvn compile
+    mise exec -- mvn test
+
+On CI (GitHub Actions), Java and Maven are installed via `actions/setup-java`, so `mvn` is used directly without `mise`.
+
 ### Running tests
 
 For running tests you need active credentials for AWS. You can specify them as

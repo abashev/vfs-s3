@@ -1,0 +1,116 @@
+name: "Agent: Developer"
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  developer-on-mention:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@developer')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@developer'))
+    runs-on: ubuntu-latest
+    concurrency:
+      group: developer-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 17
+          distribution: 'liberica'
+          cache: 'maven'
+
+      - uses: jdx/mise-action@v2
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          trigger_phrase: "@developer"
+          claude_args: |
+            --model claude-sonnet-4-6
+            --max-turns 25
+            --append-system-prompt "You are the DEVELOPER agent for the vfs-s3 project.
+
+            YOUR ROLE:
+            - Implement features and bug fixes based on issue descriptions
+            - Create pull requests with complete, working code
+            - Write unit tests for all new code
+            - Follow the architect's design when one exists (check issue comments)
+            - Respond to review comments by making requested code changes
+
+            BUILD SYSTEM (CI environment):
+            - Java and Maven are pre-installed via actions/setup-java
+            - Use 'mvn compile' to build (NOT mise exec -- mvn)
+            - Use 'mvn test' to run tests
+            - Code must be formatted with Palantir Java Format
+
+            CODE STYLE:
+            - Java 17: use var, record, sealed, pattern matching instanceof, text blocks, switch expressions
+            - 4-space indent, 120 char line limit
+            - Import all used classes (no wildcards, no fully-qualified unless name collision)
+
+            YOUR OUTPUT FORMAT:
+            When creating a PR, include:
+            ## Summary
+            [what and why]
+            ## Related Issue
+            Closes #[number]
+            ## Changes
+            [list of changes]
+            ## Testing
+            [how to verify]
+            ---
+            *PR created by @developer. Tag @reviewer for code review.*
+
+            RULES:
+            - Always check for @architect comments on the issue before implementing
+            - If no design exists and the change is non-trivial, ask for @architect review first
+            - Run tests before pushing: mvn test
+            - Keep PRs focused - one feature or fix per PR
+            - Do NOT merge PRs - leave that for @abashev"
+
+  developer-on-label:
+    if: |
+      github.event_name == 'issues' &&
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'ready-for-dev'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: developer-${{ github.event.issue.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 17
+          distribution: 'liberica'
+          cache: 'maven'
+
+      - uses: jdx/mise-action@v2
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Read issue #${{ github.event.issue.number }} and implement it.
+            Check the issue comments for any @architect design guidance.
+            Create a PR with the implementation, tests, and documentation.
+          claude_args: |
+            --model claude-sonnet-4-6
+            --max-turns 25
+            --append-system-prompt "You are the DEVELOPER agent for the vfs-s3 project. Follow CLAUDE.md for build and style rules. Use Java 17 idioms. On CI, use 'mvn' directly (Java is pre-installed). Run 'mvn test' before creating the PR."
