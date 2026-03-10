@@ -1,0 +1,45 @@
+name: "Agent: Triage"
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+jobs:
+  triage:
+    if: |
+      github.event_name == 'issues' &&
+      !contains(github.event.issue.body, '@architect') &&
+      !contains(github.event.issue.body, '@developer')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Triage this new issue. Analyze the issue title and description, then:
+
+            1. Add appropriate labels:
+               - `bug` / `enhancement` / `question` / `documentation`
+               - `needs-design` if it requires architectural discussion
+               - `good-first-issue` if it's simple and well-scoped
+
+            2. Post a brief triage comment:
+               - Acknowledge the issue
+               - Classify the type and complexity
+               - Suggest next steps:
+                 - If it needs design: "This looks like it needs architectural review. @abashev, should we involve @architect?"
+                 - If it's a simple fix: "This looks straightforward. @abashev, want to label it `ready-for-dev`?"
+                 - If it needs more info: Ask specific clarifying questions
+
+            3. If the issue is about the roadmap items (multi-module split, Java 17 migration,
+               LocalStack testing, AWS SDK shading), note which roadmap item it relates to.
+          claude_args: |
+            --model claude-haiku-4-5
+            --max-turns 3
