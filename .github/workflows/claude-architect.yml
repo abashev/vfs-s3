@@ -25,7 +25,7 @@ jobs:
       group: architect-${{ github.event.issue.number || github.event.pull_request.number }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: anthropics/claude-code-action@v1
         with:
