@@ -33,7 +33,7 @@ jobs:
           distribution: 'liberica'
           cache: 'maven'
 
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v3
 
       - uses: anthropics/claude-code-action@v1
         with:
@@ -101,7 +101,7 @@ jobs:
           distribution: 'liberica'
           cache: 'maven'
 
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v3
 
       - uses: anthropics/claude-code-action@v1
         with:
