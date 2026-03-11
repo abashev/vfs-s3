@@ -3,63 +3,90 @@
 ## Overview
 
 This document describes the multi-agent AI-native development workflow for the `vfs-s3` project.
-The system uses Claude Code GitHub Actions to create a team of specialized AI agents that
-communicate through GitHub issues and pull requests, with the project owner as the final approver.
+The system uses **Cowork skills** to create a team of specialized AI agents that communicate
+through GitHub issues and pull requests, with the project owner (@abashev) as the final approver.
+
+All agents operate through a Claude Max subscription via the Cowork desktop app. The project
+owner invokes the appropriate skill manually when needed, reviews the output, and posts it
+to GitHub. This keeps the human in the loop at every step while leveraging AI for analysis
+and implementation work.
+
+> **Language policy:** All postings to GitHub (issue comments, PR descriptions, review comments)
+> must be written in **US English**.
 
 ## Agent Roles
 
 ### 1. Architect (`@architect`)
 
-**Trigger phrase:** `@architect`
+**Cowork skill:** `.skills/vfs-architect/`
 
 **Responsibilities:**
 - Review architectural decisions and propose alternatives
 - Design APIs and module boundaries (especially for the multi-module split)
 - Create Architecture Decision Records (ADRs) in `docs/adr/`
-- Comment on issues with design guidance before implementation starts
-- Validate that PRs follow the agreed architecture
+- Provide design guidance before implementation starts
+- Validate that proposed changes follow the agreed architecture
 
 **When to invoke:**
 - New feature issues that need design discussion
 - Questions about module boundaries or API design
-- Reviewing PRs that change public APIs or module structure
+- Before implementing PRs that change public APIs or module structure
 
-**Model:** `claude-opus-4-6` (complex reasoning needed)
+**Model preference:** Opus (complex reasoning needed)
 
 ### 2. Developer (`@developer`)
 
-**Trigger phrase:** `@developer`
+**Cowork skill:** `.skills/vfs-developer/`
 
 **Responsibilities:**
 - Implement features and fixes based on issue descriptions
-- Create pull requests with working code
+- Create branches and pull requests with working code
 - Follow coding standards from `CLAUDE.md` (Java 17, Palantir format)
-- Respond to review comments with code changes
 - Write unit tests alongside implementation
+- Check for architect guidance before implementing non-trivial changes
 
 **When to invoke:**
-- Issues labeled `ready-for-dev` (architect has approved the design)
-- PR review comments requesting code changes
-- Bug reports with clear reproduction steps
+- After the architect review is posted and the owner approves the design —
+  just tell Cowork: *"implement issue #179 following the architect's plan"*
+- Bug reports with clear reproduction steps — no architect review needed
+- Small improvements and refactoring tasks
 
-**Model:** `claude-sonnet-4-6` (good balance of speed and quality)
+**Model preference:** Sonnet (good balance of speed and quality)
+
+**Build environment:** Uses `mise exec -- mvn <args>` for local builds. On CI, Maven is
+available directly via `actions/setup-java`.
 
 ### 3. Reviewer (`@reviewer`)
 
-**Trigger phrase:** `@reviewer`
+**Cowork skill:** `.skills/vfs-reviewer/`
 
 **Responsibilities:**
 - Review pull requests for code quality, correctness, and security
 - Check adherence to Java 17 idioms and Palantir code style
-- Verify test coverage meets the 80% threshold
-- Suggest improvements as PR review comments
-- Approve PRs or request changes
+- Verify test coverage and testing approach
+- Flag potential credential leaks and SSRF vulnerabilities (S3-specific)
+- Suggest improvements
 
 **When to invoke:**
-- Automatically on every new PR and push to PR
-- Manually via `@reviewer` in PR comments
+- Before merging any PR
+- When code changes need a second pair of eyes
 
-**Model:** `claude-sonnet-4-6`
+**Model preference:** Sonnet
+
+### 4. Triage
+
+**Cowork skill:** `.skills/vfs-triage/`
+
+**Responsibilities:**
+- Categorize new issues and suggest labels
+- Connect issues to the project roadmap
+- Identify duplicates and related issues
+
+**When to invoke:**
+- When new issues are created
+- Periodic cleanup of the issue backlog
+
+**Model preference:** Haiku (fast, lightweight categorization)
 
 ## Communication Protocol
 
@@ -67,37 +94,37 @@ communicate through GitHub issues and pull requests, with the project owner as t
 
 ```
                     +-----------+
-                    |  Created  |  (human or bot opens issue)
+                    |  Created  |  (human opens issue)
                     +-----+-----+
                           |
                           v
                  +--------+--------+
-                 | @architect      |  Design discussion
-                 | reviews design  |  (comments on issue)
+                 | Owner invokes   |  Design discussion
+                 | architect skill |  (review posted as comment)
                  +--------+--------+
                           |
                           v
                  +--------+--------+
-                 | Label:          |  Human approves design
-                 | ready-for-dev   |
+                 | Owner approves  |  Label: ready-for-dev
+                 | the design      |
                  +--------+--------+
                           |
                           v
                  +--------+--------+
-                 | @developer      |  Creates PR with
-                 | implements      |  implementation
+                 | Owner invokes   |  Creates branch + PR
+                 | developer skill |  with implementation
                  +--------+--------+
                           |
                           v
                  +--------+--------+
-                 | @reviewer       |  Automatic code review
-                 | reviews PR      |  on PR open
+                 | Owner invokes   |  Code review posted
+                 | reviewer skill  |  as PR comment
                  +--------+--------+
                           |
                           v
                  +--------+--------+
-                 | Human owner     |  Final approval
-                 | approves & merge|  and merge
+                 | Owner reviews   |  Final approval
+                 | and merges PR   |  and merge
                  +-----------------+
 ```
 
@@ -105,17 +132,17 @@ communicate through GitHub issues and pull requests, with the project owner as t
 
 | Label | Meaning | Who Sets It |
 |-------|---------|-------------|
+| `bug` | Bug report | Triage / Human |
+| `enhancement` | Feature request | Triage / Human |
+| `question` | Needs clarification | Triage / Human |
+| `documentation` | Documentation improvement | Triage / Human |
 | `needs-design` | Issue needs architectural review | Human / Triage |
 | `ready-for-dev` | Design approved, ready for implementation | Human (after architect review) |
-| `in-progress` | Developer is working on it | Developer agent |
-| `needs-review` | PR ready for code review | Developer agent |
-| `changes-requested` | Reviewer found issues | Reviewer agent |
-| `approved` | Review passed | Reviewer agent |
-| `owner-approved` | Owner gave final approval | Human |
+| `good-first-issue` | Simple enough for a quick fix | Triage / Human |
 
 ### Comment Conventions
 
-Agents use structured comments for clarity:
+Agent reviews use structured comments for clarity:
 
 ```markdown
 ## Architect Review
@@ -128,7 +155,7 @@ Agents use structured comments for clarity:
 - [ ] Move S3-specific logic to `s3-provider` module
 
 ---
-*This is an automated review by @architect. Tag @abashev for questions.*
+*Review by @architect. Final approval: @abashev*
 ```
 
 ### PR Description Template (Developer)
@@ -147,114 +174,93 @@ Based on @architect's review in #123 (comment link)
 - What was added/changed/removed
 
 ## Testing
-- [ ] Unit tests added
-- [ ] Integration tests updated
-- [ ] Coverage >= 80%
+- [ ] Unit tests added/updated
+- [ ] Integration tests updated (if applicable)
+- [ ] `mvn test` passes
+- [ ] `mvn verify` passes (if integration tests changed)
 
 ---
-*This PR was created by @developer. Tag @reviewer for code review.*
+*PR created by @developer. Tag @reviewer for code review.*
 ```
 
-## GitHub Actions Setup
+## Setup
 
 ### Prerequisites
 
-1. Install the Claude GitHub App: https://github.com/apps/claude
-2. Add `ANTHROPIC_API_KEY` to repository secrets
-3. Copy workflow files from `.github/workflows/`
+1. **Claude Max subscription** with Cowork mode enabled
+2. The project repository cloned locally
+3. Cowork skills installed in `.skills/` directory
 
-### Workflow Files
+### Skill Files
 
-The system uses **four separate workflow files** so each agent has independent
-configuration and trigger conditions:
+| Directory | Agent | Purpose |
+|-----------|-------|---------|
+| `.skills/vfs-architect/` | Architect | Architectural review, API design, ADRs |
+| `.skills/vfs-developer/` | Developer | Feature implementation, bug fixes |
+| `.skills/vfs-reviewer/` | Reviewer | Code review, security checks |
+| `.skills/vfs-triage/` | Triage | Issue categorization, labeling |
 
-| File | Agent | Triggers On |
-|------|-------|------------|
-| `claude-architect.yml` | Architect | `@architect` in issues/PRs |
-| `claude-developer.yml` | Developer | `@developer` in issues/PRs, `ready-for-dev` label |
-| `claude-reviewer.yml` | Reviewer | New PRs, `@reviewer` in PR comments |
-| `claude-triage.yml` | Triage | New issues (auto-label) |
+### How to Use
+
+1. **Open Cowork** and select the project folder
+2. **Describe what you need** in natural language — Cowork will use the appropriate skill
+3. **Review the output** — the skill will analyze the codebase and produce a structured review or implementation
+4. **Post to GitHub** — copy the output as a comment, or let the skill post via the browser
+
+### Typical Workflow Example
+
+Here is a concrete example of the full cycle for issue #179:
+
+```
+You:  "Review the architecture for issue #179 — splitting unit and integration tests"
+      → Cowork uses the architect skill, analyzes the codebase, produces a review
+      → You approve and post the review as a comment on the issue
+
+You:  "Implement issue #179 following the architect's plan"
+      → Cowork uses the developer skill, reads the architect's comment,
+        renames test files, adds maven-failsafe-plugin, creates a branch and PR
+      → You review the PR locally, push, and open it on GitHub
+
+You:  "Review the PR for issue #179"
+      → Cowork uses the reviewer skill, checks code quality and security
+      → You post the review as a PR comment
+
+You:  Approve and merge the PR
+```
+
+The key principle: **you drive the process** by telling Cowork what to do next.
+Each step produces output that you review before it goes to GitHub.
 
 ### Security
 
-- Fork PRs do NOT have access to secrets (prevents API credit abuse)
-- Each agent has minimal required permissions
-- Human approval is required before merging any PR
-- The `ANTHROPIC_API_KEY` should have spending limits configured
+- All actions go through the project owner — no direct API access to GitHub
+- No API keys needed (uses Claude Max subscription)
+- Human reviews every output before it reaches GitHub
+- Credential leak prevention is built into the reviewer skill
 
-## CLAUDE.md Role Instructions
+## CLAUDE.md Shared Context
 
-Each agent reads the shared `CLAUDE.md` at the repo root, which contains build instructions
-and code style rules. Role-specific behavior is injected via the `--append-system-prompt`
-parameter in each workflow file.
+All skills read the shared `CLAUDE.md` at the repo root, which contains:
+- Build commands (`mise exec -- mvn ...` for local, `mvn` for CI)
+- Java 17 style rules and language feature requirements
+- Palantir format requirements (4-space indent, 120 char line)
+- Project structure and roadmap context
+- Multi-agent workflow rules
 
-### Shared Context (CLAUDE.md)
+## Roadmap Context
 
-All agents share:
-- Build commands (`mise exec -- mvn ...`)
-- Java 17 style rules
-- Palantir format requirements
-- Project structure knowledge
-
-### Role-Specific Prompts
-
-Role-specific instructions are embedded in each workflow's `claude_args` parameter
-using `--append-system-prompt`. This keeps role definitions versioned alongside the
-workflow files.
-
-## Cost Management
-
-### Token Budget Estimates
-
-| Agent | Model | Avg Tokens/Run | Frequency |
-|-------|-------|----------------|-----------|
-| Architect | opus-4-6 | ~50K | 2-3x/week |
-| Developer | sonnet-4-6 | ~100K | 5-10x/week |
-| Reviewer | sonnet-4-6 | ~30K | 5-10x/week |
-| Triage | haiku-4-5 | ~5K | per new issue |
-
-### Cost Controls
-
-- Set `--max-turns` to prevent runaway loops
-- Use GitHub Actions concurrency controls
-- Configure API spending limits in Anthropic console
-- Reviewer uses Sonnet (cheaper) since it does not need to write complex code
-
-## Getting Started
-
-### Step 1: Install GitHub App
-
-```bash
-# In Claude Code terminal
-/install-github-app
-```
-
-### Step 2: Add API Key
-
-Go to **Settings > Secrets and variables > Actions** and add `ANTHROPIC_API_KEY`.
-
-### Step 3: Copy Workflow Files
-
-The workflow files are already in `.github/workflows/`. Push them to `branch-17.x.x`.
-
-### Step 4: Create Labels
-
-Create the labels listed in the Label System section above.
-
-### Step 5: Test
-
-1. Create a test issue with `@architect please review the design for adding MinIO support`
-2. Verify the architect agent responds
-3. Add the `ready-for-dev` label
-4. Comment `@developer please implement this`
-5. Verify the developer creates a PR
-6. Check that the reviewer automatically reviews the PR
+When working on issues, agents should be aware of the current roadmap:
+- Migrate to Java 17, Gradle, and Palantir code style
+- Update dependencies and set up local testing with LocalStack and MinIO
+- Split into multi-module: native filesystem, Spring integration, Commons VFS adapter
+- Make the project AI-native (this agent system)
+- Shade AWS SDK to avoid version conflicts
 
 ## Evolution
 
 This system is designed to grow:
 
-1. **Phase 1 (Current):** Basic agent roles with human gating
-2. **Phase 2:** Agents can assign labels (architect marks `ready-for-dev`)
-3. **Phase 3:** Agents reference each other's work (developer reads architect's ADR)
-4. **Phase 4:** Agent Teams (native Claude Code feature) for parallel work
+1. **Phase 1 (Current):** Cowork skills with human-in-the-loop for every action
+2. **Phase 2:** Skills can directly interact with GitHub via browser automation
+3. **Phase 3:** Scheduled skills for periodic triage and review
+4. **Phase 4:** Agent Teams (native Claude feature) for parallel work across issues
