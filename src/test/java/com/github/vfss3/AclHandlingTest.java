@@ -3,7 +3,7 @@ package com.github.vfss3;
 import static com.github.vfss3.operations.Acl.Group.*;
 import static com.github.vfss3.operations.Acl.Permission.READ;
 import static com.github.vfss3.operations.Acl.Permission.WRITE;
-import static org.testng.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.vfss3.operations.Acl;
 import com.github.vfss3.operations.Acl.Group;
@@ -15,8 +15,14 @@ import com.github.vfss3.support.BaseIntegrationTest;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.Selectors;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class AclHandlingTest extends BaseIntegrationTest {
     private static final String FOLDER = "/acl";
 
@@ -25,6 +31,7 @@ public class AclHandlingTest extends BaseIntegrationTest {
     Acl fileAcl;
 
     @Test
+    @Order(1)
     public void checkGet() throws FileSystemException {
         file = root.resolveFile(FOLDER + "/check_acl.zip");
 
@@ -53,7 +60,8 @@ public class AclHandlingTest extends BaseIntegrationTest {
         assertDenied(fileAcl, EVERYONE);
     }
 
-    @Test(dependsOnMethods = "checkGet")
+    @Test
+    @Order(2)
     public void checkSet() throws FileSystemException {
         if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
             return;
@@ -81,7 +89,8 @@ public class AclHandlingTest extends BaseIntegrationTest {
         fileAcl = changedAcl;
     }
 
-    @Test(dependsOnMethods = "checkGet")
+    @Test
+    @Order(3)
     public void checkSet2() throws FileSystemException {
         if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class))
                 .supportsAuthorizedGroup()) {
@@ -111,7 +120,8 @@ public class AclHandlingTest extends BaseIntegrationTest {
         fileAcl = changedAcl;
     }
 
-    @Test(dependsOnMethods = {"checkSet2"})
+    @Test
+    @Order(4)
     public void checkDenyAllForFile() throws FileSystemException {
         if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
             return;
@@ -142,7 +152,8 @@ public class AclHandlingTest extends BaseIntegrationTest {
         assertDenied(changedAcl, EVERYONE);
     }
 
-    @Test(dependsOnMethods = {"checkSet2"})
+    @Test
+    @Order(5)
     public void checkDenyAllForFolder() throws FileSystemException {
         folder = root.resolveFile(FOLDER + "/check_acl/");
 
@@ -205,6 +216,6 @@ public class AclHandlingTest extends BaseIntegrationTest {
     }
 
     private void assertSameAllowed(Acl actual, Acl expected, Group group, Permission permission) {
-        assertEquals(actual.isAllowed(group, permission), expected.isAllowed(group, permission));
+        assertEquals(expected.isAllowed(group, permission), actual.isAllowed(group, permission));
     }
 }

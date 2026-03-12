@@ -5,7 +5,7 @@ import static com.amazonaws.SDKGlobalConfiguration.SECRET_KEY_ENV_VAR;
 import static com.amazonaws.services.s3.model.ownership.ObjectOwnership.ObjectWriter;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.stream.Collectors.joining;
-import static org.testng.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
@@ -20,10 +20,10 @@ import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileSystemManager;
 import org.apache.commons.vfs2.VFS;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 
 /**
  *
@@ -37,7 +37,7 @@ public abstract class BaseIntegrationTest {
     protected FileObject root;
     protected S3FileSystemOptions options;
 
-    @BeforeClass
+    @BeforeAll
     public final void initBucket() throws IOException {
         this.options = new S3FileSystemOptions();
 
@@ -83,7 +83,7 @@ public abstract class BaseIntegrationTest {
         this.root = manager.resolveFile(String.format(baseUrl, token), options.toFileSystemOptions());
     }
 
-    @AfterClass
+    @AfterAll
     public final void deleteBucket() throws IOException {
         if (root != null) {
             root.refresh();
