@@ -88,6 +88,7 @@ The reviewer is intended for PRs from external contributors.
     "design doc"   → vfs-architect
     "development"  → vfs-developer
     "review"       → vfs-reviewer
+    "fix"          → vfs-developer (review feedback mode)
                     │
                     v
   Launches the appropriate Cowork skill
@@ -109,9 +110,10 @@ The reviewer is intended for PRs from external contributors.
 | `@vfs-s3-bot please prepare design doc` | Architect | Issue |
 | `@vfs-s3-bot please proceed with development` | Developer | Issue |
 | `@vfs-s3-bot please review` | Reviewer | External PR |
+| `@vfs-s3-bot please fix review comments` | Developer | Bot-created PR |
 
 Commands are flexible — the scheduled task matches keywords like "design", "develop"/"implement",
-and "review" to determine the appropriate skill. Only @abashev's mentions are processed.
+"review", and "fix" to determine the appropriate skill. Only @abashev's mentions are processed.
 
 ## Communication Protocol
 
@@ -160,8 +162,34 @@ and "review" to determine the appropriate skill. Only @abashev's mentions are pr
                           |
                           v
                  +--------+--------+
+                 | @abashev       |  Reviews the PR
+                 | reviews PR     |
+                 +--------+--------+
+                          |
+                 (if changes needed)
+                          |
+                          v
+                 +--------+--------+
+                 | @abashev writes |  "@vfs-s3-bot please
+                 | PR comment      |   fix review comments"
+                 +--------+--------+
+                          |
+                          v
+                 +--------+--------+
+                 | Bot reads review|  Reads PR comments,
+                 | and fixes code  |  applies fixes
+                 +--------+--------+
+                          |
+                          v
+                 +--------+--------+
+                 | Bot pushes new  |  New commit on the
+                 | commit          |  same branch
+                 +--------+--------+
+                          |
+                          v
+                 +--------+--------+
                  | @abashev       |  Final approval
-                 | reviews + merge |  and merge
+                 | approves + merge|  and merge
                  +-----------------+
 
 External PRs (from other contributors):
