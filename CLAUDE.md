@@ -2,9 +2,16 @@
 
 This project uses Maven with the `mise` tool manager for local development.
 
+## Session Setup
+
+**At the start of every Cowork session**, run the setup script:
+```sh
+source .cowork/setup.sh
+```
+This installs `gh` CLI, loads the bot token, configures git author, and trusts `mise`.
+
 ## Local Development (with mise)
 
-- Always run `mise trust` at the start of a session before building.
 - Use `mise exec -- mvn <args>` instead of `mvn` directly. There is no Maven wrapper (`mvnw`) in this project.
 
 ```sh
@@ -36,23 +43,34 @@ mvn test
 
 # Multi-Agent Development
 
-This project uses AI agents via GitHub Actions. See `docs/multi-agent-development.md` for full details.
+This project uses Cowork skills for AI-assisted development. See `docs/multi-agent-development.md` for full details.
 
 ## Agent Roles
 
-- **@architect** - Architectural review and API design (Opus)
-- **@developer** - Feature implementation and bug fixes (Sonnet)
-- **@reviewer** - Automated code review on every PR (Sonnet)
-- **Triage** - Auto-labels new issues (Haiku)
+- **Architect** - Architectural review and API design (Opus) — triggered by `@vfs-s3-bot please prepare design doc`
+- **Developer** - Feature implementation and bug fixes (Sonnet) — triggered by `@vfs-s3-bot please proceed with development`
+- **Reviewer** - Code review on PRs (Sonnet) — triggered by `@vfs-s3-bot please review`
+
+Only @abashev's mentions are processed. All other mentions are ignored.
 
 ## Workflow for Agents
 
 1. All code changes must target `branch-17.x.x`
 2. Never merge PRs directly - always wait for owner (@abashev) approval
 3. Check issue comments for @architect guidance before implementing
-4. Run `mvn test` before creating or updating PRs (on CI, Java is pre-installed)
-5. Keep PRs focused: one feature or fix per PR
-6. Reference the related issue number in every PR
+4. Use git worktrees for feature branches (`git worktree add ../vfs-s3-issue-N branch-17.x.x -b issue-N`)
+5. Run `mise exec -- mvn test` before committing
+6. Keep PRs focused: one feature or fix per PR
+7. Reference the related issue number in every PR
+8. All GitHub postings must be in **US English**
+9. Use `gh` CLI with bot token for creating PRs and posting comments
+
+## Bot Identity
+
+- **Git commits**: `Claude (vfs-s3 bot) <267615948+vfs-s3-bot@users.noreply.github.com>`
+- **GitHub account**: `@vfs-s3-bot`
+- **GitHub PRs/comments**: via `gh` CLI authenticated as the bot account
+- **Token storage**: `.cowork/github-bot-token` (gitignored)
 
 ## Roadmap Context
 
