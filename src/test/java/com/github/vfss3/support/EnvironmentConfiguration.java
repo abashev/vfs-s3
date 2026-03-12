@@ -1,12 +1,12 @@
 package com.github.vfss3.support;
 
 import static java.nio.file.Files.exists;
+import static java.util.Map.entry;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -56,7 +56,7 @@ class EnvironmentConfiguration {
                             Matcher m = ENV_PATTERN.matcher(s);
 
                             if (m.matches()) {
-                                return new AbstractMap.SimpleEntry<>(m.group(1), m.group(2));
+                                return entry(m.group(1), m.group(2));
                             } else {
                                 return null;
                             }
