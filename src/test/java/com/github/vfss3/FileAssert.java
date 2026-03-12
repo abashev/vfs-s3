@@ -1,8 +1,8 @@
 package com.github.vfss3;
 
 import static java.util.Arrays.sort;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Arrays;
 import java.util.Set;

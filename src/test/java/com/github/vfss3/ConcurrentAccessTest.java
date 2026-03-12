@@ -1,6 +1,6 @@
 package com.github.vfss3;
 
-import static org.testng.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.vfss3.support.BaseIntegrationTest;
 import java.io.IOException;
@@ -15,14 +15,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.Selectors;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ConcurrentAccessTest extends BaseIntegrationTest {
-    @BeforeClass
+    @BeforeAll
     public void setUp() throws IOException {
         root.resolveFile("/concurrent/").createFolder();
         root.resolveFile("/read-deadlock/").createFolder();
@@ -30,7 +35,8 @@ public class ConcurrentAccessTest extends BaseIntegrationTest {
         root.resolveFile("/read-deadlock/file2").createFile();
     }
 
-    @Test(invocationCount = 200, threadPoolSize = 10)
+    @RepeatedTest(200)
+    @Execution(ExecutionMode.CONCURRENT)
     public void createFileOk() throws FileSystemException {
         // was running into too many random collisions with random numbers in the range of 0-999
         // so added thread id into the mix
@@ -53,7 +59,8 @@ public class ConcurrentAccessTest extends BaseIntegrationTest {
         assertFalse(file.exists());
     }
 
-    @Test(invocationCount = 200, threadPoolSize = 10)
+    @RepeatedTest(200)
+    @Execution(ExecutionMode.CONCURRENT)
     public void checkReadDeadlock() throws FileSystemException {
         FileObject file = root.resolveFile("/read-deadlock");
 
@@ -196,6 +203,6 @@ public class ConcurrentAccessTest extends BaseIntegrationTest {
             root.resolveFile("/concurrent/").delete(Selectors.SELECT_CHILDREN);
         }
 
-        assertEquals(wrongResults.get(), 0, "Number of wrong calculations should be zero");
+        assertEquals(0, wrongResults.get(), "Number of wrong calculations should be zero");
     }
 }

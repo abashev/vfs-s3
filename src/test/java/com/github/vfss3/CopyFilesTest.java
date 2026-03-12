@@ -2,23 +2,30 @@ package com.github.vfss3;
 
 import static org.apache.commons.vfs2.FileType.FOLDER;
 import static org.apache.commons.vfs2.Selectors.*;
-import static org.testng.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.vfss3.support.BaseIntegrationTest;
 import java.util.Arrays;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.Selectors;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CopyFilesTest extends BaseIntegrationTest {
     @Test
+    @Order(1)
     public void createDirOk() throws FileSystemException {
         assertTrue(root.exists());
-        assertEquals(root.getName().getType(), FOLDER);
+        assertEquals(FOLDER, root.getName().getType());
 
         // Create files and dirs
         root.resolveFile("child-file.tmp").createFile();
@@ -30,16 +37,17 @@ public class CopyFilesTest extends BaseIntegrationTest {
 
         FileObject[] files;
         files = root.findFiles(SELECT_CHILDREN);
-        assertEquals(files.length, 3);
+        assertEquals(3, files.length);
         files = root.findFiles(Selectors.SELECT_FOLDERS);
-        assertEquals(files.length, 3);
+        assertEquals(3, files.length);
         files = root.findFiles(Selectors.SELECT_FILES);
-        assertEquals(files.length, 4);
+        assertEquals(4, files.length);
         files = root.findFiles(Selectors.EXCLUDE_SELF);
-        assertEquals(files.length, 6);
+        assertEquals(6, files.length);
     }
 
-    @Test(dependsOnMethods = "createDirOk")
+    @Test
+    @Order(2)
     public void copyInsideBucket() throws FileSystemException {
         FileObject testsDir = root.resolveFile("child-dir");
         FileObject testsDirCopy = root.resolveFile("child-dir-copy");
@@ -59,7 +67,8 @@ public class CopyFilesTest extends BaseIntegrationTest {
                 files.length, filesCopy.length, Arrays.deepToString(files) + " vs. " + Arrays.deepToString(filesCopy));
     }
 
-    @Test(dependsOnMethods = "copyInsideBucket")
+    @Test
+    @Order(3)
     public void checkDelete() throws FileSystemException {
         assertTrue(root.delete(EXCLUDE_SELF) > 0);
 

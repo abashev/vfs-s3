@@ -8,8 +8,7 @@ import static org.apache.commons.vfs2.FileType.FILE;
 import static org.apache.commons.vfs2.Selectors.SELECT_ALL;
 import static org.apache.commons.vfs2.Selectors.SELECT_SELF;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.*;
-import static org.testng.internal.junit.ArrayAsserts.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.github.vfss3.operations.IMD5HashGetter;
@@ -25,17 +24,22 @@ import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.Selectors;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class S3ProviderTest extends BaseIntegrationTest {
     private static final String BIG_FILE = "big_file.iso";
 
     private String fileName, dirName;
     private FileObject file, dir;
 
-    @BeforeClass
+    @BeforeAll
     public void setUp() {
         Random r = new Random();
         fileName = "vfs-file" + r.nextInt(1000);
@@ -43,6 +47,7 @@ public class S3ProviderTest extends BaseIntegrationTest {
     }
 
     @Test
+    @Order(1)
     public void createFileOk() throws FileSystemException {
         file = root.resolveFile("/test-place/" + fileName);
         file.createFile();
@@ -57,9 +62,8 @@ public class S3ProviderTest extends BaseIntegrationTest {
         assertTrue(f2.exists());
     }
 
-    @Test(
-            dependsOnMethods = {"createFileOk"},
-            expectedExceptions = {FileSystemException.class})
+    @Test
+    @Order(3)
     public void checkLastModified() throws FileSystemException {
         file = root.resolveFile("/test-place/" + fileName);
 
@@ -67,39 +71,49 @@ public class S3ProviderTest extends BaseIntegrationTest {
 
         assertTrue(file.getContent().getLastModifiedTime() > 0);
 
-        file.getContent().setLastModifiedTime(111L);
+        assertThrows(FileSystemException.class, () -> {
+            file.getContent().setLastModifiedTime(111L);
+        });
     }
 
     /**
      * Create folder on already existed file
      * @throws FileSystemException
      */
-    @Test(expectedExceptions = FileSystemException.class, dependsOnMethods = "createFileOk")
+    @Test
+    @Order(3)
     public void createFileFailed2() throws FileSystemException {
         FileObject tmpFile = root.resolveFile("/test-place/" + fileName);
-        tmpFile.createFolder();
+        assertThrows(FileSystemException.class, () -> {
+            tmpFile.createFolder();
+        });
     }
 
     @Test
+    @Order(2)
     public void createDirOk() throws FileSystemException {
         dir = root.resolveFile("/test-place/" + dirName);
         dir.createFolder();
 
         assertTrue(dir.exists());
-        assertEquals(dir.getName().getType(), FileType.FOLDER);
+        assertEquals(FileType.FOLDER, dir.getName().getType());
     }
 
     /**
      * Create file on already existed folder
      * @throws FileSystemException
      */
-    @Test(expectedExceptions = FileSystemException.class, dependsOnMethods = "createDirOk")
+    @Test
+    @Order(3)
     public void createDirFailed2() throws FileSystemException {
         FileObject tmpFile = root.resolveFile("/test-place/" + dirName);
-        tmpFile.createFile();
+        assertThrows(FileSystemException.class, () -> {
+            tmpFile.createFile();
+        });
     }
 
-    @Test(dependsOnMethods = {"upload"})
+    @Test
+    @Order(8)
     public void exists() throws IOException {
         // Existed dir
         FileObject existedDir = root.resolveFile("/test-place");
@@ -111,10 +125,11 @@ public class S3ProviderTest extends BaseIntegrationTest {
 
         // Non-existed file
         FileObject nonExistedFile = root.resolveFile("/ne/bыlo/i/net");
-        Assert.assertFalse(nonExistedFile.exists());
+        assertFalse(nonExistedFile.exists());
     }
 
-    @Test(dependsOnMethods = {"createFileOk"})
+    @Test
+    @Order(4)
     public void upload() throws IOException {
         FileObject dest = root.resolveFile("/test-place/backup.zip");
 
@@ -129,7 +144,8 @@ public class S3ProviderTest extends BaseIntegrationTest {
         assertTrue(dest.exists() && dest.getType().equals(FILE));
     }
 
-    @Test(dependsOnMethods = {"createFileOk"})
+    @Test
+    @Order(5)
     public void uploadMultiple() throws Exception {
         FileObject dest = root.resolveFile("/test-place/backup.zip");
 
@@ -146,7 +162,8 @@ public class S3ProviderTest extends BaseIntegrationTest {
         assertTrue(dest.exists() && dest.getType().equals(FILE));
     }
 
-    @Test(dependsOnMethods = {"createFileOk"})
+    @Test
+    @Order(6)
     public void uploadBigFile() throws IOException {
         FileObject dest = root.resolveFile("/" + BIG_FILE);
 
@@ -165,12 +182,13 @@ public class S3ProviderTest extends BaseIntegrationTest {
         dest.copyFrom(src, SELECT_SELF);
 
         assertTrue(dest.exists(), "Destination file should be on place");
-        assertEquals(dest.getType(), FILE);
+        assertEquals(FILE, dest.getType());
         assertEquals(src.getContent().getSize(), dest.getContent().getSize());
         assertEquals(63963136, dest.getContent().getSize());
     }
 
-    @Test(dependsOnMethods = {"createFileOk"})
+    @Test
+    @Order(5)
     public void outputStream() throws IOException {
         FileObject dest = root.resolveFile("/test-place/output.txt");
 
@@ -187,8 +205,7 @@ public class S3ProviderTest extends BaseIntegrationTest {
         }
 
         assertTrue(dest.exists() && dest.getType().equals(FILE));
-        assertEquals(
-                dest.getContent().getSize(), binaryFile().getPath().toFile().length());
+        assertEquals(binaryFile().getPath().toFile().length(), dest.getContent().getSize());
 
         try (InputStream in = dest.getContent().getInputStream()) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -201,7 +218,8 @@ public class S3ProviderTest extends BaseIntegrationTest {
         dest.delete();
     }
 
-    @Test(dependsOnMethods = {"getSize"})
+    @Test
+    @Order(9)
     public void download() throws IOException {
         FileObject typica = root.resolveFile("/test-place/backup.zip");
         File localCache = File.createTempFile("vfs.", ".s3-test");
@@ -211,12 +229,13 @@ public class S3ProviderTest extends BaseIntegrationTest {
         IOUtils.copy(typica.getContent().getInputStream(), out);
 
         // Test that file sizes equals
-        assertEquals(localCache.length(), typica.getContent().getSize());
+        assertEquals(typica.getContent().getSize(), localCache.length());
 
         localCache.delete();
     }
 
-    @Test(dependsOnMethods = {"createFileOk", "createDirOk"})
+    @Test
+    @Order(7)
     public void listChildren() throws FileSystemException {
         FileObject baseDir = dir.resolveFile("list-children-test");
         baseDir.createFolder();
@@ -227,10 +246,11 @@ public class S3ProviderTest extends BaseIntegrationTest {
         }
 
         FileObject[] children = baseDir.getChildren();
-        assertEquals(children.length, 5);
+        assertEquals(5, children.length);
     }
 
-    @Test(dependsOnMethods = {"createFileOk", "createDirOk", "uploadBigFile"})
+    @Test
+    @Order(7)
     public void listChildrenRoot() throws FileSystemException {
         assertHasChildren(root.resolveFile("/"), "test-place", BIG_FILE);
         assertHasChildren(
@@ -245,7 +265,8 @@ public class S3ProviderTest extends BaseIntegrationTest {
         assertHasChildren(destFile, "backup.zip", dirName, "folder with space", "name with space");
     }
 
-    @Test(dependsOnMethods = {"createDirOk"})
+    @Test
+    @Order(7)
     public void findFiles() throws FileSystemException {
         FileObject baseDir = dir.resolveFile("find-tests");
         baseDir.createFolder();
@@ -260,16 +281,17 @@ public class S3ProviderTest extends BaseIntegrationTest {
 
         FileObject[] files;
         files = baseDir.findFiles(Selectors.SELECT_CHILDREN);
-        assertEquals(files.length, 3);
+        assertEquals(3, files.length);
         files = baseDir.findFiles(Selectors.SELECT_FOLDERS);
-        assertEquals(files.length, 3);
+        assertEquals(3, files.length);
         files = baseDir.findFiles(Selectors.SELECT_FILES);
-        assertEquals(files.length, 4);
+        assertEquals(4, files.length);
         files = baseDir.findFiles(Selectors.EXCLUDE_SELF);
-        assertEquals(files.length, 6);
+        assertEquals(6, files.length);
     }
 
-    @Test(dependsOnMethods = {"createFileOk"})
+    @Test
+    @Order(7)
     public void renameAndMove() throws FileSystemException {
         FileObject sourceFile = root.resolveFile("/test-place/" + fileName);
         FileObject targetFile = root.resolveFile("/test-place/rename-target");
@@ -293,24 +315,23 @@ public class S3ProviderTest extends BaseIntegrationTest {
         assertTrue(sourceFile.exists());
         assertFalse(targetFile.exists());
 
-        try {
+        assertThrows(FileSystemException.class, () -> {
             sourceFile.moveTo(sourceFile);
-
-            fail("Should block copy into itself");
-        } catch (FileSystemException ignored) {
-        }
+        });
     }
 
-    @Test(dependsOnMethods = {"createFileOk", "createDirOk"})
+    @Test
+    @Order(7)
     public void getType() throws FileSystemException {
         FileObject imagine = dir.resolveFile("imagine-there-is-no-countries");
 
-        assertEquals(imagine.getType(), FileType.IMAGINARY);
-        assertEquals(dir.getType(), FileType.FOLDER);
-        assertEquals(file.getType(), FILE);
+        assertEquals(FileType.IMAGINARY, imagine.getType());
+        assertEquals(FileType.FOLDER, dir.getType());
+        assertEquals(FILE, file.getType());
     }
 
-    @Test(dependsOnMethods = {"createFileOk", "createDirOk"})
+    @Test
+    @Order(7)
     public void getTypeAfterCopyToSubFolder() throws FileSystemException {
         FileObject dest = dir.resolveFile("type-tests/sub1/sub2/backup.zip");
 
@@ -328,20 +349,23 @@ public class S3ProviderTest extends BaseIntegrationTest {
         assertTrue(sub2.getType().equals(FileType.FOLDER));
     }
 
-    @Test(dependsOnMethods = {"upload"})
+    @Test
+    @Order(7)
     public void getContentType() throws FileSystemException {
         FileObject backup = root.resolveFile("/test-place/backup.zip");
-        assertEquals(backup.getContent().getContentInfo().getContentType(), "application/zip");
+        assertEquals("application/zip", backup.getContent().getContentInfo().getContentType());
     }
 
-    @Test(dependsOnMethods = {"upload"})
+    @Test
+    @Order(7)
     public void getSize() throws FileSystemException {
         FileObject backup = root.resolveFile("/test-place/backup.zip");
 
-        assertEquals(backup.getContent().getSize(), 996166);
+        assertEquals(996166, backup.getContent().getSize());
     }
 
-    @Test(dependsOnMethods = {"createFileOk", "upload"})
+    @Test
+    @Order(7)
     public void getUrls() throws FileSystemException {
         FileObject backup = root.resolveFile("/test-place/backup.zip");
 
@@ -365,7 +389,8 @@ public class S3ProviderTest extends BaseIntegrationTest {
                         "X-Amz-Signature=");
     }
 
-    @Test(dependsOnMethods = {"createFileOk", "upload"})
+    @Test
+    @Order(7)
     public void getMD5Hash() throws NoSuchAlgorithmException, IOException {
         FileObject backup = root.resolveFile("/test-place/backup.zip");
 
@@ -375,14 +400,15 @@ public class S3ProviderTest extends BaseIntegrationTest {
 
         String md5Remote = md5Getter.getMD5Hash();
 
-        Assert.assertNotNull(md5Remote);
+        assertNotNull(md5Remote);
 
         String md5Local = toHex(computeMD5Hash(binaryFile().getContent().getInputStream()));
 
         assertTrue(md5Remote.equalsIgnoreCase(md5Local), "Local and remote md5 should be equal");
     }
 
-    @Test(dependsOnMethods = "upload")
+    @Test
+    @Order(7)
     public void getLastModified() throws FileSystemException {
         FileObject backup = root.resolveFile("/test-place/backup.zip");
 
@@ -392,14 +418,15 @@ public class S3ProviderTest extends BaseIntegrationTest {
                 > 2010);
     }
 
-    @Test(dependsOnMethods = {"findFiles", "download"})
+    @Test
+    @Order(10)
     public void delete() throws FileSystemException {
         FileObject testsDir = dir.resolveFile("find-tests");
         testsDir.delete(Selectors.EXCLUDE_SELF);
 
         // Only tests dir must remains
         FileObject[] files = testsDir.findFiles(SELECT_ALL);
-        assertEquals(files.length, 1);
+        assertEquals(1, files.length);
     }
 
     /**
