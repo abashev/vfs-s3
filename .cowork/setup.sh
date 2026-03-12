@@ -6,7 +6,7 @@ set -e
 
 COWORK_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$COWORK_DIR")"
-LOCAL_BIN="/sessions/compassionate-ecstatic-dirac/.local/bin"
+LOCAL_BIN="$HOME/.local/bin"
 
 echo "=== vfs-s3 Cowork Session Setup ==="
 
