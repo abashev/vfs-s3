@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -17,7 +18,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.internal.collections.Pair;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
@@ -56,13 +56,13 @@ class EnvironmentConfiguration {
                             Matcher m = ENV_PATTERN.matcher(s);
 
                             if (m.matches()) {
-                                return (Pair.of(m.group(1), m.group(2)));
+                                return new AbstractMap.SimpleEntry<>(m.group(1), m.group(2));
                             } else {
                                 return null;
                             }
                         })
                         .filter(p -> (p != null))
-                        .collect(Collectors.toMap(Pair::first, Pair::second));
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             } catch (IOException e) {
                 log.warn("Not able to read file " + envFile, e);
             }

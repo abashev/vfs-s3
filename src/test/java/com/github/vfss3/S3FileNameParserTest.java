@@ -3,13 +3,14 @@ package com.github.vfss3;
 import static org.apache.commons.vfs2.FileType.FOLDER;
 import static org.apache.commons.vfs2.FileType.IMAGINARY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.github.vfss3.parser.S3FileNameParser;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.assertj.core.api.AssertDelegateTarget;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
@@ -119,9 +120,11 @@ public class S3FileNameParserTest {
                 .hasType(IMAGINARY);
     }
 
-    @Test(expectedExceptions = FileSystemException.class)
-    public void checkAliyunPathStyleUrl() throws FileSystemException {
-        parse("s3://oss-cn-beijing.aliyuncs.com/test-bucket/some-file");
+    @Test
+    public void checkAliyunPathStyleUrl() {
+        assertThrows(FileSystemException.class, () -> {
+            parse("s3://oss-cn-beijing.aliyuncs.com/test-bucket/some-file");
+        });
     }
 
     @Test
@@ -181,12 +184,9 @@ public class S3FileNameParserTest {
                 .hasPath("/s3-tests/big_file.iso");
     }
 
-    @Test(expectedExceptions = FileSystemException.class)
-    public void wrongKeys() throws FileSystemException {
-        assertThat(parse("s3://access@bucket.s3.amazonaws.com"))
-                .hasEndpoint("s3.amazonaws.com")
-                .hasPathPrefix("bucket")
-                .hasType(FOLDER);
+    @Test
+    public void wrongKeys() {
+        assertThrows(FileSystemException.class, () -> parse("s3://access@bucket.s3.amazonaws.com"));
     }
 
     @Test
