@@ -1,6 +1,6 @@
 ---
 name: vfs-developer
-description: "Implement features and fix bugs for the vfs-s3 project. Use when the user asks to implement an issue, write code for a feature, fix a bug, or create a PR for vfs-s3. Also trigger when the user says 'develop this', 'implement #123', 'fix this issue', or wants code changes made to the vfs-s3 codebase. Triggered via GitHub by: @vfs-s3-bot please proceed with development"
+description: "Implement features and fix bugs for the vfs-s3 project. Use when the user asks to implement an issue, write code for a feature, fix a bug, create a PR, or fix review comments for vfs-s3. Also trigger when the user says 'develop this', 'implement #123', 'fix this issue', or wants code changes made to the vfs-s3 codebase. Also handles review feedback on existing PRs: when @abashev posts review comments, the bot reads the feedback, fixes the code, and pushes a new commit. Triggered via GitHub by: @vfs-s3-bot please proceed with development OR @vfs-s3-bot please fix review comments"
 ---
 
 # Developer Agent for vfs-s3
@@ -142,6 +142,71 @@ After committing, switch to reviewer mode and review your own changes. Repeat un
     ```bash
     cd ../vfs-s3
     git worktree remove ../vfs-s3-issue-<number>
+    ```
+
+### Phase 6: Address Owner Review Feedback
+
+This phase is triggered when @abashev posts review comments on a bot-created PR
+(`@vfs-s3-bot please fix review comments`), or when the notification inbox contains
+a mention on an existing PR.
+
+15. **Read the PR review comments.** Identify the PR number from the notification, then:
+    ```bash
+    gh pr view <pr-number> --repo abashev/vfs-s3 --comments
+    gh api repos/abashev/vfs-s3/pulls/<pr-number>/comments \
+      --jq '.[] | {path: .path, line: .line, body: .body, user: .user.login}'
+    gh pr diff <pr-number> --repo abashev/vfs-s3
+    ```
+    Focus on comments from @abashev. Ignore comments from other users.
+
+16. **Navigate to the existing worktree.** The branch should already exist:
+    ```bash
+    cd ../vfs-s3-issue-<number>
+    git pull origin issue-<number>
+    ```
+    If the worktree was cleaned up, recreate it:
+    ```bash
+    git worktree add ../vfs-s3-issue-<number> issue-<number>
+    cd ../vfs-s3-issue-<number>
+    ```
+
+17. **Apply the requested fixes.** For each review comment:
+    - Read the specific file and line mentioned
+    - Apply the fix as @abashev requested
+    - If the request is ambiguous, make the most reasonable interpretation
+
+18. **Build and test.** Run `mise exec -- mvn compile test-compile` and `mise exec -- mvn test`
+    to verify the fixes don't break anything.
+
+19. **Commit and push.** Create a NEW commit (do not amend):
+    ```bash
+    git add <changed-files>
+    git commit -m "fix: address review feedback for #<issue-number>
+
+    - <brief summary of each fix applied>"
+    git push origin issue-<number>
+    ```
+
+20. **Reply on the PR.** Post a comment summarizing what was fixed:
+    ```bash
+    gh pr comment <pr-number> --repo abashev/vfs-s3 --body "$(cat <<'EOF'
+    ## Review Feedback Addressed
+
+    Applied the following fixes based on @abashev's review:
+    - <fix 1>
+    - <fix 2>
+
+    All tests pass. Ready for re-review.
+
+    ---
+    *Updated by @vfs-s3-bot (developer).*
+    EOF
+    )"
+    ```
+
+21. **Mark the notification as read:**
+    ```bash
+    gh api /notifications/threads/<thread-id> --method PATCH
     ```
 
 ## Code Style Checklist
