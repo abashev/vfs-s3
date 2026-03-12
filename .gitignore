@@ -11,3 +11,6 @@ atlassian-ide-plugin.xml
 .envrc
 dependency-reduced-pom.xml
 .claude/settings.local.json
+
+# Cowork sandbox secrets
+.cowork/github-bot-token

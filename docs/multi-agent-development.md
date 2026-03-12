@@ -3,22 +3,25 @@
 ## Overview
 
 This document describes the multi-agent AI-native development workflow for the `vfs-s3` project.
-The system uses **Cowork skills** to create a team of specialized AI agents that communicate
-through GitHub issues and pull requests, with the project owner (@abashev) as the final approver.
+The system uses **Cowork skills** to create a team of specialized AI agents that are invoked by
+**@mentioning the bot account** (`@vfs-s3-bot`) in GitHub issue or PR comments.
 
-All agents operate through a Claude Max subscription via the Cowork desktop app. The project
-owner invokes the appropriate skill manually when needed, reviews the output, and posts it
-to GitHub. This keeps the human in the loop at every step while leveraging AI for analysis
-and implementation work.
+A scheduled task periodically checks the bot's notification inbox. When a mention from the
+project owner (@abashev) is detected, Cowork launches the appropriate skill to handle the request.
 
 > **Language policy:** All postings to GitHub (issue comments, PR descriptions, review comments)
 > must be written in **US English**.
 
+> **Authorization:** The bot only responds to @mentions from **@abashev**. Mentions from any
+> other user are ignored — this prevents unauthorized triggering via external issue comments.
+
 ## Agent Roles
 
-### 1. Architect (`@architect`)
+### 1. Architect
 
 **Cowork skill:** `.skills/vfs-architect/`
+
+**Trigger:** `@vfs-s3-bot please prepare design doc` (in an issue comment)
 
 **Responsibilities:**
 - Review architectural decisions and propose alternatives
@@ -27,16 +30,13 @@ and implementation work.
 - Provide design guidance before implementation starts
 - Validate that proposed changes follow the agreed architecture
 
-**When to invoke:**
-- New feature issues that need design discussion
-- Questions about module boundaries or API design
-- Before implementing PRs that change public APIs or module structure
-
 **Model preference:** Opus (complex reasoning needed)
 
-### 2. Developer (`@developer`)
+### 2. Developer
 
 **Cowork skill:** `.skills/vfs-developer/`
+
+**Trigger:** `@vfs-s3-bot please proceed with development` (in an issue comment)
 
 **Responsibilities:**
 - Implement features and fixes based on issue descriptions
@@ -45,48 +45,73 @@ and implementation work.
 - Write unit tests alongside implementation
 - Check for architect guidance before implementing non-trivial changes
 
-**When to invoke:**
-- After the architect review is posted and the owner approves the design —
-  just tell Cowork: *"implement issue #179 following the architect's plan"*
-- Bug reports with clear reproduction steps — no architect review needed
-- Small improvements and refactoring tasks
-
 **Model preference:** Sonnet (good balance of speed and quality)
 
 **Build environment:** Uses `mise exec -- mvn <args>` for local builds. On CI, Maven is
 available directly via `actions/setup-java`.
 
-### 3. Reviewer (`@reviewer`)
+### 3. Reviewer
 
 **Cowork skill:** `.skills/vfs-reviewer/`
 
+**Trigger:** `@vfs-s3-bot please review` (in a PR comment)
+
 **Responsibilities:**
-- Review pull requests for code quality, correctness, and security
+- Review external pull requests (from other contributors) for code quality, correctness, and security
 - Check adherence to Java 17 idioms and Palantir code style
 - Verify test coverage and testing approach
 - Flag potential credential leaks and SSRF vulnerabilities (S3-specific)
 - Suggest improvements
 
-**When to invoke:**
-- Before merging any PR
-- When code changes need a second pair of eyes
+Note: For bot-created PRs, the internal review loop is built into the developer skill (Phase 3).
+The reviewer is intended for PRs from external contributors.
 
 **Model preference:** Sonnet
 
-### 4. Triage
+## Invocation Model
 
-**Cowork skill:** `.skills/vfs-triage/`
+### How It Works
 
-**Responsibilities:**
-- Categorize new issues and suggest labels
-- Connect issues to the project roadmap
-- Identify duplicates and related issues
+```
+@abashev writes a comment on GitHub:
+  "@vfs-s3-bot please prepare design doc"
+                    │
+                    v
+  Scheduled task checks bot inbox via:
+    gh api /notifications?participating=true
+                    │
+                    v
+  Filters for reason: "mention", author: "abashev"
+                    │
+                    v
+  Parses the command and determines the skill:
+    "design doc"   → vfs-architect
+    "development"  → vfs-developer
+    "review"       → vfs-reviewer
+                    │
+                    v
+  Launches the appropriate Cowork skill
+  with the issue/PR number as context
+                    │
+                    v
+  Skill reads the issue, analyzes code, and
+  posts results back as a GitHub comment
+                    │
+                    v
+  Marks the notification as read:
+    gh api /notifications/threads/<id> --method PATCH
+```
 
-**When to invoke:**
-- When new issues are created
-- Periodic cleanup of the issue backlog
+### Command Reference
 
-**Model preference:** Haiku (fast, lightweight categorization)
+| Comment in GitHub | Skill Invoked | Context |
+|-------------------|---------------|---------|
+| `@vfs-s3-bot please prepare design doc` | Architect | Issue |
+| `@vfs-s3-bot please proceed with development` | Developer | Issue |
+| `@vfs-s3-bot please review` | Reviewer | External PR |
+
+Commands are flexible — the scheduled task matches keywords like "design", "develop"/"implement",
+and "review" to determine the appropriate skill. Only @abashev's mentions are processed.
 
 ## Communication Protocol
 
@@ -94,37 +119,74 @@ available directly via `actions/setup-java`.
 
 ```
                     +-----------+
-                    |  Created  |  (human opens issue)
+                    |  Created  |  (@abashev opens issue)
                     +-----+-----+
                           |
                           v
                  +--------+--------+
-                 | Owner invokes   |  Design discussion
-                 | architect skill |  (review posted as comment)
+                 | @abashev writes |  "@vfs-s3-bot please
+                 | issue comment   |   prepare design doc"
                  +--------+--------+
                           |
                           v
                  +--------+--------+
-                 | Owner approves  |  Label: ready-for-dev
-                 | the design      |
+                 | Bot posts       |  Architect review
+                 | design review   |  as issue comment
                  +--------+--------+
                           |
                           v
                  +--------+--------+
-                 | Owner invokes   |  Creates branch + PR
-                 | developer skill |  with implementation
+                 | @abashev writes |  "@vfs-s3-bot please
+                 | issue comment   |   proceed with development"
                  +--------+--------+
                           |
                           v
                  +--------+--------+
-                 | Owner invokes   |  Code review posted
-                 | reviewer skill  |  as PR comment
+                 | Bot implements  |  Worktree, code,
+                 | the change      |  build, test
                  +--------+--------+
                           |
                           v
                  +--------+--------+
-                 | Owner reviews   |  Final approval
-                 | and merges PR   |  and merge
+                 | Internal review |  Bot self-reviews diff,
+                 | loop (automatic)|  fixes issues, re-commits
+                 +--------+--------+
+                          |
+                          v
+                 +--------+--------+
+                 | Bot pushes      |  PR created on GitHub
+                 | branch + PR     |
+                 +--------+--------+
+                          |
+                          v
+                 +--------+--------+
+                 | @abashev       |  Final approval
+                 | reviews + merge |  and merge
+                 +-----------------+
+
+External PRs (from other contributors):
+
+                 +--------+--------+
+                 | External PR     |  Someone opens a PR
+                 | is created      |
+                 +--------+--------+
+                          |
+                          v
+                 +--------+--------+
+                 | @abashev writes |  "@vfs-s3-bot please review"
+                 | PR comment      |
+                 +--------+--------+
+                          |
+                          v
+                 +--------+--------+
+                 | Bot posts       |  Code review comment
+                 | review          |  on the PR
+                 +--------+--------+
+                          |
+                          v
+                 +--------+--------+
+                 | @abashev       |  Final approval
+                 | reviews + merge |  and merge
                  +-----------------+
 ```
 
@@ -132,13 +194,13 @@ available directly via `actions/setup-java`.
 
 | Label | Meaning | Who Sets It |
 |-------|---------|-------------|
-| `bug` | Bug report | Triage / Human |
-| `enhancement` | Feature request | Triage / Human |
-| `question` | Needs clarification | Triage / Human |
-| `documentation` | Documentation improvement | Triage / Human |
-| `needs-design` | Issue needs architectural review | Human / Triage |
+| `bug` | Bug report | Human |
+| `enhancement` | Feature request | Human |
+| `question` | Needs clarification | Human |
+| `documentation` | Documentation improvement | Human |
+| `needs-design` | Issue needs architectural review | Human |
 | `ready-for-dev` | Design approved, ready for implementation | Human (after architect review) |
-| `good-first-issue` | Simple enough for a quick fix | Triage / Human |
+| `good-first-issue` | Simple enough for a quick fix | Human |
 
 ### Comment Conventions
 
@@ -155,7 +217,7 @@ Agent reviews use structured comments for clarity:
 - [ ] Move S3-specific logic to `s3-provider` module
 
 ---
-*Review by @architect. Final approval: @abashev*
+*Review by @vfs-s3-bot (architect). Final approval: @abashev*
 ```
 
 ### PR Description Template (Developer)
@@ -168,7 +230,7 @@ Brief description of what this PR does.
 Closes #123
 
 ## Design Reference
-Based on @architect's review in #123 (comment link)
+Based on architect review in #123 (comment link)
 
 ## Changes
 - What was added/changed/removed
@@ -180,7 +242,7 @@ Based on @architect's review in #123 (comment link)
 - [ ] `mvn verify` passes (if integration tests changed)
 
 ---
-*PR created by @developer. Tag @reviewer for code review.*
+*PR created by @vfs-s3-bot (developer). Tag @abashev for review.*
 ```
 
 ## Setup
@@ -190,6 +252,14 @@ Based on @architect's review in #123 (comment link)
 1. **Claude Max subscription** with Cowork mode enabled
 2. The project repository cloned locally
 3. Cowork skills installed in `.skills/` directory
+4. A dedicated GitHub bot account (`@vfs-s3-bot`) with Collaborator access
+
+### Bot Account (`@vfs-s3-bot`)
+
+1. Create a GitHub account for the bot
+2. Grant it Collaborator access to `abashev/vfs-s3`
+3. Create a fine-grained PAT with minimal scope (see Authentication below)
+4. Save the PAT to `.cowork/github-bot-token`
 
 ### Skill Files
 
@@ -198,45 +268,74 @@ Based on @architect's review in #123 (comment link)
 | `.skills/vfs-architect/` | Architect | Architectural review, API design, ADRs |
 | `.skills/vfs-developer/` | Developer | Feature implementation, bug fixes |
 | `.skills/vfs-reviewer/` | Reviewer | Code review, security checks |
-| `.skills/vfs-triage/` | Triage | Issue categorization, labeling |
 
 ### How to Use
 
-1. **Open Cowork** and select the project folder
-2. **Describe what you need** in natural language — Cowork will use the appropriate skill
-3. **Review the output** — the skill will analyze the codebase and produce a structured review or implementation
-4. **Post to GitHub** — copy the output as a comment, or let the skill post via the browser
+1. **Open an issue** on GitHub describing what you need
+2. **Write a comment** mentioning the bot: `@vfs-s3-bot please prepare design doc`
+3. **The scheduled task** picks up the mention and launches the appropriate skill
+4. **The bot posts** its analysis or implementation as a GitHub comment or PR
+
+Alternatively, you can invoke skills directly in Cowork by describing what you need.
 
 ### Typical Workflow Example
 
-Here is a concrete example of the full cycle for issue #179:
-
 ```
-You:  "Review the architecture for issue #179 — splitting unit and integration tests"
-      → Cowork uses the architect skill, analyzes the codebase, produces a review
-      → You approve and post the review as a comment on the issue
+In GitHub issue #185:
 
-You:  "Implement issue #179 following the architect's plan"
-      → Cowork uses the developer skill, reads the architect's comment,
-        renames test files, adds maven-failsafe-plugin, creates a branch and PR
-      → You review the PR locally, push, and open it on GitHub
+@abashev:  "@vfs-s3-bot please prepare design doc"
+           → Scheduled task detects the mention
+           → Architect skill analyzes the issue and codebase
+           → Bot posts a design review as an issue comment
 
-You:  "Review the PR for issue #179"
-      → Cowork uses the reviewer skill, checks code quality and security
-      → You post the review as a PR comment
+@abashev:  (reads the review, approves) "@vfs-s3-bot please proceed with development"
+           → Developer skill creates a worktree + branch (issue-185)
+           → Implements the change, builds, tests, commits
+           → Runs internal review loop: self-reviews, fixes, re-commits
+           → Pushes the branch and creates a PR
 
-You:  Approve and merge the PR
+In the PR:
+
+@abashev:  (reviews the code) "@vfs-s3-bot please review"
+           → Reviewer skill analyzes the diff
+           → Bot posts a code review comment on the PR
+
+@abashev:  Approves and merges the PR
 ```
 
-The key principle: **you drive the process** by telling Cowork what to do next.
-Each step produces output that you review before it goes to GitHub.
+### Bot Account and Authentication
+
+All agent interactions with GitHub use the `@vfs-s3-bot` account authenticated via `gh` CLI
+with a fine-grained Personal Access Token (PAT).
+
+**PAT scope — principle of least privilege:**
+- `repo:contents` — read/write (push branches)
+- `repo:pull_requests` — read/write (create PRs, post review comments)
+- `repo:issues` — read/write (read issues, post comments, add labels)
+- `repo:metadata` — read (required by GitHub)
+- `notifications` — read (check bot inbox for @mentions)
+- **Do NOT grant:** `repo:admin`, `repo:actions`, `repo:secrets`, `org:*`
+
+The token is stored in `.cowork/github-bot-token` (gitignored) and loaded by `source .cowork/setup.sh`
+at the start of each session.
+
+### Branch Protection
+
+Enable branch protection on `branch-17.x.x` in GitHub repository settings:
+- Require pull request reviews before merging (at least 1 review from @abashev)
+- Require status checks to pass before merging (CI build)
+- Do not allow bypassing the above settings
+- Restrict who can push to the branch: only @abashev and the bot account
+
+This ensures that even if an agent misbehaves, it cannot merge or force-push to the main branch.
 
 ### Security
 
-- All actions go through the project owner — no direct API access to GitHub
-- No API keys needed (uses Claude Max subscription)
-- Human reviews every output before it reaches GitHub
+- Bot only responds to @mentions from @abashev — all other mentions are ignored
+- Bot account uses a fine-grained PAT with minimal scope (see above)
+- Human reviews every output before merging
 - Credential leak prevention is built into the reviewer skill
+- Branch protection prevents unauthorized merges to `branch-17.x.x`
 
 ## CLAUDE.md Shared Context
 
@@ -260,7 +359,6 @@ When working on issues, agents should be aware of the current roadmap:
 
 This system is designed to grow:
 
-1. **Phase 1 (Current):** Cowork skills with human-in-the-loop for every action
-2. **Phase 2:** Skills can directly interact with GitHub via browser automation
-3. **Phase 3:** Scheduled skills for periodic triage and review
-4. **Phase 4:** Agent Teams (native Claude feature) for parallel work across issues
+1. **Phase 1 (Current):** Cowork skills with @mention invocation via `gh` CLI
+2. **Phase 2:** Fully automated scheduled dispatch (bot inbox polling)
+3. **Phase 3:** Agent Teams (native Claude feature) for parallel work across issues
