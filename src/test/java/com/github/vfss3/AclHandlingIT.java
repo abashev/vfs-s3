@@ -23,7 +23,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class AclHandlingTest extends BaseIntegrationTest {
+public class AclHandlingIT extends BaseIntegrationTest {
     private static final String FOLDER = "/acl";
 
     FileObject file;
