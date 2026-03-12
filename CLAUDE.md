@@ -18,7 +18,17 @@ This installs `gh` CLI, loads the bot token, configures git author, and trusts `
 mise exec -- mvn compile
 mise exec -- mvn test -pl <module>
 mise exec -- mvn test -pl <module> -am
+mise exec -- mvn verify
 ```
+
+### Test Separation
+
+Tests are split into two categories using Maven Surefire and Failsafe plugins:
+
+- **Unit tests** (`mvn test`) — runs `*Test.java` files with Surefire
+- **Integration tests** (`mvn verify`) — runs `*IT.java` files with Failsafe
+
+Integration tests require AWS credentials and external resources (S3 buckets, etc.).
 
 ## CI Environment (GitHub Actions)
 
