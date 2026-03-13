@@ -20,6 +20,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -28,15 +30,13 @@ import org.testcontainers.utility.DockerImageName;
  *
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
+@Testcontainers
 public abstract class BaseIntegrationTest {
     private static final DockerImageName LOCALSTACK_IMAGE = DockerImageName.parse("localstack/localstack:3.4");
 
-    /** Shared container — started once for the entire test run. */
+    /** Shared container — started once for the entire test run via the JUnit 5 Testcontainers extension. */
+    @Container
     static final LocalStackContainer localstack = new LocalStackContainer(LOCALSTACK_IMAGE).withServices(S3);
-
-    static {
-        localstack.start();
-    }
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
     protected FileObject root;
