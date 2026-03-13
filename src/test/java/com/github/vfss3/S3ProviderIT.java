@@ -375,13 +375,13 @@ public class S3ProviderIT extends BaseIntegrationTest {
         IPublicUrlsGetter urlsGetter =
                 (IPublicUrlsGetter) backup.getFileOperations().getOperation(IPublicUrlsGetter.class);
 
-        assertThat(urlsGetter.getHttpUrl()).contains("https", "/test-place/backup.zip");
+        assertThat(urlsGetter.getHttpUrl()).contains("http", "/test-place/backup.zip");
 
         final String signedUrl = urlsGetter.getSignedUrl(60);
 
         assertThat(signedUrl)
                 .contains(
-                        "https",
+                        "http",
                         "/test-place/backup.zip",
                         "Signature=",
                         "Expires=",
