@@ -81,7 +81,9 @@ The reviewer is intended for PRs from external contributors.
     gh api /notifications?participating=true
                     │
                     v
-  Filters for reason: "mention", author: "abashev"
+  Filters for:
+    reason: "mention" — direct @mentions from @abashev
+    reason: "author"  — activity on bot-created PRs (e.g. review comments)
                     │
                     v
   Parses the command and determines the skill:
