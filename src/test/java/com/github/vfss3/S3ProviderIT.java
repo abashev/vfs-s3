@@ -254,15 +254,15 @@ public class S3ProviderIT extends BaseIntegrationTest {
     public void listChildrenRoot() throws FileSystemException {
         assertHasChildren(root.resolveFile("/"), "test-place", BIG_FILE);
         assertHasChildren(
-                root.resolveFile("/test-place/"), "backup.zip", dirName, "folder with space", "name with space");
+                root.resolveFile("/test-place/"), "backup.zip", dirName, fileName, "folder with space", "name with space");
         assertHasChildren(
-                root.resolveFile("/test-place"), "backup.zip", dirName, "folder with space", "name with space");
+                root.resolveFile("/test-place"), "backup.zip", dirName, fileName, "folder with space", "name with space");
 
         final FileObject destFile = root.resolveFile("/test-place-2");
 
         destFile.copyFrom(root.resolveFile("/test-place"), SELECT_ALL);
 
-        assertHasChildren(destFile, "backup.zip", dirName, "folder with space", "name with space");
+        assertHasChildren(destFile, "backup.zip", dirName, fileName, "folder with space", "name with space");
     }
 
     @Test
