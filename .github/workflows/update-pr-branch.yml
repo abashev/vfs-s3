@@ -2,7 +2,7 @@ name: Update PR branches
 
 on:
   push:
-    branches: [17.0]
+    branches: [ '17.0' ]
   schedule:
     # Run every night at 3:00 AM UTC to catch any stuck PRs
     - cron: '0 3 * * *'
@@ -11,7 +11,7 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: adRise/update-pr-branch@v0.10
+      - uses: adRise/update-pr-branch@v0.10.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: '17.0'
