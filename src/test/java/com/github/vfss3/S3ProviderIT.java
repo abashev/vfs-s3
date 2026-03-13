@@ -254,15 +254,15 @@ public class S3ProviderIT extends BaseIntegrationTest {
     public void listChildrenRoot() throws FileSystemException {
         assertHasChildren(root.resolveFile("/"), "test-place", BIG_FILE);
         assertHasChildren(
-                root.resolveFile("/test-place/"), "backup.zip", dirName, "folder with space", "name with space");
+                root.resolveFile("/test-place/"), "backup.zip", dirName, fileName, "folder with space", "name with space");
         assertHasChildren(
-                root.resolveFile("/test-place"), "backup.zip", dirName, "folder with space", "name with space");
+                root.resolveFile("/test-place"), "backup.zip", dirName, fileName, "folder with space", "name with space");
 
         final FileObject destFile = root.resolveFile("/test-place-2");
 
         destFile.copyFrom(root.resolveFile("/test-place"), SELECT_ALL);
 
-        assertHasChildren(destFile, "backup.zip", dirName, "folder with space", "name with space");
+        assertHasChildren(destFile, "backup.zip", dirName, fileName, "folder with space", "name with space");
     }
 
     @Test
@@ -375,13 +375,13 @@ public class S3ProviderIT extends BaseIntegrationTest {
         IPublicUrlsGetter urlsGetter =
                 (IPublicUrlsGetter) backup.getFileOperations().getOperation(IPublicUrlsGetter.class);
 
-        assertThat(urlsGetter.getHttpUrl()).contains("https", "/test-place/backup.zip");
+        assertThat(urlsGetter.getHttpUrl()).contains("http", "/test-place/backup.zip");
 
         final String signedUrl = urlsGetter.getSignedUrl(60);
 
         assertThat(signedUrl)
                 .contains(
-                        "https",
+                        "http",
                         "/test-place/backup.zip",
                         "Signature=",
                         "Expires=",
