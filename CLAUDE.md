@@ -65,10 +65,10 @@ Only @abashev's mentions are processed. All other mentions are ignored.
 
 ## Workflow for Agents
 
-1. All code changes must target `branch-17.x.x`
+1. All code changes must target `17.0`
 2. Never merge PRs directly - always wait for owner (@abashev) approval
 3. Check issue comments for @architect guidance before implementing
-4. Use git worktrees for feature branches (`git worktree add ../vfs-s3-issue-N branch-17.x.x -b issue-N`)
+4. Use git worktrees for feature branches (`git worktree add ../vfs-s3-issue-N 17.0 -b issue-N`)
 5. Run `mise exec -- mvn test` before committing
 6. Keep PRs focused: one feature or fix per PR
 7. Reference the related issue number in every PR

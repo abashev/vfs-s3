@@ -21,7 +21,7 @@ source .cowork/setup.sh
 
 ## Context
 
-The vfs-s3 project is undergoing a major evolution (branch-17.x.x roadmap):
+The vfs-s3 project is undergoing a major evolution (17.0 roadmap):
 - Migrating to Java 17 with modern language features
 - Splitting into multi-module: core filesystem, Spring integration, Commons VFS adapter
 - Setting up local testing with LocalStack and MinIO

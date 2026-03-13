@@ -6,7 +6,7 @@
 
 ## Context
 
-The vfs-s3 project aims to become "AI-native" as part of the 17.x.x roadmap. We need a system
+The vfs-s3 project aims to become "AI-native" as part of the 17.0 roadmap. We need a system
 that allows AI agents to contribute to the project while maintaining quality and human oversight.
 
 ## Decision

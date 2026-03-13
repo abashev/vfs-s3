@@ -41,7 +41,7 @@ Read `CLAUDE.md` in the project root for:
 
 3. **Create a feature branch in a worktree.** For every issue, work in an isolated git worktree:
    ```bash
-   git worktree add ../vfs-s3-issue-<number> branch-17.x.x -b issue-<number>
+   git worktree add ../vfs-s3-issue-<number> 17.0 -b issue-<number>
    cd ../vfs-s3-issue-<number>
    ```
    This keeps the main working copy clean and allows parallel work on multiple issues.
@@ -68,7 +68,7 @@ After committing, switch to reviewer mode and review your own changes. Repeat un
 
 7. **Self-review.** Examine the diff against the base branch:
    ```bash
-   git diff branch-17.x.x...HEAD
+   git diff 17.0...HEAD
    ```
    Review as if you are @reviewer. Check for:
    - Logic bugs, edge cases, null handling
@@ -93,9 +93,9 @@ After committing, switch to reviewer mode and review your own changes. Repeat un
     git push -u origin issue-<number>
     ```
 
-11. **Create a PR** via `gh` CLI targeting `branch-17.x.x`:
+11. **Create a PR** via `gh` CLI targeting `17.0`:
     ```bash
-    gh pr create --base branch-17.x.x --title "feat: short description (#<number>)" --body "$(cat <<'EOF'
+    gh pr create --base 17.0 --title "feat: short description (#<number>)" --body "$(cat <<'EOF'
     ## Summary
     Brief description of changes.
 
@@ -219,7 +219,7 @@ Before finishing, verify:
 - Run tests before committing
 - Keep PRs focused — one feature or fix per PR
 - Do NOT merge PRs — leave that for @abashev
-- All code targets `branch-17.x.x`
+- All code targets `17.0`
 - All GitHub postings (PR descriptions, comments) must be in **US English**
 - Always use git worktrees for feature branches — never commit directly in the main working copy
 - Always run the internal review loop (Phase 3) before creating a PR — do not skip it

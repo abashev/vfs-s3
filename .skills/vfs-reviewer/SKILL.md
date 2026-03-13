@@ -25,7 +25,7 @@ Read `CLAUDE.md` in the project root for coding standards. Key points:
 - Java 17 with modern features (var, records, sealed, pattern matching, text blocks)
 - Palantir Java Format (4-space indent, 120 char lines)
 - Explicit imports, no wildcards
-- All changes target `branch-17.x.x`
+- All changes target `17.0`
 
 ## Workflow
 
@@ -43,11 +43,11 @@ The user may ask to review either a **PR** or a **branch**. Both are valid.
 1. The user gives a branch name (e.g., `issue-185`). Review the diff locally:
    ```bash
    git fetch origin
-   git diff branch-17.x.x...origin/issue-185
+   git diff 17.0...origin/issue-185
    ```
    Or if the branch exists in a local worktree, diff against the base:
    ```bash
-   git diff branch-17.x.x...issue-185
+   git diff 17.0...issue-185
    ```
 2. Also read the linked issue on GitHub for context.
 3. Post the review as a comment in the chat (the user will decide where to share it).

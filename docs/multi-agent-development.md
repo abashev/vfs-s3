@@ -349,7 +349,7 @@ at the start of each session.
 
 ### Branch Protection
 
-Enable branch protection on `branch-17.x.x` in GitHub repository settings:
+Enable branch protection on `17.0` in GitHub repository settings:
 - Require pull request reviews before merging (at least 1 review from @abashev)
 - Require status checks to pass before merging (CI build)
 - Do not allow bypassing the above settings
@@ -363,7 +363,7 @@ This ensures that even if an agent misbehaves, it cannot merge or force-push to 
 - Bot account uses a fine-grained PAT with minimal scope (see above)
 - Human reviews every output before merging
 - Credential leak prevention is built into the reviewer skill
-- Branch protection prevents unauthorized merges to `branch-17.x.x`
+- Branch protection prevents unauthorized merges to `17.0`
 
 ## CLAUDE.md Shared Context
 

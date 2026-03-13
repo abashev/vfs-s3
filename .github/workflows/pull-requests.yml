@@ -2,7 +2,7 @@ name: Build pull request with simple check
 
 on:
   pull_request:
-    branches: [ branch-17.x.x ]
+    branches: [ 17.0 ]
 
 permissions:
   checks: write

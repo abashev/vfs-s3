@@ -2,7 +2,7 @@ name: Submit dependency graph
 
 on:
   push:
-    branches: [ branch-17.x.x ]
+    branches: [ 17.0 ]
 
 permissions:
   contents: write
