@@ -121,22 +121,16 @@ After committing, switch to reviewer mode and review your own changes. Repeat un
 
 12. **Notify the user.** Tell the user the PR URL is ready for their review on GitHub.
 
-### Phase 5: Monitor CI Build
+### Phase 5: Wait for CI Build
 
-13. **Schedule a build check.** After creating the PR, create a scheduled task to check the CI build status in 5 minutes:
+13. **Check the CI build status.** Wait a few minutes, then poll:
+    ```bash
+    gh pr checks <pr-number> --repo abashev/vfs-s3
     ```
-    Use the scheduled-tasks MCP tool: create_scheduled_task
-    - taskId: "check-pr-<number>"
-    - fireAt: (5 minutes from now, ISO 8601)
-    - description: "Check CI build status for PR #<pr-number>"
-    - prompt: |
-        Check the CI build status for PR #<pr-number> in abashev/vfs-s3:
-        1. Run: source .cowork/setup.sh && gh pr checks <pr-number> --repo abashev/vfs-s3
-        2. If checks are still running — reschedule this task for 10 minutes later
-        3. If checks passed — do nothing, the PR is ready for owner review
-        4. If checks failed — read the failure logs, fix the issues in the worktree
-           ../vfs-s3-issue-<number>, commit, push, and reschedule this task for 5 minutes
-    ```
+    - If checks are still running — wait and check again
+    - If checks passed — notify the user that the PR is ready for review
+    - If checks failed — read the failure logs, fix the issues in the worktree,
+      commit, push, and check again
 
 14. **Clean up** (after the PR is merged by the user):
     ```bash

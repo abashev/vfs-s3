@@ -4,7 +4,9 @@
 
 set -e
 
-COWORK_DIR="$(cd "$(dirname "$0")" && pwd)"
+# When sourced, $0 is the shell binary, not the script path.
+# Use BASH_SOURCE which always points to the script file.
+COWORK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$COWORK_DIR")"
 LOCAL_BIN="$HOME/.local/bin"
 
