@@ -1,0 +1,16 @@
+name: Update PR branches
+
+on:
+  push:
+    branches: [17.0]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: adRise/update-pr-branch@v0.10
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: '17.0'
+          required_approval_count: 1
+          require_passed_checks: true
