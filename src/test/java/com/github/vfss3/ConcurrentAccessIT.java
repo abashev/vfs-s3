@@ -26,7 +26,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class ConcurrentAccessTest extends BaseIntegrationTest {
+public class ConcurrentAccessIT extends BaseIntegrationTest {
     @BeforeAll
     public void setUp() throws IOException {
         root.resolveFile("/concurrent/").createFolder();

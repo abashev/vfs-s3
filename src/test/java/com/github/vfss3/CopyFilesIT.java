@@ -20,7 +20,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class CopyFilesTest extends BaseIntegrationTest {
+public class CopyFilesIT extends BaseIntegrationTest {
     @Test
     @Order(1)
     public void createDirOk() throws FileSystemException {

@@ -12,9 +12,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit test for accessing public buckets.
+ * Integration test for accessing public buckets.
  */
-public class PublicAccessBucketTest {
+public class PublicAccessBucketIT {
 
     @Test
     public void testCreate() throws Exception {
