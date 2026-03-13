@@ -47,14 +47,35 @@ else
     echo "Create a fine-grained PAT for the bot account and save it there."
 fi
 
-# 3. Set git author via environment variables (does NOT modify .git/config)
+# 3. Clean up stale git worktrees and lock files from previous sessions
+# Each Cowork session runs in a temporary VM with a unique path (/sessions/<name>/).
+# When a session ends, worktree directories disappear but .git/worktrees/ records remain,
+# causing lock errors in subsequent sessions.
+if [ -d "$PROJECT_DIR/.git/worktrees" ]; then
+    # Unlock any locked worktrees (they point to non-existent session dirs)
+    for wt in "$PROJECT_DIR/.git/worktrees"/*/; do
+        [ -d "$wt" ] || continue
+        wt_name=$(basename "$wt")
+        git -C "$PROJECT_DIR" worktree unlock "$wt_name" 2>/dev/null || true
+    done
+    # Remove stale maintenance lock
+    rm -f "$PROJECT_DIR/.git/objects/maintenance.lock"
+    # Prune worktrees whose directories no longer exist
+    PRUNED=$(git -C "$PROJECT_DIR" worktree prune -v 2>&1)
+    if [ -n "$PRUNED" ]; then
+        echo "Pruned stale worktrees:"
+        echo "$PRUNED"
+    fi
+fi
+
+# 4. Set git author via environment variables (does NOT modify .git/config)
 export GIT_AUTHOR_NAME="Claude (vfs-s3 bot)"
 export GIT_AUTHOR_EMAIL="267615948+vfs-s3-bot@users.noreply.github.com"
 export GIT_COMMITTER_NAME="Claude (vfs-s3 bot)"
 export GIT_COMMITTER_EMAIL="267615948+vfs-s3-bot@users.noreply.github.com"
 echo "Git author: $GIT_AUTHOR_NAME <$GIT_AUTHOR_EMAIL>"
 
-# 4. Install mise if not present
+# 5. Install mise if not present
 if ! command -v mise &>/dev/null && [ ! -f "$LOCAL_BIN/mise" ]; then
     echo "Installing mise..."
     curl -fsSL https://mise.jdx.dev/install.sh | MISE_INSTALL_PATH="$LOCAL_BIN/mise" sh
@@ -63,7 +84,7 @@ else
     echo "mise already available"
 fi
 
-# 5. Run mise trust and install tools
+# 6. Run mise trust and install tools
 if command -v mise &>/dev/null; then
     mise trust 2>/dev/null && echo "mise trusted"
     mise install 2>/dev/null && echo "mise tools installed"
