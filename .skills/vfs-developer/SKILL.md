@@ -19,6 +19,12 @@ Before starting any work, run the session setup if not done already:
 source .cowork/setup.sh
 ```
 
+**IMPORTANT:** Before every git operation (commit, push, pull, checkout, worktree add), remove stale
+lock files. The repo folder is shared with host macOS which runs background `git maintenance`:
+```bash
+rm -f .git/objects/maintenance.lock .git/index.lock .git/HEAD.lock
+```
+
 ## Context
 
 Read `CLAUDE.md` in the project root for:
