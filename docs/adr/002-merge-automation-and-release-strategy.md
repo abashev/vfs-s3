@@ -15,42 +15,71 @@ from the bot developer agent. Currently all PRs require manual merge. We need au
 
 The main branch has been renamed from `branch-17.x.x` to `17.0`.
 
+GitHub's merge queue is only available for organization-owned repos or GitHub Enterprise,
+so we need an alternative for this personal repository.
+
 ## Decision
 
-### 1. Merge Automation: Palantir Bulldozer
+### 1. Merge Automation: GitHub Native Auto-Merge + Branch Update Action
 
-We use **[Bulldozer](https://github.com/palantir/bulldozer)** — a GitHub App by Palantir
-that automatically merges PRs when all required checks pass and required reviews are provided.
+We use two GitHub-native mechanisms together:
+
+1. **GitHub auto-merge** — built-in feature that merges a PR automatically once all
+   required checks pass and required reviews are provided
+2. **[adRise/update-pr-branch](https://github.com/adRise/update-pr-branch)** — GitHub
+   Action that automatically updates outdated PR branches when new commits land on `17.0`
+
+Together these form a lightweight merge queue without any external services.
 
 **Rationale:**
-- **Self-hosted** — runs as a container, can be deployed inside a company network
-- **Event-driven** — merges within seconds of all preconditions being met
-- **Branch updates** — automatically updates PR branches before merging (eliminates
-  "out-of-date" problem without requiring "Require branches to be up to date" in ruleset)
-- **Configurable per-repo** — via `.bulldozer.yml` at repo root or shared across an org
-- **Actively maintained** — latest release June 2025
+- **No external apps** — everything runs as GitHub Actions, portable to any GitHub instance
+  (personal, org, enterprise, on-prem)
+- **Native integration** — auto-merge works with branch protection rules out of the box
+- **Automatic branch updates** — the update action keeps PR branches current, so
+  "Require branches to be up to date" works without manual "Update branch" clicks
+- **Zero operational overhead** — no containers to deploy, no apps to install
 
-**Configuration (`.bulldozer.yml`):**
+**How it works:**
 
-```yaml
-version: 1
-merge:
-  trigger:
-    labels: ["merge when ready"]
-  method: merge
-  delete_after_merge: true
-update:
-  trigger:
-    labels: ["merge when ready"]
+```
+PR gets approved + auto-merge enabled
+        │
+        v
+Another PR merges into 17.0
+        │
+        v
+update-pr-branch action triggers (on push to 17.0)
+        │
+        v
+Finds approved PRs with auto-merge → updates their branch
+        │
+        v
+CI re-runs on updated branch
+        │
+        v
+All checks pass → GitHub auto-merge completes the merge
 ```
 
-**Setup:**
-- Deploy Bulldozer as a GitHub App (container image from `palantir/bulldozer`)
-- Install the app on the repository
-- Add `.bulldozer.yml` to repo root on `17.0` branch
-- In branch protection ruleset: remove "Require branches to be up to date before merging"
-  (Bulldozer's `update` config handles this)
-- Label PRs with `merge when ready` to opt in to auto-merge
+**Workflow (`.github/workflows/update-pr-branch.yml`):**
+
+```yaml
+name: Update PR branches
+
+on:
+  push:
+    branches: [17.0]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: adRise/update-pr-branch@v0.10
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: '17.0'
+          required_approval_count: 1
+          require_passed_checks: true
+```
 
 ### 2. Versioning Scheme
 
@@ -80,13 +109,16 @@ Dependabot opens PR
 GitHub Actions: auto-approve (patch/minor only)
         │
         v
-GitHub Actions: add "merge when ready" label
+GitHub Actions: enable auto-merge (gh pr merge --auto --merge)
         │
         v
 CI runs: build + unit tests (+ integration tests after #189)
         │
         v
-Bulldozer: all checks pass + approved → update branch → merge
+If 17.0 is ahead → update-pr-branch action updates the PR branch
+        │
+        v
+CI re-runs → all checks pass → GitHub auto-merge completes
         │
         v
 Post-merge workflow: compute next tag, create release
@@ -97,16 +129,15 @@ Post-merge workflow: compute next tag, create release
 - Dependabot PRs merge fully automatically for patch/minor updates
 - Major dependency updates still require manual review
 - Every merged Dependabot PR produces a release tag and GitHub Release
-- Bulldozer can be deployed in any environment (cloud, on-prem, company network)
+- No external services or apps needed — everything is GitHub Actions
+- Works on any GitHub instance (personal, org, enterprise, on-prem)
 - Bot developer PRs still require @abashev approval before merge
-- "Require branches to be up to date" can be removed from ruleset — Bulldozer handles it
+- "Require branches to be up to date" stays enabled — the update action handles it
 
 ## Alternatives Considered
 
-1. **GitHub Native Auto-Merge** — Works but limited: no merge queue, no automatic branch
-   updates. GitHub's merge queue is only available for organization-owned repos or Enterprise.
-   For personal repos, "Require branches to be up to date" creates friction with multiple
-   concurrent PRs.
+1. **Palantir Bulldozer** — Self-hosted GitHub App with merge queue. More powerful but
+   requires deploying and maintaining a container. Overkill for current PR volume.
 
 2. **Mergify** — Commercial SaaS with free tier for open source only. Not suitable for
    internal company use without a paid plan.
