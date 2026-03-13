@@ -33,7 +33,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class S3ProviderTest extends BaseIntegrationTest {
+public class S3ProviderIT extends BaseIntegrationTest {
     private static final String BIG_FILE = "big_file.iso";
 
     private String fileName, dirName;
