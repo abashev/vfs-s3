@@ -1,17 +1,12 @@
 package com.github.vfss3.support;
 
-import static com.amazonaws.SDKGlobalConfiguration.ACCESS_KEY_ENV_VAR;
-import static com.amazonaws.SDKGlobalConfiguration.SECRET_KEY_ENV_VAR;
 import static com.amazonaws.services.s3.model.ownership.ObjectOwnership.ObjectWriter;
-import static java.lang.Boolean.parseBoolean;
 import static java.util.stream.Collectors.joining;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.github.vfss3.S3FileSystemOptions;
 import java.io.File;
 import java.io.IOException;
@@ -24,16 +19,26 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 /**
+ * Base class for integration tests. Uses a shared LocalStack container (started once per JVM)
+ * to provide a self-contained S3-compatible endpoint — no external credentials or network access needed.
  *
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
+@Testcontainers
 public abstract class BaseIntegrationTest {
-    private static final String BASE_URL = "BASE_URL";
-    private static final String USE_HTTP = "USE_HTTPS";
-    private static final String DISABLE_CHUNKED_ENCODING = "DISABLE_CHUNKED_ENCODING";
-    protected final Logger log = LoggerFactory.getLogger(BaseIntegrationTest.class);
+    private static final DockerImageName LOCALSTACK_IMAGE = DockerImageName.parse("localstack/localstack:3.4");
+
+    /** Shared container — started once for the entire test run via the JUnit 5 Testcontainers extension. */
+    @Container
+    static final LocalStackContainer localstack = new LocalStackContainer(LOCALSTACK_IMAGE).withServices(S3);
+
+    protected final Logger log = LoggerFactory.getLogger(getClass());
     protected FileObject root;
     protected S3FileSystemOptions options;
 
@@ -41,46 +46,29 @@ public abstract class BaseIntegrationTest {
     public final void initBucket() throws IOException {
         this.options = new S3FileSystemOptions();
 
-        EnvironmentConfiguration configuration = new EnvironmentConfiguration();
+        // Use LocalStack's built-in test credentials
+        options.setCredentialsProvider(new AWSStaticCredentialsProvider(
+                new BasicAWSCredentials(localstack.getAccessKey(), localstack.getSecretKey())));
 
-        // Try to load access and secret key from environment
-        AWSCredentials awsCredentials = null;
-
-        try {
-            awsCredentials = (new EnvironmentVariableCredentialsProvider()).getCredentials();
-        } catch (AmazonClientException e) {
-            log.info("Not able to load credentials from environment - try .envrc file");
-        }
-
-        if (awsCredentials != null) {
-            log.info("Will use AWS credentials from environment variables");
-        } else {
-            configuration.computeIfPresent(
-                    ACCESS_KEY_ENV_VAR,
-                    SECRET_KEY_ENV_VAR,
-                    (access, secret) -> options.setCredentialsProvider(
-                            new AWSStaticCredentialsProvider(new BasicAWSCredentials(access, secret))));
-        }
-
-        configuration.computeIfPresent(USE_HTTP, v -> options.setUseHttps(parseBoolean(v)));
-        configuration.computeIfPresent(
-                DISABLE_CHUNKED_ENCODING, v -> options.setDisableChunkedEncoding(parseBoolean(v)));
-
+        // LocalStack uses HTTP — disable HTTPS
+        options.setUseHttps(false);
+        options.setDisableChunkedEncoding(true);
         options.setCreateBucket(true);
         options.setObjectOwnership(ObjectWriter);
 
-        String token = (new Random()).ints(3).mapToObj(Integer::toHexString).collect(joining());
+        // Unique bucket name per test class run (3 random hex segments, lowercase S3-compatible)
+        var endpoint = localstack.getEndpointOverride(S3);
+        String token =
+                new Random().ints(3).mapToObj(i -> String.format("%08x", i)).collect(joining());
+        String bucketName = "vfs3-tests-" + token;
 
-        String baseUrl = configuration
-                .get(BASE_URL)
-                .orElseThrow(
-                        () -> new IllegalStateException(BASE_URL + " should present in environment configuration"));
+        // Build URL in custom-endpoint (path-style) format: s3://host:port/bucket/
+        String url = String.format("s3://%s:%d/%s/", endpoint.getHost(), endpoint.getPort(), bucketName);
 
-        assertTrue(baseUrl.contains("%s"), "BASE_URL should contain placeholder for token");
+        log.info("Integration test bucket URL: {}", url);
 
         final FileSystemManager manager = VFS.getManager();
-
-        this.root = manager.resolveFile(String.format(baseUrl, token), options.toFileSystemOptions());
+        this.root = manager.resolveFile(url, options.toFileSystemOptions());
     }
 
     @AfterAll
@@ -93,21 +81,18 @@ public abstract class BaseIntegrationTest {
 
     /**
      * Local binary file for doing tests.
-     *
-     * @return
      */
     public FileObject binaryFile() throws FileSystemException {
         File backupFile = new File("src/test/resources/backup.zip");
 
-        assertTrue(backupFile.exists(), "Backup file should exists");
+        assertTrue(backupFile.exists(), "Backup file should exist");
 
         return VFS.getManager().resolveFile(backupFile.getAbsolutePath());
     }
 
     /**
-     * Returns path to big file for doing upload test.
-     *
-     * @return
+     * Returns path to a large file for upload tests.
+     * Downloads a small netboot ISO from the Ubuntu archive.
      */
     public FileObject bigFile() throws FileSystemException {
         return VFS.getManager()
