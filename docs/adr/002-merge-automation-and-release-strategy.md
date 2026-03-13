@@ -68,6 +68,9 @@ name: Update PR branches
 on:
   push:
     branches: [17.0]
+  schedule:
+    # Run every night at 3:00 AM UTC to catch any stuck PRs
+    - cron: '0 3 * * *'
 
 jobs:
   update:
@@ -80,6 +83,10 @@ jobs:
           required_approval_count: 1
           require_passed_checks: true
 ```
+
+**Triggers:**
+- **On push to `17.0`** — immediately updates the next approved PR after each merge
+- **Nightly at 3:00 AM UTC** — catches any PRs stuck due to race conditions or transient failures
 
 ### 2. Versioning Scheme
 
