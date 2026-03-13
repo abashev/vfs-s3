@@ -47,20 +47,26 @@ else
     echo "Create a fine-grained PAT for the bot account and save it there."
 fi
 
-# 3. Clean up stale git worktrees and lock files from previous sessions
-# Each Cowork session runs in a temporary VM with a unique path (/sessions/<name>/).
-# When a session ends, worktree directories disappear but .git/worktrees/ records remain,
-# causing lock errors in subsequent sessions.
+# 3. Clean up stale git state from previous sessions and host interference
+# The repo folder is shared between the host macOS and the Cowork VM.
+# Two sources of lock files:
+#   a) Host-side `git maintenance` runs in background and creates maintenance.lock
+#   b) Stale worktrees from previous VM sessions leave HEAD.lock files
+# Disable host-side background maintenance to prevent recurring locks.
+git -C "$PROJECT_DIR" config maintenance.auto false 2>/dev/null || true
+git -C "$PROJECT_DIR" config gc.auto 0 2>/dev/null || true
+# Remove any leftover lock files
+rm -f "$PROJECT_DIR/.git/objects/maintenance.lock"
+rm -f "$PROJECT_DIR/.git/index.lock"
+rm -f "$PROJECT_DIR/.git/HEAD.lock"
+# Clean up stale worktrees from previous Cowork sessions
 if [ -d "$PROJECT_DIR/.git/worktrees" ]; then
-    # Unlock any locked worktrees (they point to non-existent session dirs)
     for wt in "$PROJECT_DIR/.git/worktrees"/*/; do
         [ -d "$wt" ] || continue
         wt_name=$(basename "$wt")
         git -C "$PROJECT_DIR" worktree unlock "$wt_name" 2>/dev/null || true
+        rm -f "${wt}HEAD.lock" "${wt}index.lock"
     done
-    # Remove stale maintenance lock
-    rm -f "$PROJECT_DIR/.git/objects/maintenance.lock"
-    # Prune worktrees whose directories no longer exist
     PRUNED=$(git -C "$PROJECT_DIR" worktree prune -v 2>&1)
     if [ -n "$PRUNED" ]; then
         echo "Pruned stale worktrees:"
