@@ -35,7 +35,7 @@
         <error-prone.version>2.42.0</error-prone.version>
         <nullaway.version>0.13.1</nullaway.version>
         <!-- Pin Jackson to 2.15.x so testcontainers and aws-java-sdk share compatible versions -->
-        <jackson.version>2.15.4</jackson.version>
+        <jackson.version>2.18.6</jackson.version>
     </properties>
 
     <dependencyManagement>
