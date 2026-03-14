@@ -20,4 +20,4 @@ jobs:
           distribution: 'liberica'
 
       - name: Submit Dependency Snapshot
-        uses: gradle/actions/dependency-submission@v4
+        uses: gradle/actions/dependency-submission@v5

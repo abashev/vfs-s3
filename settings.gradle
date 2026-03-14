@@ -1,8 +1,18 @@
-rootProject.name = 'vfs-s3'
-
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+pluginManagement {
     repositories {
+        gradlePluginPortal()
         mavenCentral()
     }
 }
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+
+        maven {
+            url = 'https://jitpack.io'
+        }
+    }
+}
+
+rootProject.name = 'vfs-s3'

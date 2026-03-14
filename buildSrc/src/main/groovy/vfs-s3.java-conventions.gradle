@@ -3,9 +3,23 @@ plugins {
     id 'jacoco'
     id 'com.diffplug.spotless'
     id 'net.ltgt.errorprone'
+    id 'net.ltgt.nullaway'
+    id 'io.freefair.lombok'
 }
 
 group = 'com.github.abashev'
+
+repositories {
+    mavenCentral()
+}
+
+testing {
+    suites {
+        test {
+            useJUnitJupiter()
+        }
+    }
+}
 
 java {
     toolchain {
@@ -40,6 +54,7 @@ tasks.register('integrationTest', Test) {
 // JaCoCo
 jacocoTestReport {
     dependsOn test
+
     reports {
         xml.required = true
         html.required = false
@@ -59,16 +74,6 @@ dependencies {
     errorprone libs.nullaway
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.errorprone {
-        option('NullAway:AnnotatedPackages', 'com.github.vfss3')
-    }
-}
-
-testing {
-    suites {
-        test {
-            useJUnitPlatform()
-        }
-    }
+nullaway {
+    annotatedPackages.add('com.github.vfss3')
 }

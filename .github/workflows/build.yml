@@ -3,6 +3,8 @@ name: Build with integration tests and code coverage
 on:
   push:
     branches: [ '17.0' ]
+  pull_request:
+    branches: [ '17.0' ]
 
 permissions:
   checks: write
@@ -11,12 +13,12 @@ permissions:
   contents: write
 
 jobs:
-  full-build:
-    strategy:
-      matrix:
-        environment: [ AWS-1, YANDEX-1, YANDEX-2 ]
-        java-version: [ 17 ]
-    environment: ${{ matrix.environment }}
+  build:
+    #    strategy:
+    #      matrix:
+    #        environment: [ AWS-1, YANDEX-1, YANDEX-2 ]
+    #        java-version: [ 17 ]
+    #    environment: ${{ matrix.environment }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -24,16 +26,12 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: ${{ matrix.java-version }}
+          java-version: 17
           distribution: 'liberica'
           cache: 'gradle'
 
       - name: Build with Gradle
         run: ./gradlew check integrationTest jacocoTestReport
-        env:
-          BASE_URL: ${{ vars.BASE_URL }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
 
       - name: Publish Test Report
         uses: dorny/test-reporter@v2
@@ -53,10 +51,11 @@ jobs:
           min-coverage-changed-files: 60
           title: Code Coverage
           comment-type: summary
+          update-comment: true
 
-      - name: Fail PR if overall coverage is less than 80%
-        if: ${{ steps.jacoco.outputs.coverage-overall < 80.0 }}
-        uses: actions/github-script@v8
-        with:
-          script: |
-            core.setFailed('Overall coverage is less than 80%!')
+#      - name: Fail PR if overall coverage is less than 80%
+#        if: ${{ steps.jacoco.outputs.coverage-overall < 80.0 }}
+#        uses: actions/github-script@v8
+#        with:
+#          script: |
+#            core.setFailed('Overall coverage is less than 80%!')

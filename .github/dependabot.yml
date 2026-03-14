@@ -6,7 +6,7 @@ updates:
       interval: "weekly"
     target-branch: "17.0"
 
-  - package-ecosystem: "maven"
+  - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"

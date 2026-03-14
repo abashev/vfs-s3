@@ -24,12 +24,7 @@ import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.Selectors;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -254,9 +249,19 @@ public class S3ProviderIT extends BaseIntegrationTest {
     public void listChildrenRoot() throws FileSystemException {
         assertHasChildren(root.resolveFile("/"), "test-place", BIG_FILE);
         assertHasChildren(
-                root.resolveFile("/test-place/"), "backup.zip", dirName, fileName, "folder with space", "name with space");
+                root.resolveFile("/test-place/"),
+                "backup.zip",
+                dirName,
+                fileName,
+                "folder with space",
+                "name with space");
         assertHasChildren(
-                root.resolveFile("/test-place"), "backup.zip", dirName, fileName, "folder with space", "name with space");
+                root.resolveFile("/test-place"),
+                "backup.zip",
+                dirName,
+                fileName,
+                "folder with space",
+                "name with space");
 
         final FileObject destFile = root.resolveFile("/test-place-2");
 
