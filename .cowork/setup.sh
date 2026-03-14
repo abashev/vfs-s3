@@ -47,19 +47,15 @@ else
     echo "Create a fine-grained PAT for the bot account and save it there."
 fi
 
-# 3. Clean up stale git state from previous sessions and host interference
-# The repo folder is shared between the host macOS and the Cowork VM.
-# Two sources of lock files:
-#   a) Host-side `git maintenance` runs in background and creates maintenance.lock
-#   b) Stale worktrees from previous VM sessions leave HEAD.lock files
-# Disable host-side background maintenance to prevent recurring locks.
-git -C "$PROJECT_DIR" config maintenance.auto false 2>/dev/null || true
-git -C "$PROJECT_DIR" config gc.auto 0 2>/dev/null || true
-# Remove any leftover lock files
-rm -f "$PROJECT_DIR/.git/objects/maintenance.lock"
-rm -f "$PROJECT_DIR/.git/index.lock"
-rm -f "$PROJECT_DIR/.git/HEAD.lock"
-# Clean up stale worktrees from previous Cowork sessions
+# 3. Configure git to avoid creating lock files on read-only operations.
+# Claude Code polls `git status` frequently, which creates stale index.lock files
+# (see https://github.com/anthropics/claude-code/issues/11005).
+# The --no-optional-locks flag prevents this.
+git -C "$PROJECT_DIR" config alias.s "status --no-optional-locks"
+git -C "$PROJECT_DIR" config alias.d "diff --no-optional-locks"
+echo "Git aliases configured: 'git s' and 'git d' use --no-optional-locks"
+
+# 4. Clean up stale worktrees from previous Cowork sessions
 if [ -d "$PROJECT_DIR/.git/worktrees" ]; then
     for wt in "$PROJECT_DIR/.git/worktrees"/*/; do
         [ -d "$wt" ] || continue
@@ -74,7 +70,7 @@ if [ -d "$PROJECT_DIR/.git/worktrees" ]; then
     fi
 fi
 
-# 4. Set git author via environment variables (does NOT modify .git/config)
+# 5. Set git author via environment variables (does NOT modify .git/config)
 export GIT_AUTHOR_NAME="Claude (vfs-s3 bot)"
 export GIT_AUTHOR_EMAIL="267615948+vfs-s3-bot@users.noreply.github.com"
 export GIT_COMMITTER_NAME="Claude (vfs-s3 bot)"

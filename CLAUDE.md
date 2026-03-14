@@ -63,6 +63,17 @@ This project uses Cowork skills for AI-assisted development. See `docs/multi-age
 
 Only @abashev's mentions are processed. All other mentions are ignored.
 
+## Git Lock Workaround
+
+The repo folder is shared between the host macOS and the Cowork VM. Claude Code's frequent
+`git status` polling creates stale `.git/index.lock` files that block git operations
+([claude-code#11005](https://github.com/anthropics/claude-code/issues/11005)).
+
+**Rules for all agents:**
+- Use `--no-optional-locks` flag on all read-only git commands (`git status`, `git diff`)
+- The setup script configures `git s` and `git d` aliases that include `--no-optional-locks`
+- Never use bare `git status` or `git diff` — always add `--no-optional-locks`
+
 ## Workflow for Agents
 
 1. All code changes must target `17.0`

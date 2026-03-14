@@ -19,11 +19,11 @@ Before starting any work, run the session setup if not done already:
 source .cowork/setup.sh
 ```
 
-**IMPORTANT:** Before every git operation (commit, push, pull, checkout, worktree add), remove stale
-lock files. The repo folder is shared with host macOS which runs background `git maintenance`:
-```bash
-rm -f .git/objects/maintenance.lock .git/index.lock .git/HEAD.lock
-```
+**IMPORTANT — Git lock workaround ([claude-code#11005](https://github.com/anthropics/claude-code/issues/11005)):**
+The repo folder is shared with host macOS. Claude Code's `git status` polling creates stale lock files.
+- Use `--no-optional-locks` on all read-only git commands: `git status --no-optional-locks`, `git diff --no-optional-locks`
+- Or use aliases `git s`, `git d` configured by setup.sh
+- Never use bare `git status` or `git diff` — always add `--no-optional-locks`
 
 ## Context
 
