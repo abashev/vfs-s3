@@ -36,10 +36,11 @@ jobs:
 
       - name: Jacoco Report to PR
         uses: madrapps/jacoco-report@v1.7.2
+        if: ${{ !cancelled() }}
         with:
           paths: ${{ github.workspace }}/target/site/jacoco/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 40
           min-coverage-changed-files: 60
           title: Code Coverage
-          comment-type: summary
+          update-comment: true
