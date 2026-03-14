@@ -13,5 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 17
+          distribution: 'liberica'
+
       - name: Submit Dependency Snapshot
-        uses: advanced-security/maven-dependency-submission-action@v5
+        uses: gradle/actions/dependency-submission@v4

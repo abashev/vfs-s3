@@ -77,19 +77,4 @@ export GIT_COMMITTER_NAME="Claude (vfs-s3 bot)"
 export GIT_COMMITTER_EMAIL="267615948+vfs-s3-bot@users.noreply.github.com"
 echo "Git author: $GIT_AUTHOR_NAME <$GIT_AUTHOR_EMAIL>"
 
-# 5. Install mise if not present
-if ! command -v mise &>/dev/null && [ ! -f "$LOCAL_BIN/mise" ]; then
-    echo "Installing mise..."
-    curl -fsSL https://mise.jdx.dev/install.sh | MISE_INSTALL_PATH="$LOCAL_BIN/mise" sh
-    echo "mise installed: $($LOCAL_BIN/mise --version)"
-else
-    echo "mise already available"
-fi
-
-# 6. Run mise trust and install tools
-if command -v mise &>/dev/null; then
-    mise trust 2>/dev/null && echo "mise trusted"
-    mise install 2>/dev/null && echo "mise tools installed"
-fi
-
 echo "=== Setup complete ==="

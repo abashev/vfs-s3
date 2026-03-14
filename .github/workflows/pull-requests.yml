@@ -21,24 +21,24 @@ jobs:
         with:
           java-version: 17
           distribution: 'liberica'
-          cache: 'maven'
+          cache: 'gradle'
 
-      - name: Build with Maven
-        run: mvn -B verify jacoco:report
+      - name: Build with Gradle
+        run: ./gradlew check jacocoTestReport
 
       - name: Publish Test Report
         uses: dorny/test-reporter@v2
         if: ${{ !cancelled() }}
         with:
           name: Test Results
-          path: '**/target/surefire-reports/TEST-*.xml,**/target/failsafe-reports/TEST-*.xml'
+          path: '**/build/test-results/test/*.xml'
           reporter: java-junit
 
       - name: Jacoco Report to PR
         uses: madrapps/jacoco-report@v1.7.2
         if: ${{ !cancelled() }}
         with:
-          paths: ${{ github.workspace }}/target/site/jacoco/jacoco.xml
+          paths: ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 40
           min-coverage-changed-files: 60

@@ -1,0 +1,75 @@
+plugins {
+    id 'java-library'
+    id 'jacoco'
+    id 'com.diffplug.spotless'
+    id 'net.ltgt.errorprone'
+}
+
+group = 'com.github.abashev'
+version = '17.0.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+// Integration test source set
+sourceSets {
+    integrationTest {
+        java.srcDir 'src/integrationTest/java'
+        resources.srcDir 'src/integrationTest/resources'
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
+    }
+}
+
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+tasks.register('integrationTest', Test) {
+    group = 'verification'
+    description = 'Runs integration tests.'
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    useJUnitPlatform()
+    shouldRunAfter(tasks.test)
+}
+
+// JaCoCo
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+// Spotless
+spotless {
+    java {
+        palantirJavaFormat('2.89.0')
+    }
+}
+
+// Error Prone + NullAway
+dependencies {
+    errorprone libs.errorprone.core
+    errorprone libs.nullaway
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.errorprone {
+        option('NullAway:AnnotatedPackages', 'com.github.vfss3')
+    }
+}
+
+testing {
+    suites {
+        test {
+            useJUnitPlatform()
+        }
+    }
+}
