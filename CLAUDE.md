@@ -70,12 +70,7 @@ The repo folder is shared between the host macOS and the Cowork VM. Claude Code'
 ([claude-code#11005](https://github.com/anthropics/claude-code/issues/11005)).
 
 **Rules for all agents:**
-- Use `--no-optional-locks` flag on read-only git commands (`git status`, `git diff`)
-- Before every **write** git operation (commit, push, pull, checkout, merge, rebase, worktree add),
-  remove stale lock files:
-  ```bash
-  rm -f .git/index.lock .git/HEAD.lock
-  ```
+- Use `--no-optional-locks` flag on all read-only git commands (`git status`, `git diff`)
 - The setup script configures `git s` and `git d` aliases that include `--no-optional-locks`
 - Never use bare `git status` or `git diff` — always add `--no-optional-locks`
 
