@@ -1,0 +1,121 @@
+plugins {
+    id 'vfs-s3.java-conventions'
+    id 'com.gradleup.shadow' version '9.0.0-beta15'
+    id 'maven-publish'
+    id 'signing'
+    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
+}
+
+description = 'Amazon S3 driver for VFS (Apache Commons Virtual File System)'
+
+dependencies {
+    api libs.commons.vfs2
+    api libs.aws.sdk.s3
+
+    testImplementation libs.junit.jupiter
+    testImplementation libs.commons.io
+    testImplementation libs.commons.httpclient
+    testImplementation libs.logback.classic
+    testImplementation libs.jcl.over.slf4j
+    testImplementation libs.assertj.core
+    testImplementation libs.testcontainers.core
+    testImplementation libs.testcontainers.localstack
+    testImplementation libs.testcontainers.junit.jupiter
+}
+
+// Shadow (shaded) JAR configuration
+shadowJar {
+    minimize()
+    mergeServiceFiles()
+
+    def shadePrefix = 'com.github.vfss3.shaded'
+
+    relocate('com.amazonaws', "${shadePrefix}.com.amazonaws") {
+        exclude 'com.amazonaws.auth.InstanceProfileCredentialsProvider*'
+        exclude 'com.amazonaws.auth.AWSStaticCredentialsProvider'
+        exclude 'com.amazonaws.auth.AWSCredentialsProviderChain'
+        exclude 'com.amazonaws.auth.AWSCredentialsProvider'
+        exclude 'com.amazonaws.auth.DefaultAWSCredentialsProviderChain'
+        exclude 'com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider'
+        exclude 'com.amazonaws.auth.AWSSessionCredentialsProvider'
+        exclude 'com.amazonaws.auth.EnvironmentVariableCredentialsProvider'
+        exclude 'com.amazonaws.auth.SystemPropertiesCredentialsProvider'
+        exclude 'com.amazonaws.auth.EC2ContainerCredentialsProviderWrapper'
+        exclude 'com.amazonaws.auth.PropertiesFileCredentialsProvider'
+        exclude 'com.amazonaws.auth.ContainerCredentialsProvider'
+        exclude 'com.amazonaws.auth.profile.internal.ProfileAssumeRoleCredentialsProvider'
+        exclude 'com.amazonaws.auth.profile.internal.ProfileStaticCredentialsProvider'
+        exclude 'com.amazonaws.auth.profile.internal.securitytoken.STSProfileCredentialsServiceProvider'
+        exclude 'com.amazonaws.auth.profile.ProfileCredentialsProvider'
+        exclude 'com.amazonaws.auth.*CredentialsFetcher'
+        exclude 'com.amazonaws.ClientConfiguration*'
+        exclude 'com.amazonaws.ApacheHttpClientConfig'
+        exclude 'com.amazonaws.DnsResolver'
+        exclude 'com.amazonaws.ProxyAuthenticationMethod'
+    }
+    relocate 'com.fasterxml', "${shadePrefix}.com.fasterxml"
+    relocate 'org.apache.http', "${shadePrefix}.org.apache.http"
+    relocate 'org.apache.commons.codec', "${shadePrefix}.org.apache.commons.codec"
+    relocate 'org.joda', "${shadePrefix}.org.joda"
+    relocate 'software', "${shadePrefix}.software"
+
+    dependencies {
+        include(dependency('com.amazonaws::'))
+        include(dependency('org.apache.httpcomponents::'))
+        include(dependency('commons-codec::'))
+        include(dependency('com.fasterxml.jackson.dataformat::'))
+        include(dependency('com.fasterxml.jackson.core::'))
+        include(dependency('joda-time::'))
+        include(dependency('software.amazon.ion::'))
+    }
+}
+
+// Maven publishing
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            pom {
+                name = "${project.group}:${project.name}"
+                description = project.description
+                url = 'https://github.com/abashev/vfs-s3'
+                licenses {
+                    license {
+                        name = 'The Apache Software License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution = 'repo'
+                    }
+                }
+                developers {
+                    developer {
+                        name = 'Alexey Abashev'
+                        email = 'alexey@abashev.ru'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/abashev/vfs-s3.git'
+                    developerConnection = 'scm:git:ssh://github.com:abashev/vfs-s3.git'
+                    url = 'https://github.com/abashev/vfs-s3'
+                }
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            nexusUrl = uri('https://oss.sonatype.org/service/local/')
+            snapshotRepositoryUrl = uri('https://oss.sonatype.org/content/repositories/snapshots/')
+        }
+    }
+}

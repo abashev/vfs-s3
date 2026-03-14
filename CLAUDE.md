@@ -1,6 +1,6 @@
 # Build & Run
 
-This project uses Maven with the `mise` tool manager for local development.
+This project uses Gradle with the Gradle wrapper for local development.
 
 ## Session Setup
 
@@ -8,35 +8,36 @@ This project uses Maven with the `mise` tool manager for local development.
 ```sh
 source .cowork/setup.sh
 ```
-This installs `gh` CLI, loads the bot token, configures git author, and trusts `mise`.
+This installs `gh` CLI, loads the bot token, configures git author, and installs `mise` for Java toolchain management.
 
-## Local Development (with mise)
+## Local Development (with mise + Gradle wrapper)
 
-- Use `mise exec -- mvn <args>` instead of `mvn` directly. There is no Maven wrapper (`mvnw`) in this project.
+Use `mise exec -- ./gradlew` instead of `./gradlew` directly. `mise` ensures the correct Java version is used.
 
 ```sh
-mise exec -- mvn compile
-mise exec -- mvn test -pl <module>
-mise exec -- mvn test -pl <module> -am
-mise exec -- mvn verify
+mise exec -- ./gradlew compile
+mise exec -- ./gradlew test
+mise exec -- ./gradlew integrationTest
+mise exec -- ./gradlew check
 ```
 
 ### Test Separation
 
-Tests are split into two categories using Maven Surefire and Failsafe plugins:
+Tests are split into two categories using Gradle source sets:
 
-- **Unit tests** (`mvn test`) — runs `*Test.java` files with Surefire
-- **Integration tests** (`mvn verify`) — runs `*IT.java` files with Failsafe
+- **Unit tests** (`./gradlew test`) — runs `*Test.java` files from `src/test/java`
+- **Integration tests** (`./gradlew integrationTest`) — runs `*IT.java` files from `src/integrationTest/java`
 
 Integration tests require AWS credentials and external resources (S3 buckets, etc.).
 
 ## CI Environment (GitHub Actions)
 
-On CI runners, Java and Maven are installed via `actions/setup-java`. Use `mvn` directly:
+On CI runners, Java is installed via `actions/setup-java`. The Gradle wrapper is committed to the repo:
 
 ```sh
-mvn compile
-mvn test
+./gradlew compile
+./gradlew test
+./gradlew check integrationTest
 ```
 
 # Java Style
@@ -80,7 +81,7 @@ The repo folder is shared between the host macOS and the Cowork VM. Claude Code'
 2. Never merge PRs directly - always wait for owner (@abashev) approval
 3. Check issue comments for @architect guidance before implementing
 4. Use git worktrees for feature branches (`git worktree add ../vfs-s3-issue-N 17.0 -b issue-N`)
-5. Run `mise exec -- mvn test` before committing
+5. Run `mise exec -- ./gradlew test` before committing
 6. Keep PRs focused: one feature or fix per PR
 7. Reference the related issue number in every PR
 8. All GitHub postings must be in **US English**
