@@ -4,8 +4,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    target-branch: "17.0"
 
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
       interval: "weekly"
+    target-branch: "17.0"
