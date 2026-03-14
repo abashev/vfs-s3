@@ -73,7 +73,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
-            <version>1.12.523</version>
+            <version>1.12.797</version>
         </dependency>
 
         <dependency>
@@ -85,7 +85,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.7</version>
+            <version>2.21.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -97,7 +97,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.2.9</version>
+            <version>1.5.32</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -109,7 +109,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.24.2</version>
+            <version>3.27.7</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -150,7 +150,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.0</version>
+                <version>3.15.0</version>
                 <configuration>
                     <release>17</release>
                     <encoding>UTF-8</encoding>
@@ -217,7 +217,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.1.2</version>
+                <version>3.5.5</version>
                 <configuration>
                     <forkCount>${test.fork.count}</forkCount>
                     <reuseForks>true</reuseForks>
