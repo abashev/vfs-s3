@@ -24,7 +24,7 @@ jobs:
           cache: 'gradle'
 
       - name: Build with Gradle
-        run: ./gradlew check jacocoTestReport
+        run: ./gradlew check integrationTest jacocoTestReport
 
       - name: Publish Test Report
         uses: dorny/test-reporter@v2

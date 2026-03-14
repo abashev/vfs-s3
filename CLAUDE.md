@@ -8,17 +8,17 @@ This project uses Gradle with the Gradle wrapper for local development.
 ```sh
 source .cowork/setup.sh
 ```
-This installs `gh` CLI, loads the bot token, and configures git author.
+This installs `gh` CLI, loads the bot token, configures git author, and installs `mise` for Java toolchain management.
 
-## Local Development (with Gradle wrapper)
+## Local Development (with mise + Gradle wrapper)
 
-Use `./gradlew` instead of `gradle` directly. The Gradle wrapper is self-contained and downloads the correct Gradle version automatically.
+Use `mise exec -- ./gradlew` instead of `./gradlew` directly. `mise` ensures the correct Java version is used.
 
 ```sh
-./gradlew compile
-./gradlew test
-./gradlew integrationTest
-./gradlew check
+mise exec -- ./gradlew compile
+mise exec -- ./gradlew test
+mise exec -- ./gradlew integrationTest
+mise exec -- ./gradlew check
 ```
 
 ### Test Separation
@@ -81,7 +81,7 @@ The repo folder is shared between the host macOS and the Cowork VM. Claude Code'
 2. Never merge PRs directly - always wait for owner (@abashev) approval
 3. Check issue comments for @architect guidance before implementing
 4. Use git worktrees for feature branches (`git worktree add ../vfs-s3-issue-N 17.0 -b issue-N`)
-5. Run `./gradlew test` before committing
+5. Run `mise exec -- ./gradlew test` before committing
 6. Keep PRs focused: one feature or fix per PR
 7. Reference the related issue number in every PR
 8. All GitHub postings must be in **US English**

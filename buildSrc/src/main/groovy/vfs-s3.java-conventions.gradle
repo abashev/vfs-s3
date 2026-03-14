@@ -6,7 +6,6 @@ plugins {
 }
 
 group = 'com.github.abashev'
-version = '17.0.0-SNAPSHOT'
 
 java {
     toolchain {
@@ -43,7 +42,7 @@ jacocoTestReport {
     dependsOn test
     reports {
         xml.required = true
-        html.required = true
+        html.required = false
     }
 }
 
