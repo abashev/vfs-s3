@@ -125,11 +125,17 @@ After committing, switch to reviewer mode and review your own changes. Repeat un
     ```
     The `gh` CLI uses the bot token from `.cowork/github-bot-token`, so the PR will be created from the bot account.
 
-12. **Notify the user.** Tell the user the PR URL is ready for their review on GitHub.
+12. **Enable auto-merge** on the PR immediately after creation:
+    ```bash
+    gh pr merge <pr-number> --repo abashev/vfs-s3 --auto --merge
+    ```
+    This ensures the PR merges automatically once checks pass and @abashev approves.
+
+13. **Notify the user.** Tell the user the PR URL is ready for their review on GitHub.
 
 ### Phase 5: Wait for CI Build
 
-13. **Check the CI build status.** Wait a few minutes, then poll:
+14. **Check the CI build status.** Wait a few minutes, then poll:
     ```bash
     gh pr checks <pr-number> --repo abashev/vfs-s3
     ```
@@ -138,7 +144,7 @@ After committing, switch to reviewer mode and review your own changes. Repeat un
     - If checks failed — read the failure logs, fix the issues in the worktree,
       commit, push, and check again
 
-14. **Clean up** (after the PR is merged by the user):
+15. **Clean up** (after the PR is merged by the user):
     ```bash
     cd ../vfs-s3
     git worktree remove ../vfs-s3-issue-<number>
@@ -150,7 +156,7 @@ This phase is triggered when @abashev posts review comments on a bot-created PR
 (`@vfs-s3-bot please fix review comments`), or when the notification inbox contains
 a mention on an existing PR.
 
-15. **Read the PR review comments.** Identify the PR number from the notification, then:
+16. **Read the PR review comments.** Identify the PR number from the notification, then:
     ```bash
     gh pr view <pr-number> --repo abashev/vfs-s3 --comments
     gh api repos/abashev/vfs-s3/pulls/<pr-number>/comments \
@@ -159,7 +165,7 @@ a mention on an existing PR.
     ```
     Focus on comments from @abashev. Ignore comments from other users.
 
-16. **Navigate to the existing worktree.** The branch should already exist:
+17. **Navigate to the existing worktree.** The branch should already exist:
     ```bash
     cd ../vfs-s3-issue-<number>
     git pull origin issue-<number>
@@ -170,15 +176,15 @@ a mention on an existing PR.
     cd ../vfs-s3-issue-<number>
     ```
 
-17. **Apply the requested fixes.** For each review comment:
+18. **Apply the requested fixes.** For each review comment:
     - Read the specific file and line mentioned
     - Apply the fix as @abashev requested
     - If the request is ambiguous, make the most reasonable interpretation
 
-18. **Build and test.** Run `mise exec -- mvn compile test-compile` and `mise exec -- mvn test`
+19. **Build and test.** Run `mise exec -- mvn compile test-compile` and `mise exec -- mvn test`
     to verify the fixes don't break anything.
 
-19. **Commit and push.** Create a NEW commit (do not amend):
+20. **Commit and push.** Create a NEW commit (do not amend):
     ```bash
     git add <changed-files>
     git commit -m "fix: address review feedback for #<issue-number>
@@ -187,7 +193,7 @@ a mention on an existing PR.
     git push origin issue-<number>
     ```
 
-20. **Reply on the PR.** Post a comment summarizing what was fixed:
+21. **Reply on the PR.** Post a comment summarizing what was fixed:
     ```bash
     gh pr comment <pr-number> --repo abashev/vfs-s3 --body "$(cat <<'EOF'
     ## Review Feedback Addressed
@@ -204,7 +210,7 @@ a mention on an existing PR.
     )"
     ```
 
-21. **Mark the notification as read:**
+22. **Mark the notification as read:**
     ```bash
     gh api /notifications/threads/<thread-id> --method PATCH
     ```
