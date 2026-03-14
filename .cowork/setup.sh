@@ -51,7 +51,9 @@ fi
 # The repo folder is shared between the host macOS and the Cowork VM.
 # Two sources of lock files:
 #   a) Host-side `git maintenance` runs in background and creates maintenance.lock
-#   b) Stale worktrees from previous VM sessions leave HEAD.lock files
+#   b) Claude Code's frequent `git status` polling creates stale index.lock files
+#      (see https://github.com/anthropics/claude-code/issues/11005)
+#   c) Stale worktrees from previous VM sessions leave HEAD.lock files
 # Disable host-side background maintenance to prevent recurring locks.
 git -C "$PROJECT_DIR" config maintenance.auto false 2>/dev/null || true
 git -C "$PROJECT_DIR" config gc.auto 0 2>/dev/null || true
@@ -59,6 +61,13 @@ git -C "$PROJECT_DIR" config gc.auto 0 2>/dev/null || true
 rm -f "$PROJECT_DIR/.git/objects/maintenance.lock"
 rm -f "$PROJECT_DIR/.git/index.lock"
 rm -f "$PROJECT_DIR/.git/HEAD.lock"
+
+# 3b. Configure git to avoid creating lock files on read-only operations.
+# Claude Code polls `git status` frequently, which creates index.lock.
+# The --no-optional-locks flag prevents this. We set it as default via alias.
+git -C "$PROJECT_DIR" config alias.s "status --no-optional-locks"
+git -C "$PROJECT_DIR" config alias.d "diff --no-optional-locks"
+echo "Git aliases configured: 'git s' and 'git d' use --no-optional-locks"
 # Clean up stale worktrees from previous Cowork sessions
 if [ -d "$PROJECT_DIR/.git/worktrees" ]; then
     for wt in "$PROJECT_DIR/.git/worktrees"/*/; do

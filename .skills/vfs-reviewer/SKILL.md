@@ -19,6 +19,15 @@ Before starting any work, run the session setup if not done already:
 source .cowork/setup.sh
 ```
 
+**IMPORTANT — Git lock workaround ([claude-code#11005](https://github.com/anthropics/claude-code/issues/11005)):**
+The repo folder is shared with host macOS. Claude Code's `git status` polling creates stale lock files.
+- Use `--no-optional-locks` on read-only git commands: `git status --no-optional-locks`, `git diff --no-optional-locks`
+  (or use aliases `git s`, `git d` configured by setup.sh)
+- Before every **write** git operation (commit, push, pull, checkout), remove stale locks:
+  ```bash
+  rm -f .git/index.lock .git/HEAD.lock
+  ```
+
 ## Context
 
 Read `CLAUDE.md` in the project root for coding standards. Key points:
