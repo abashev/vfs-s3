@@ -56,10 +56,7 @@ jacocoTestReport {
     dependsOn test, integrationTest
 
     // Include execution data from both test runs
-    executionData.from(
-        tasks.named('test'),
-        tasks.named('integrationTest')
-    )
+    executionData fileTree(layout.buildDirectory).include("jacoco/*.exec")
 
     reports {
         xml.required = true
