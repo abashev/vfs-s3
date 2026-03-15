@@ -1,0 +1,9 @@
+plugins {
+    id 'vfs-s3.java-conventions'
+}
+
+description = 'Amazon S3 FileSystemProvider for JDK NIO.2 (java.nio.file.spi.FileSystemProvider)'
+
+dependencies {
+    testImplementation libs.junit.jupiter
+}

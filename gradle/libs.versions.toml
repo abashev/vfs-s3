@@ -11,6 +11,7 @@ jackson = "2.15.4"
 palantir-java-format = "2.89.0"
 errorprone = "2.42.0"
 nullaway = "0.13.1"
+spring = "6.2.4"
 
 [libraries]
 commons-vfs2 = { module = "org.apache.commons:commons-vfs2", version.ref = "commons-vfs2" }
@@ -26,6 +27,8 @@ testcontainers-localstack = { module = "org.testcontainers:localstack", version.
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
 nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }
+spring-core = { module = "org.springframework:spring-core", version.ref = "spring" }
+spring-context = { module = "org.springframework:spring-context", version.ref = "spring" }
 
 [plugins]
 shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta15" }

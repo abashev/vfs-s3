@@ -16,3 +16,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'vfs-s3'
+
+include 'commons-vfs'
+include 'jdk'
+include 'spring-6'
