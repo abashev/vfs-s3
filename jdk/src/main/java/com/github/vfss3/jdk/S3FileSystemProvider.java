@@ -57,8 +57,8 @@ public class S3FileSystemProvider extends FileSystemProvider {
     }
 
     @Override
-    public SeekableByteChannel newByteChannel(
-            Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+    public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
+            throws IOException {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
