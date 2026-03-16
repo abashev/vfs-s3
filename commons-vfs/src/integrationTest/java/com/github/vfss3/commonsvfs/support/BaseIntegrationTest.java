@@ -1,4 +1,4 @@
-package com.github.vfss3.support;
+package com.github.vfss3.commonsvfs.support;
 
 import static com.amazonaws.services.s3.model.ownership.ObjectOwnership.ObjectWriter;
 import static java.util.stream.Collectors.joining;
