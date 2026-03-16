@@ -144,9 +144,13 @@ After committing, switch to reviewer mode and review your own changes. Repeat un
     - If checks failed — read the failure logs, fix the issues in the worktree,
       commit, push, and check again
 
-15. **Clean up** (after the PR is merged by the user):
+15. **Unlock and clean up worktree** (after push, before ending session):
     ```bash
     cd ../vfs-s3
+    git worktree unlock vfs-s3-issue-<number> 2>/dev/null || true
+    ```
+    After the PR is merged by the user, fully remove the worktree:
+    ```bash
     git worktree remove ../vfs-s3-issue-<number>
     ```
 
@@ -210,7 +214,13 @@ a mention on an existing PR.
     )"
     ```
 
-22. **Mark the notification as read:**
+22. **Unlock the worktree** before ending the session:
+    ```bash
+    cd ../vfs-s3
+    git worktree unlock vfs-s3-issue-<number> 2>/dev/null || true
+    ```
+
+23. **Mark the notification as read:**
     ```bash
     gh api /notifications/threads/<thread-id> --method PATCH
     ```
@@ -234,5 +244,6 @@ Before finishing, verify:
 - All code targets `17.0`
 - All GitHub postings (PR descriptions, comments) must be in **US English**
 - Always use git worktrees for feature branches — never commit directly in the main working copy
+- Always unlock worktrees (`git worktree unlock`) before ending a session — locked worktrees cause git index.lock issues in subsequent sessions
 - Always run the internal review loop (Phase 3) before creating a PR — do not skip it
 - Use `gh` CLI (not browser) for reading issues, creating PRs, and posting comments
