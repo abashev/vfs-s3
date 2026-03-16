@@ -90,10 +90,14 @@ jobs:
 
 ### 2. Versioning Scheme
 
-Format: `17.0.N` where:
+Format: `17.X.N` where:
 - `17` = target JDK version (major)
-- `0` = feature track (minor) — increments to `17.1` for significant changes
+- `X` = feature track (minor) — even numbers (0, 2, 4...) are **unstable** (testing new features),
+  odd numbers (1, 3, 5...) are **stable** (production-ready)
 - `N` = auto-incrementing release counter (patch)
+
+Current branch `17.0` is the unstable development track. When features are validated,
+a stable `17.1` branch will be created. Next unstable cycle will be `17.2`, next stable `17.3`, etc.
 
 The version is derived from the latest git tag on the branch. If the last tag is `17.0.3`,
 the next release is `17.0.4`.
