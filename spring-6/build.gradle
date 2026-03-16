@@ -1,0 +1,15 @@
+plugins {
+    id 'vfs-s3.java-conventions'
+}
+
+description = 'Amazon S3 Spring 6 Resource / ResourceLoader implementation'
+
+dependencies {
+    // Spring is provided by the user's application — compileOnly scope
+    compileOnly libs.spring.core
+    compileOnly libs.spring.context
+
+    testImplementation libs.junit.jupiter
+    testImplementation libs.spring.core
+    testImplementation libs.spring.context
+}
