@@ -4,8 +4,8 @@ aws-sdk-s3 = "1.12.523"
 junit-jupiter = "5.10.3"
 commons-io = "2.7"
 logback = "1.2.9"
-slf4j = "2.0.13"
-assertj = "3.24.2"
+slf4j = "2.0.17"
+assertj = "3.27.7"
 testcontainers = "1.19.8"
 jackson = "2.15.4"
 palantir-java-format = "2.89.0"
@@ -31,5 +31,5 @@ spring-core = { module = "org.springframework:spring-core", version.ref = "sprin
 spring-context = { module = "org.springframework:spring-context", version.ref = "spring" }
 
 [plugins]
-shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta15" }
+shadow = { id = "com.gradleup.shadow", version = "9.3.2" }
 nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version = "2.0.0" }
