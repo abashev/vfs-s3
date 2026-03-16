@@ -51,9 +51,12 @@ tasks.register('integrationTest', Test) {
     shouldRunAfter(tasks.test)
 }
 
-// JaCoCo
+// JaCoCo — aggregate coverage from both unit and integration tests
 jacocoTestReport {
-    dependsOn test
+    dependsOn test, integrationTest
+
+    // Include execution data from both test runs
+    executionData fileTree(layout.buildDirectory).include("jacoco/*.exec")
 
     reports {
         xml.required = true

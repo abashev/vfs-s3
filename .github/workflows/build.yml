@@ -40,12 +40,16 @@ jobs:
           name: Test Results
           path: '**/build/test-results/**/*.xml'
           reporter: java-junit
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Jacoco Report to PR
         id: jacoco
         uses: madrapps/jacoco-report@v1.7.2
         with:
-          paths: ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
+          paths: >-
+            ${{ github.workspace }}/commons-vfs/build/reports/jacoco/test/jacocoTestReport.xml,
+            ${{ github.workspace }}/jdk/build/reports/jacoco/test/jacocoTestReport.xml,
+            ${{ github.workspace }}/spring-6/build/reports/jacoco/test/jacocoTestReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 40
           min-coverage-changed-files: 60
