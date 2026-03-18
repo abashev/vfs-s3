@@ -2,7 +2,7 @@
 commons-vfs2 = "2.9.0"
 aws-sdk-s3 = "1.12.523"
 junit-jupiter = "5.10.3"
-commons-io = "2.7"
+commons-io = "2.21.0"
 logback = "1.2.9"
 slf4j = "2.0.17"
 assertj = "3.27.7"
