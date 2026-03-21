@@ -12,32 +12,37 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystem;
 import java.nio.file.FileSystemException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * Suite A: File Lifecycle tests for the JDK NIO.2 mock backend.
  *
- * <p>Tests use the standard {@link Files} API via the S3 {@link java.nio.file.FileSystem}.
+ * <p>Tests use the standard {@link Files} API via the S3 {@link FileSystem}.
  * The mock backend stores all data in a temporary directory.
  */
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class FileLifecycleTest {
 
     private static final String BUCKET = "test-bucket";
     private static final String CONTENT = "Hello, S3!";
 
-    private S3FileSystem fs;
-    private S3FileSystemProvider provider;
+    private FileSystem fs;
 
     @BeforeEach
     void setUp() throws IOException {
-        provider = new S3FileSystemProvider();
-        fs = (S3FileSystem) provider.newFileSystem(URI.create("s3://" + BUCKET), Map.of());
+        fs = FileSystems.newFileSystem(URI.create("s3://" + BUCKET), Map.of());
     }
 
     @AfterEach
@@ -60,6 +65,8 @@ class FileLifecycleTest {
 
     /** Step 1: Create a file and assert it exists. Content is readable back. */
     @Test
+    @Order(1)
+    @DisplayName("Step 1: create file and verify content is readable back")
     void step1_createFileAndVerifyExists() throws IOException {
         var path = fs.getPath("/file-lifecycle/test-file");
 
@@ -71,6 +78,8 @@ class FileLifecycleTest {
 
     /** Step 1b: Verify getFileName() returns the last segment. */
     @Test
+    @Order(2)
+    @DisplayName("Step 1b: getFileName() returns the last path segment")
     void step1b_getFilenameReturnsLastSegment() throws IOException {
         var path = fs.getPath("/file-lifecycle/file.txt");
         Files.write(path, CONTENT.getBytes(UTF_8), CREATE, WRITE);
@@ -81,6 +90,8 @@ class FileLifecycleTest {
 
     /** Step 2: Create a file with spaces in its name and assert it exists. */
     @Test
+    @Order(3)
+    @DisplayName("Step 2: create file with spaces in name")
     void step2_createFileWithSpacesInName() throws IOException {
         var path = fs.getPath("/file-lifecycle/name with space");
 
@@ -94,6 +105,8 @@ class FileLifecycleTest {
      * setLastModifiedTime is not supported and throws an exception.
      */
     @Test
+    @Order(4)
+    @DisplayName("Step 3: lastModifiedTime is positive; setAttribute throws UnsupportedOperationException")
     void step3_lastModifiedTimeIsPositiveAndSetLastModifiedTimeThrows() throws IOException {
         var path = fs.getPath("/file-lifecycle/test-file");
         Files.write(path, CONTENT.getBytes(UTF_8), CREATE, WRITE);
@@ -111,6 +124,8 @@ class FileLifecycleTest {
      * Step 4: Attempt createDirectory on an existing regular file path → FileAlreadyExistsException.
      */
     @Test
+    @Order(5)
+    @DisplayName("Step 4: createDirectory on existing file throws FileAlreadyExistsException")
     void step4_createDirectoryOnExistingFileThrows() throws IOException {
         var path = fs.getPath("/file-lifecycle/test-file");
         Files.write(path, CONTENT.getBytes(UTF_8), CREATE, WRITE);
@@ -123,6 +138,8 @@ class FileLifecycleTest {
      * Move back. Try self-move → throws error.
      */
     @Test
+    @Order(6)
+    @DisplayName("Step 5: move file succeeds; self-move throws FileSystemException")
     void step5_moveFileAndSelfMoveThrows() throws IOException {
         var original = fs.getPath("/file-lifecycle/test-file");
         var renamed = fs.getPath("/file-lifecycle/renamed");
@@ -148,6 +165,8 @@ class FileLifecycleTest {
      * Existing file path → exists and is a regular file.
      */
     @Test
+    @Order(7)
+    @DisplayName("Step 6: file type checks — exists() and isRegularFile()")
     void step6_fileTypeChecks() throws IOException {
         var existing = fs.getPath("/file-lifecycle/test-file");
         var nonexistent = fs.getPath("/file-lifecycle/nonexistent");
@@ -161,58 +180,19 @@ class FileLifecycleTest {
 
     /** Step 7: Deeply nested non-existent path → does not exist. No exception thrown. */
     @Test
+    @Order(8)
+    @DisplayName("Step 7: deeply nested non-existent path returns false without exception")
     void step7_deeplyNestedNonExistentPathDoesNotExist() {
         var path = fs.getPath("/file-lifecycle/does/not/exist");
         assertFalse(Files.exists(path), "Deeply nested non-existent path should return false");
     }
 
-    /** End-to-end: full Suite A flow in sequence. */
-    @Test
-    void suitA_fullLifecycle() throws IOException {
-        var testFile = fs.getPath("/file-lifecycle/test-file");
-        var fileWithSpace = fs.getPath("/file-lifecycle/name with space");
-        var renamed = fs.getPath("/file-lifecycle/renamed");
-
-        // Step 1: write and verify
-        Files.write(testFile, CONTENT.getBytes(UTF_8), CREATE, WRITE);
-        assertTrue(Files.exists(testFile));
-        assertArrayEquals(CONTENT.getBytes(UTF_8), Files.readAllBytes(testFile));
-
-        // Step 2: file with spaces
-        Files.write(fileWithSpace, CONTENT.getBytes(UTF_8), CREATE, WRITE);
-        assertTrue(Files.exists(fileWithSpace));
-
-        // Step 3: lastModifiedTime works; setLastModifiedTime throws
-        var mtime = Files.getLastModifiedTime(testFile);
-        assertTrue(mtime.toMillis() > 0);
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> Files.setAttribute(testFile, "basic:lastModifiedTime", mtime));
-
-        // Step 4: createDirectory on existing file throws
-        assertThrows(FileAlreadyExistsException.class, () -> Files.createDirectory(testFile));
-
-        // Step 5: move / rename
-        Files.move(testFile, renamed);
-        assertFalse(Files.exists(testFile));
-        assertTrue(Files.exists(renamed));
-        Files.move(renamed, testFile);
-        assertTrue(Files.exists(testFile));
-        assertFalse(Files.exists(renamed));
-        assertThrows(FileSystemException.class, () -> Files.move(testFile, testFile));
-
-        // Step 6: type checks
-        assertFalse(Files.exists(fs.getPath("/file-lifecycle/nonexistent")));
-        assertTrue(Files.isRegularFile(testFile));
-
-        // Step 7: deeply nested non-existent
-        assertFalse(Files.exists(fs.getPath("/file-lifecycle/does/not/exist")));
-    }
-
     /** Verify reading a non-existent file throws NoSuchFileException. */
     @Test
+    @Order(9)
+    @DisplayName("Read non-existent file throws NoSuchFileException")
     void readNonExistentFileThrows() {
-        var path = fs.getPath("/file-lifecycle/ghost.txt");
+        var path = fs.getPath("/ghost.txt");
         assertThrows(NoSuchFileException.class, () -> Files.readAllBytes(path));
     }
 }

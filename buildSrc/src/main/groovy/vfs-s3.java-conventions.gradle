@@ -53,15 +53,21 @@ tasks.register('integrationTest', Test) {
 
 // JaCoCo — aggregate coverage from both unit and integration tests
 jacocoTestReport {
-    dependsOn test, integrationTest
+    // Always depends on unit tests; integration tests only when they have run
+    dependsOn test
 
-    // Include execution data from both test runs
+    // Include execution data from any test runs that have completed
     executionData fileTree(layout.buildDirectory).include("jacoco/*.exec")
 
     reports {
         xml.required = true
-        html.required = false
+        html.required = true
     }
+}
+
+// Make 'check' also generate the coverage report
+tasks.named('check') {
+    dependsOn jacocoTestReport
 }
 
 // Spotless
