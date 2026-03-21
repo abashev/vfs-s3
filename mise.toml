@@ -1,10 +1,2 @@
 [tools]
 java = "liberica-17"
-
-[tasks.format]
-description = "Format Java sources with Palantir Java Format"
-run = "./gradlew spotlessApply"
-
-[tasks."format.check"]
-description = "Check Java formatting (fails if unformatted)"
-run = "./gradlew spotlessCheck"
