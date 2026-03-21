@@ -1,0 +1,18 @@
+name: Palantir Java Format Check
+
+on:
+  pull_request:
+    branches: [ '17.0' ]
+  push:
+    branches: [ '17.0' ]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: abashev/palantir-java-format-action@v1
+        with:
+          version: '2.89.0'
+          mode: ${{ github.event_name == 'push' && 'all' || 'changed' }}
