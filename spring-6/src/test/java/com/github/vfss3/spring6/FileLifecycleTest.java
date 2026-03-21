@@ -10,7 +10,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.core.io.WritableResource;
 
 /**
@@ -22,6 +26,7 @@ import org.springframework.core.io.WritableResource;
  * <p>Note: Spring Resource API does not have native move/rename — those Suite A steps
  * are skipped. Focus is on read/write/exists/metadata operations.
  */
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class FileLifecycleTest {
 
     private static final String BUCKET = "test-bucket";
@@ -41,6 +46,8 @@ class FileLifecycleTest {
 
     /** Step 1: Write file via WritableResource.getOutputStream(). Verify exists and content. */
     @Test
+    @Order(1)
+    @DisplayName("Step 1: write file and verify exists and content")
     void step1_writeFileAndVerifyExistsAndContent() throws IOException {
         var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
 
@@ -57,6 +64,8 @@ class FileLifecycleTest {
 
     /** Step 2: Check getFilename() returns the last segment of the key. */
     @Test
+    @Order(2)
+    @DisplayName("Step 2: getFilename() returns the last segment of the key")
     void step2_getFilenameReturnsLastSegment() throws IOException {
         var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
 
@@ -69,6 +78,8 @@ class FileLifecycleTest {
 
     /** Step 2b: Create a file with spaces in its name. */
     @Test
+    @Order(3)
+    @DisplayName("Step 2b: create file with spaces in its name")
     void step2b_createFileWithSpacesInName() throws IOException {
         var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/name with spaces.txt");
 
@@ -82,6 +93,8 @@ class FileLifecycleTest {
 
     /** Step 4: lastModified() returns a valid (positive) timestamp. */
     @Test
+    @Order(4)
+    @DisplayName("Step 4: lastModified() returns a positive timestamp")
     void step4_lastModifiedReturnsPositiveTimestamp() throws IOException {
         var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
 
@@ -94,6 +107,8 @@ class FileLifecycleTest {
 
     /** Step 5: contentLength() matches the number of bytes written. */
     @Test
+    @Order(5)
+    @DisplayName("Step 5: contentLength() matches the number of bytes written")
     void step5_contentLengthMatchesWrittenBytes() throws IOException {
         var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
         var contentBytes = CONTENT.getBytes(UTF_8);
@@ -107,6 +122,8 @@ class FileLifecycleTest {
 
     /** Step 6: Non-existent resource — exists() == false, getInputStream() throws IOException. */
     @Test
+    @Order(6)
+    @DisplayName("Step 6: non-existent resource returns exists()=false and getInputStream() throws")
     void step6_nonExistentResourceExistsFalseAndGetInputStreamThrows() {
         var resource = loader.getResource("s3://" + BUCKET + "/file-lifecycle/nonexistent.txt");
 
@@ -119,47 +136,10 @@ class FileLifecycleTest {
 
     /** isWritable() returns true for mock-backed resources. */
     @Test
+    @Order(7)
+    @DisplayName("isWritable() returns true for mock-backed S3Resource")
     void isWritableReturnsTrueForMockResource() {
         var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
         assertTrue(resource.isWritable(), "isWritable() should return true for mock-backed S3Resource");
-    }
-
-    /** End-to-end: full Suite A flow covering all steps. */
-    @Test
-    void suiteA_fullLifecycle() throws IOException {
-        var file = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
-        var fileWithSpaces =
-                (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/name with spaces.txt");
-        var nonExistent = loader.getResource("s3://" + BUCKET + "/file-lifecycle/nonexistent.txt");
-
-        var contentBytes = CONTENT.getBytes(UTF_8);
-
-        // Step 1: write and verify
-        try (var out = file.getOutputStream()) {
-            out.write(contentBytes);
-        }
-        assertTrue(file.exists());
-        try (InputStream in = file.getInputStream()) {
-            assertEquals(CONTENT, new String(in.readAllBytes(), UTF_8));
-        }
-
-        // Step 2: filename
-        assertEquals("file.txt", file.getFilename());
-
-        // Step 2b: file with spaces
-        try (var out = fileWithSpaces.getOutputStream()) {
-            out.write(contentBytes);
-        }
-        assertTrue(fileWithSpaces.exists());
-
-        // Step 4: lastModified
-        assertTrue(file.lastModified() > 0);
-
-        // Step 5: contentLength
-        assertEquals(contentBytes.length, file.contentLength());
-
-        // Step 6: non-existent
-        assertFalse(nonExistent.exists());
-        assertThrows(IOException.class, nonExistent::getInputStream);
     }
 }
