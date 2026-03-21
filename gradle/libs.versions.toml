@@ -1,8 +1,8 @@
 [versions]
 commons-vfs2 = "2.9.0"
 aws-sdk-s3 = "1.12.523"
-junit-jupiter = "5.10.3"
-commons-io = "2.7"
+junit-jupiter = "6.0.3"
+commons-io = "2.21.0"
 logback = "1.2.9"
 slf4j = "2.0.17"
 assertj = "3.27.7"
@@ -11,6 +11,7 @@ jackson = "2.15.4"
 palantir-java-format = "2.89.0"
 errorprone = "2.42.0"
 nullaway = "0.13.1"
+spring = "6.2.4"
 
 [libraries]
 commons-vfs2 = { module = "org.apache.commons:commons-vfs2", version.ref = "commons-vfs2" }
@@ -26,7 +27,9 @@ testcontainers-localstack = { module = "org.testcontainers:localstack", version.
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
 nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }
+spring-core = { module = "org.springframework:spring-core", version.ref = "spring" }
+spring-context = { module = "org.springframework:spring-context", version.ref = "spring" }
 
 [plugins]
-shadow = { id = "com.gradleup.shadow", version = "9.3.2" }
+shadow = { id = "com.gradleup.shadow", version = "9.4.0" }
 nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version = "2.0.0" }
