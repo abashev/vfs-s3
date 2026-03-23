@@ -5,7 +5,6 @@ on:
     branches: [ '17.0' ]
   pull_request:
     branches: [ '17.0' ]
-  workflow_dispatch:
 
 permissions:
   checks: write
