@@ -13,39 +13,7 @@ jobs:
     steps:
       - uses: adRise/update-pr-branch@v0.10.2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BOT_PAT }}
           base: '17.0'
           required_approval_count: 1
           require_passed_checks: true
-
-      - name: Trigger build for PRs missing checks
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const prs = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              base: '17.0',
-              state: 'open'
-            });
-            for (const pr of prs.data) {
-              const checks = await github.rest.checks.listForRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: pr.head.sha
-              });
-              const hasBuild = checks.data.check_runs.some(
-                c => c.name === 'build'
-              );
-              if (!hasBuild) {
-                console.log(`PR #${pr.number} (${pr.head.ref}) has no build on ${pr.head.sha.substring(0, 7)}, triggering...`);
-                await github.rest.actions.createWorkflowDispatch({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  workflow_id: 'build.yml',
-                  ref: pr.head.ref
-                });
-              } else {
-                console.log(`PR #${pr.number} (${pr.head.ref}) already has build checks`);
-              }
-            }
