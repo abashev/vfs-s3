@@ -11,7 +11,7 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: adRise/update-pr-branch@v0.10.2
+      - uses: adRise/update-pr-branch@a51c014567e5be98445551cce9b8f5ad42dd8acf # v0.10.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: '17.0'
