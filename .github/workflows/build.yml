@@ -47,9 +47,9 @@ jobs:
         uses: madrapps/jacoco-report@50d3aff4548aa991e6753342d9ba291084e63848 # v1.7.2
         with:
           paths: >-
-            ${{ github.workspace }}/commons-vfs/build/reports/jacoco/test/jacocoTestReport.xml,
-            ${{ github.workspace }}/jdk/build/reports/jacoco/test/jacocoTestReport.xml,
-            ${{ github.workspace }}/spring-6/build/reports/jacoco/test/jacocoTestReport.xml
+            ${{ github.workspace }}/modules/commons-vfs/build/reports/jacoco/test/jacocoTestReport.xml,
+            ${{ github.workspace }}/modules/jdk/build/reports/jacoco/test/jacocoTestReport.xml,
+            ${{ github.workspace }}/modules/spring-6/build/reports/jacoco/test/jacocoTestReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 40
           min-coverage-changed-files: 60
