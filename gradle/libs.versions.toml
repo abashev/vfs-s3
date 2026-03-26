@@ -11,7 +11,7 @@ jackson = "2.15.4"
 palantir-java-format = "2.89.0"
 errorprone = "2.42.0"
 nullaway = "0.13.1"
-spring = "6.2.4"
+spring = "7.0.6"
 
 [libraries]
 commons-vfs2 = { module = "org.apache.commons:commons-vfs2", version.ref = "commons-vfs2" }
