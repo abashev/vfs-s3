@@ -4,8 +4,8 @@ on:
   push:
     branches: [ '17.0' ]
   schedule:
-    # Run every night at 3:00 AM UTC to catch any stuck PRs
-    - cron: '0 3 * * *'
+    # Run every hour to catch stuck PRs
+    - cron: '0 * * * *'
 
 jobs:
   update:
