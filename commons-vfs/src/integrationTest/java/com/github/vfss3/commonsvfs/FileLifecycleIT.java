@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.vfss3.commonsvfs.support.BaseIntegrationTest;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.FileType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -73,9 +72,7 @@ public class FileLifecycleIT extends BaseIntegrationTest {
         file.createFile();
 
         long lastModified = file.getContent().getLastModifiedTime();
-        assertThat(lastModified)
-                .as("Last modified time should be positive")
-                .isGreaterThan(0);
+        assertThat(lastModified).as("Last modified time should be positive").isGreaterThan(0);
 
         assertThrows(
                 FileSystemException.class,
@@ -156,8 +153,6 @@ public class FileLifecycleIT extends BaseIntegrationTest {
     public void testNonexistentPathDoesNotExist() throws FileSystemException {
         FileObject nonexistent = root.resolveFile(PREFIX + "does/not/exist");
 
-        assertFalse(
-                nonexistent.exists(),
-                "Nonexistent path with multiple segments should not exist");
+        assertFalse(nonexistent.exists(), "Nonexistent path with multiple segments should not exist");
     }
 }
