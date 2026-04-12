@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.github.vfss3.commonsvfs.operations.Acl;
 import org.junit.jupiter.api.Test;
 
-public class AclTest {
+class AclTest {
     @Test
-    public void testOperations() {
+    void testOperations() {
         Acl acl = new Acl();
         acl.denyAll();
 
