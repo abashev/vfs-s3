@@ -23,7 +23,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class AclHandlingIT extends BaseIntegrationTest {
+class AclHandlingIT extends BaseIntegrationTest {
     private static final String FOLDER = "/acl";
 
     FileObject file;
@@ -32,7 +32,7 @@ public class AclHandlingIT extends BaseIntegrationTest {
 
     @Test
     @Order(1)
-    public void checkGet() throws FileSystemException {
+    void checkGet() throws FileSystemException {
         file = root.resolveFile(FOLDER + "/check_acl.zip");
 
         if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
@@ -62,7 +62,7 @@ public class AclHandlingIT extends BaseIntegrationTest {
 
     @Test
     @Order(2)
-    public void checkSet() throws FileSystemException {
+    void checkSet() throws FileSystemException {
         if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
             return;
         }
@@ -91,7 +91,7 @@ public class AclHandlingIT extends BaseIntegrationTest {
 
     @Test
     @Order(3)
-    public void checkSet2() throws FileSystemException {
+    void checkSet2() throws FileSystemException {
         if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class))
                 .supportsAuthorizedGroup()) {
             // Doesn't support authorized group
@@ -122,7 +122,7 @@ public class AclHandlingIT extends BaseIntegrationTest {
 
     @Test
     @Order(4)
-    public void checkDenyAllForFile() throws FileSystemException {
+    void checkDenyAllForFile() throws FileSystemException {
         if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
             return;
         }
@@ -154,7 +154,7 @@ public class AclHandlingIT extends BaseIntegrationTest {
 
     @Test
     @Order(5)
-    public void checkDenyAllForFolder() throws FileSystemException {
+    void checkDenyAllForFolder() throws FileSystemException {
         folder = root.resolveFile(FOLDER + "/check_acl/");
 
         if (!((PlatformFeatures) folder.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {

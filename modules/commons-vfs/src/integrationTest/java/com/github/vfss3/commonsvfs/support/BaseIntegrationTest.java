@@ -43,7 +43,7 @@ public abstract class BaseIntegrationTest {
     protected S3FileSystemOptions options;
 
     @BeforeAll
-    public final void initBucket() throws IOException {
+    final void initBucket() throws IOException {
         this.options = new S3FileSystemOptions();
 
         // Use LocalStack's built-in test credentials
@@ -72,7 +72,7 @@ public abstract class BaseIntegrationTest {
     }
 
     @AfterAll
-    public final void deleteBucket() throws IOException {
+    final void deleteBucket() throws IOException {
         if (root != null) {
             root.refresh();
             root.deleteAll();
@@ -82,7 +82,7 @@ public abstract class BaseIntegrationTest {
     /**
      * Local binary file for doing tests.
      */
-    public FileObject binaryFile() throws FileSystemException {
+    protected FileObject binaryFile() throws FileSystemException {
         File backupFile = new File("src/test/resources/backup.zip");
 
         assertTrue(backupFile.exists(), "Backup file should exist");
@@ -94,7 +94,7 @@ public abstract class BaseIntegrationTest {
      * Returns path to a large file for upload tests.
      * Downloads a small netboot ISO from the Ubuntu archive.
      */
-    public FileObject bigFile() throws FileSystemException {
+    protected FileObject bigFile() throws FileSystemException {
         return VFS.getManager()
                 .resolveFile(
                         "http://archive.ubuntu.com/ubuntu/dists/xenial-updates/main/installer-i386/current/images/netboot/mini.iso");

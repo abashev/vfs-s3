@@ -1,19 +1,16 @@
 package com.github.vfss3.commonsvfs;
 
-import static org.apache.commons.vfs2.FileType.FILE;
-import static org.apache.commons.vfs2.FileType.IMAGINARY;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.github.vfss3.commonsvfs.support.BaseIntegrationTest;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+
+import static org.apache.commons.vfs2.FileType.FILE;
+import static org.apache.commons.vfs2.FileType.IMAGINARY;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests for Suite A: File Lifecycle.
@@ -24,11 +21,11 @@ import org.junit.jupiter.api.TestInstance;
  * @author <A href="mailto:claude at anthropic dot com">Claude (vfs-s3 bot)</A>
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class FileLifecycleIT extends BaseIntegrationTest {
+class FileLifecycleIT extends BaseIntegrationTest {
     private static final String PREFIX = "/file-lifecycle/";
 
     @AfterAll
-    public void tearDown() throws FileSystemException {
+    void tearDown() throws FileSystemException {
         // Delete the entire prefix directory recursively
         FileObject prefixDir = root.resolveFile(PREFIX);
         if (prefixDir.exists()) {
@@ -41,7 +38,7 @@ public class FileLifecycleIT extends BaseIntegrationTest {
      * Assert: file exists
      */
     @Test
-    public void testCreateFile() throws FileSystemException {
+    void testCreateFile() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "test-file");
         file.createFile();
 
@@ -53,7 +50,7 @@ public class FileLifecycleIT extends BaseIntegrationTest {
      * Assert: file exists
      */
     @Test
-    public void testCreateFileWithSpace() throws FileSystemException {
+    void testCreateFileWithSpace() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "name with space");
         file.createFile();
 
@@ -67,7 +64,7 @@ public class FileLifecycleIT extends BaseIntegrationTest {
      * Assert: throws FileSystemException
      */
     @Test
-    public void testLastModifiedTime() throws FileSystemException {
+    void testLastModifiedTime() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "test-file");
         file.createFile();
 
@@ -85,7 +82,7 @@ public class FileLifecycleIT extends BaseIntegrationTest {
      * Assert: throws FileSystemException
      */
     @Test
-    public void testCreateFolderOnExistingFile() throws FileSystemException {
+    void testCreateFolderOnExistingFile() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "test-file");
         file.createFile();
 
@@ -104,7 +101,7 @@ public class FileLifecycleIT extends BaseIntegrationTest {
      * Assert: throws error
      */
     @Test
-    public void testMoveAndRename() throws FileSystemException {
+    void testMoveAndRename() throws FileSystemException {
         FileObject sourceFile = root.resolveFile(PREFIX + "test-file");
         sourceFile.createFile();
 
@@ -135,7 +132,7 @@ public class FileLifecycleIT extends BaseIntegrationTest {
      * Assert: existing file → type is FILE
      */
     @Test
-    public void testGetType() throws FileSystemException {
+    void testGetType() throws FileSystemException {
         FileObject nonexistent = root.resolveFile(PREFIX + "nonexistent");
         assertEquals(IMAGINARY, nonexistent.getType(), "Nonexistent file should have IMAGINARY type");
 
@@ -150,7 +147,7 @@ public class FileLifecycleIT extends BaseIntegrationTest {
      * Assert: /file-lifecycle/does/not/exist does not exist
      */
     @Test
-    public void testNonexistentPathDoesNotExist() throws FileSystemException {
+    void testNonexistentPathDoesNotExist() throws FileSystemException {
         FileObject nonexistent = root.resolveFile(PREFIX + "does/not/exist");
 
         assertFalse(nonexistent.exists(), "Nonexistent path with multiple segments should not exist");
