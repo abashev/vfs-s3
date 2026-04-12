@@ -1,16 +1,16 @@
 package com.github.vfss3.commonsvfs;
 
+import static org.apache.commons.vfs2.FileType.FILE;
+import static org.apache.commons.vfs2.FileType.IMAGINARY;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.github.vfss3.commonsvfs.support.BaseIntegrationTest;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-
-import static org.apache.commons.vfs2.FileType.FILE;
-import static org.apache.commons.vfs2.FileType.IMAGINARY;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests for Suite A: File Lifecycle.

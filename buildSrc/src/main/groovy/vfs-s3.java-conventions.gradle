@@ -68,6 +68,7 @@ jacocoTestReport {
 spotless {
     java {
         palantirJavaFormat('2.89.0')
+        target 'src/*/java/**/*.java'
     }
 }
 
