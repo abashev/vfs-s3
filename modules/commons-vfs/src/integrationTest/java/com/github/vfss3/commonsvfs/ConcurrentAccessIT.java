@@ -26,9 +26,9 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class ConcurrentAccessIT extends BaseIntegrationTest {
+class ConcurrentAccessIT extends BaseIntegrationTest {
     @BeforeAll
-    public void setUp() throws IOException {
+    void setUp() throws IOException {
         root.resolveFile("/concurrent/").createFolder();
         root.resolveFile("/read-deadlock/").createFolder();
         root.resolveFile("/read-deadlock/file1").createFile();
@@ -37,7 +37,7 @@ public class ConcurrentAccessIT extends BaseIntegrationTest {
 
     @RepeatedTest(200)
     @Execution(ExecutionMode.CONCURRENT)
-    public void createFileOk() throws FileSystemException {
+    void createFileOk() throws FileSystemException {
         // was running into too many random collisions with random numbers in the range of 0-999
         // so added thread id into the mix
         String fileName = "folder-" + Thread.currentThread().getId() + "-" + (new Random()).nextInt(1000) + "/";
@@ -61,7 +61,7 @@ public class ConcurrentAccessIT extends BaseIntegrationTest {
 
     @RepeatedTest(200)
     @Execution(ExecutionMode.CONCURRENT)
-    public void checkReadDeadlock() throws FileSystemException {
+    void checkReadDeadlock() throws FileSystemException {
         FileObject file = root.resolveFile("/read-deadlock");
 
         assertNotNull(file.getParent());
@@ -74,7 +74,7 @@ public class ConcurrentAccessIT extends BaseIntegrationTest {
     }
 
     @Test
-    public void testGetChildrenGetParentDeadlock() throws FileSystemException, InterruptedException {
+    void testGetChildrenGetParentDeadlock() throws FileSystemException, InterruptedException {
         final FileObject parent = root.resolveFile("/concurrent/");
         parent.delete(Selectors.EXCLUDE_SELF);
 

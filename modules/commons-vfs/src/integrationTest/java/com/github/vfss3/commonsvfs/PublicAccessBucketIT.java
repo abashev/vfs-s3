@@ -14,10 +14,10 @@ import org.junit.jupiter.api.Test;
 /**
  * Integration test for accessing public buckets.
  */
-public class PublicAccessBucketIT {
+class PublicAccessBucketIT {
 
     @Test
-    public void testCreate() throws Exception {
+    void testCreate() throws Exception {
         FileSystemManager manager = VFS.getManager();
         FileSystemOptions options = new FileSystemOptions();
         DelegatingFileSystemOptionsBuilder builder = new DelegatingFileSystemOptionsBuilder(manager);
@@ -31,7 +31,7 @@ public class PublicAccessBucketIT {
 
     @Test
     @DisplayName("Test how VFS-S3 plugin can access public OSM bucket, see https://registry.opendata.aws/osm/")
-    public void testResolvePublicBucket1() throws FileSystemException {
+    void testResolvePublicBucket1() throws FileSystemException {
         FileSystemManager manager = VFS.getManager();
         S3FileSystemOptions options = new S3FileSystemOptions();
 
@@ -48,7 +48,7 @@ public class PublicAccessBucketIT {
 
     @Test
     @DisplayName("Test how VFS-S3 plugin can access public OSM bucket, see https://registry.opendata.aws/osm/")
-    public void testResolvePublicBucket2() throws FileSystemException {
+    void testResolvePublicBucket2() throws FileSystemException {
         FileSystemManager manager = VFS.getManager();
         S3FileSystemOptions options = new S3FileSystemOptions();
 

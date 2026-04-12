@@ -15,9 +15,9 @@ import org.junit.jupiter.api.Test;
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
-public class S3FileNameParserTest {
+class S3FileNameParserTest {
     @Test
-    public void checkHostedStyleUrl() throws FileSystemException {
+    void checkHostedStyleUrl() throws FileSystemException {
         assertThat(parse("s3://bucket.s3.amazonaws.com"))
                 .hasEndpoint("s3.amazonaws.com")
                 .hasPathPrefix("bucket")
@@ -74,7 +74,7 @@ public class S3FileNameParserTest {
     }
 
     @Test
-    public void checkPathStyleUrl() throws FileSystemException {
+    void checkPathStyleUrl() throws FileSystemException {
         assertThat(parse("s3://s3.amazonaws.com/bucket"))
                 .hasEndpoint("s3.amazonaws.com")
                 .hasPathPrefix("bucket");
@@ -121,21 +121,21 @@ public class S3FileNameParserTest {
     }
 
     @Test
-    public void checkAliyunPathStyleUrl() {
+    void checkAliyunPathStyleUrl() {
         assertThrows(FileSystemException.class, () -> {
             parse("s3://oss-cn-beijing.aliyuncs.com/test-bucket/some-file");
         });
     }
 
     @Test
-    public void checkLocalStackUrl() throws FileSystemException {
+    void checkLocalStackUrl() throws FileSystemException {
         assertThat(parse("s3://localhost:4572/bucket"))
                 .hasEndpoint("localhost:4572")
                 .hasPathPrefix("bucket");
     }
 
     @Test
-    public void checkRegionParsing() throws FileSystemException {
+    void checkRegionParsing() throws FileSystemException {
         assertThat(parse("s3://s3.eu-west-1.amazonaws.com/bucket")).hasSigningRegion("eu-west-1");
 
         assertThat(parse("s3://s3.amazonaws.com/bucket")).hasSigningRegion("us-east-1");
@@ -148,7 +148,7 @@ public class S3FileNameParserTest {
     }
 
     @Test
-    public void checkBrokenUrls() throws FileSystemException {
+    void checkBrokenUrls() throws FileSystemException {
         assertThat(parse("s3://s3.eu-west-1.amazonaws.com/s3-tests//big_file.iso"))
                 .hasEndpoint("s3.eu-west-1.amazonaws.com")
                 .hasPathPrefix("s3-tests")
@@ -185,12 +185,12 @@ public class S3FileNameParserTest {
     }
 
     @Test
-    public void wrongKeys() {
+    void wrongKeys() {
         assertThrows(FileSystemException.class, () -> parse("s3://access@bucket.s3.amazonaws.com"));
     }
 
     @Test
-    public void checkCredentials() throws FileSystemException {
+    void checkCredentials() throws FileSystemException {
         assertThat(parse("s3://access:secret@bucket.s3.amazonaws.com"))
                 .hasEndpoint("s3.amazonaws.com")
                 .hasPathPrefix("bucket")

@@ -20,10 +20,10 @@ import org.junit.jupiter.api.TestMethodOrder;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class CopyFilesIT extends BaseIntegrationTest {
+class CopyFilesIT extends BaseIntegrationTest {
     @Test
     @Order(1)
-    public void createDirOk() throws FileSystemException {
+    void createDirOk() throws FileSystemException {
         assertTrue(root.exists());
         assertEquals(FOLDER, root.getName().getType());
 
@@ -48,7 +48,7 @@ public class CopyFilesIT extends BaseIntegrationTest {
 
     @Test
     @Order(2)
-    public void copyInsideBucket() throws FileSystemException {
+    void copyInsideBucket() throws FileSystemException {
         FileObject testsDir = root.resolveFile("child-dir");
         FileObject testsDirCopy = root.resolveFile("child-dir-copy");
 
@@ -69,7 +69,7 @@ public class CopyFilesIT extends BaseIntegrationTest {
 
     @Test
     @Order(3)
-    public void checkDelete() throws FileSystemException {
+    void checkDelete() throws FileSystemException {
         assertTrue(root.delete(EXCLUDE_SELF) > 0);
 
         assertFalse(root.resolveFile("child-dir").exists());
