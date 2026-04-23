@@ -14,15 +14,20 @@ Review architectural decisions and provide design guidance. You focus on the big
 
 ## Setup
 
-Before starting any work, run the session setup if not done already:
+Verify required tools are present (pre-installed on the host — no container setup needed):
 ```bash
-source .cowork/setup.sh
+command -v gh   >/dev/null || { echo "ERROR: gh not found";   exit 1; }
+command -v mise >/dev/null || { echo "ERROR: mise not found"; exit 1; }
+export GH_TOKEN=$(cat /Users/abashev/vfs-s3/.cowork/github-bot-token)
+export GIT_AUTHOR_NAME="Claude (vfs-s3 bot)"
+export GIT_AUTHOR_EMAIL="267615948+vfs-s3-bot@users.noreply.github.com"
+export GIT_COMMITTER_NAME="Claude (vfs-s3 bot)"
+export GIT_COMMITTER_EMAIL="267615948+vfs-s3-bot@users.noreply.github.com"
 ```
 
 **IMPORTANT — Git lock workaround ([claude-code#11005](https://github.com/anthropics/claude-code/issues/11005)):**
 The repo folder is shared with host macOS. Claude Code's `git status` polling creates stale lock files.
 - Use `--no-optional-locks` on all read-only git commands: `git status --no-optional-locks`, `git diff --no-optional-locks`
-- Or use aliases `git s`, `git d` configured by setup.sh
 - Never use bare `git status` or `git diff` — always add `--no-optional-locks`
 
 ## Context
