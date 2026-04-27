@@ -3,8 +3,6 @@ plugins {
 
     id 'maven-publish'
     id 'signing'
-
-    alias(libs.plugins.shadow)
 }
 
 description = 'Amazon S3 driver for VFS (Apache Commons Virtual File System)'
@@ -34,53 +32,6 @@ dependencies {
 tasks.named('integrationTest', Test) {
     useJUnitPlatform {
         includeEngines 'junit-platform-suite'
-    }
-}
-
-// Shadow (shaded) JAR configuration
-shadowJar {
-    minimize()
-    mergeServiceFiles()
-
-    def shadePrefix = 'com.github.vfss3.shaded'
-
-    relocate('com.amazonaws', "${shadePrefix}.com.amazonaws") {
-        exclude 'com.amazonaws.auth.InstanceProfileCredentialsProvider*'
-        exclude 'com.amazonaws.auth.AWSStaticCredentialsProvider'
-        exclude 'com.amazonaws.auth.AWSCredentialsProviderChain'
-        exclude 'com.amazonaws.auth.AWSCredentialsProvider'
-        exclude 'com.amazonaws.auth.DefaultAWSCredentialsProviderChain'
-        exclude 'com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider'
-        exclude 'com.amazonaws.auth.AWSSessionCredentialsProvider'
-        exclude 'com.amazonaws.auth.EnvironmentVariableCredentialsProvider'
-        exclude 'com.amazonaws.auth.SystemPropertiesCredentialsProvider'
-        exclude 'com.amazonaws.auth.EC2ContainerCredentialsProviderWrapper'
-        exclude 'com.amazonaws.auth.PropertiesFileCredentialsProvider'
-        exclude 'com.amazonaws.auth.ContainerCredentialsProvider'
-        exclude 'com.amazonaws.auth.profile.internal.ProfileAssumeRoleCredentialsProvider'
-        exclude 'com.amazonaws.auth.profile.internal.ProfileStaticCredentialsProvider'
-        exclude 'com.amazonaws.auth.profile.internal.securitytoken.STSProfileCredentialsServiceProvider'
-        exclude 'com.amazonaws.auth.profile.ProfileCredentialsProvider'
-        exclude 'com.amazonaws.auth.*CredentialsFetcher'
-        exclude 'com.amazonaws.ClientConfiguration*'
-        exclude 'com.amazonaws.ApacheHttpClientConfig'
-        exclude 'com.amazonaws.DnsResolver'
-        exclude 'com.amazonaws.ProxyAuthenticationMethod'
-    }
-    relocate 'com.fasterxml', "${shadePrefix}.com.fasterxml"
-    relocate 'org.apache.http', "${shadePrefix}.org.apache.http"
-    relocate 'org.apache.commons.codec', "${shadePrefix}.org.apache.commons.codec"
-    relocate 'org.joda', "${shadePrefix}.org.joda"
-    relocate 'software', "${shadePrefix}.software"
-
-    dependencies {
-        include(dependency('com.amazonaws::'))
-        include(dependency('org.apache.httpcomponents::'))
-        include(dependency('commons-codec::'))
-        include(dependency('com.fasterxml.jackson.dataformat::'))
-        include(dependency('com.fasterxml.jackson.core::'))
-        include(dependency('joda-time::'))
-        include(dependency('software.amazon.ion::'))
     }
 }
 

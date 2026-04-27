@@ -1,12 +1,10 @@
 package com.github.vfss3.commonsvfs.parser;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.compile;
 import static org.apache.commons.vfs2.FileName.ROOT_PATH;
 import static org.apache.commons.vfs2.FileType.FOLDER;
 import static org.apache.commons.vfs2.FileType.IMAGINARY;
 
-import com.amazonaws.regions.Regions;
 import com.github.vfss3.commonsvfs.S3FileName;
 import com.github.vfss3.commonsvfs.operations.PlatformFeatures;
 import java.net.URI;
@@ -21,6 +19,7 @@ import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.provider.AbstractFileNameParser;
 import org.apache.commons.vfs2.provider.UriParser;
 import org.apache.commons.vfs2.provider.VfsComponentContext;
+import software.amazon.awssdk.regions.Region;
 
 /**
  * @author Matthias L. Jugel
@@ -391,14 +390,15 @@ public class S3FileNameParser extends AbstractFileNameParser {
     }
 
     /**
-     * Check region for correct name.
-     *
+     * Check region for correct name. The SDK's {@link Region#regions()} list is the canonical
+     * set of regions baked into the AWS SDK; an unknown name almost certainly indicates a typo
+     * (newly-released AWS regions may not yet be in this list — bumping the SDK version picks
+     * them up).
      */
     private void checkRegion(String regionName) throws FileSystemException {
         if ((regionName != null) && (regionName.trim().length() > 0)) {
-            try {
-                requireNonNull(Regions.fromName(regionName));
-            } catch (IllegalArgumentException e) {
+            boolean known = Region.regions().stream().anyMatch(r -> r.id().equals(regionName));
+            if (!known) {
                 throw new FileSystemException("Not able to parse region [" + regionName + "]");
             }
         }

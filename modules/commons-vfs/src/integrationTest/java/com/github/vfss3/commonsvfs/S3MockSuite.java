@@ -1,12 +1,12 @@
 package com.github.vfss3.commonsvfs;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import java.net.URI;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * Runs every test in {@code com.github.vfss3.commonsvfs.tests} against Adobe S3Mock
@@ -28,7 +28,7 @@ public class S3MockSuite {
 
         // S3Mock accepts any credentials.
         S3FileSystemOptions options = new S3FileSystemOptions();
-        options.setCredentialsProvider(new AWSStaticCredentialsProvider(new BasicAWSCredentials("test", "test")));
+        options.setCredentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test")));
         options.setUseHttps(false);
         options.setDisableChunkedEncoding(true);
 

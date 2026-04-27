@@ -1,7 +1,5 @@
 package com.github.vfss3.commonsvfs;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import java.net.URI;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -11,6 +9,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * Runs every test in {@code com.github.vfss3.commonsvfs.tests} against a freshly-started
@@ -70,7 +70,8 @@ public class GarageSuite {
         exec("/garage", "key", "allow", "--create-bucket", accessKey);
 
         S3FileSystemOptions options = new S3FileSystemOptions();
-        options.setCredentialsProvider(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)));
+        options.setCredentialsProvider(
+                StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)));
         options.setUseHttps(false);
         options.setDisableChunkedEncoding(true);
 

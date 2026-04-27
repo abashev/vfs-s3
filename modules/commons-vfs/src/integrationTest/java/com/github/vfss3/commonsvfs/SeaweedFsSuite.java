@@ -1,12 +1,12 @@
 package com.github.vfss3.commonsvfs;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import java.net.URI;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * Runs every test in {@code com.github.vfss3.commonsvfs.tests} against a freshly-started
@@ -31,7 +31,7 @@ public class SeaweedFsSuite {
 
         // SeaweedFS S3 API runs anonymous by default — any access key is accepted.
         S3FileSystemOptions options = new S3FileSystemOptions();
-        options.setCredentialsProvider(new AWSStaticCredentialsProvider(new BasicAWSCredentials("any", "any")));
+        options.setCredentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("any", "any")));
         options.setUseHttps(false);
         options.setDisableChunkedEncoding(true);
 

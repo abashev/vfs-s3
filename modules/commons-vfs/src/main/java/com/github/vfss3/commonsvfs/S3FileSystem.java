@@ -1,13 +1,7 @@
 package com.github.vfss3.commonsvfs;
 
-import static com.amazonaws.services.s3.internal.Constants.*;
 import static java.util.Optional.ofNullable;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.CreateBucketRequest;
-import com.amazonaws.services.s3.transfer.TransferManager;
 import java.util.Collection;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -15,6 +9,12 @@ import org.apache.commons.vfs2.Capability;
 import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 /**
  * An S3 file system.
@@ -24,17 +24,19 @@ import org.apache.commons.vfs2.FileSystemException;
  * @author Moritz Siuts
  */
 public class S3FileSystem extends AbstractFileSystem {
-    private final Log log = LogFactory.getLog(getClass());
-    private final Bucket bucket;
-    private AmazonS3 service;
-    private TransferManager transferManager;
+    private static final int BUCKET_REDIRECT_STATUS_CODE = 301;
+    private static final int BUCKET_ACCESS_FORBIDDEN_STATUS_CODE = 403;
 
-    S3FileSystem(S3FileName rootName, S3FileSystemOptions options, TransferManager transferManager)
+    private final Log log = LogFactory.getLog(getClass());
+    private S3Client service;
+    private S3Presigner presigner;
+
+    S3FileSystem(S3FileName rootName, S3FileSystemOptions options, S3Client service, S3Presigner presigner)
             throws FileSystemException {
         super(rootName, null, options.toFileSystemOptions());
 
-        this.transferManager = transferManager;
-        this.service = transferManager.getAmazonS3Client();
+        this.service = service;
+        this.presigner = presigner;
 
         if (log.isInfoEnabled()) {
             log.info("Init new S3 FileSystem [root=" + rootName + ",opts=" + options + "]");
@@ -42,25 +44,22 @@ public class S3FileSystem extends AbstractFileSystem {
 
         try {
             if (!doesBucketExist(rootName.getBucket()) && options.isCreateBucket()) {
-                CreateBucketRequest createBucketRequest = new CreateBucketRequest(rootName.getBucket());
+                CreateBucketRequest.Builder builder =
+                        CreateBucketRequest.builder().bucket(rootName.getBucket());
 
-                ofNullable(options.getObjectOwnership()).ifPresent(createBucketRequest::setObjectOwnership);
-                ofNullable(options.getCannedAcl()).ifPresent(createBucketRequest::setCannedAcl);
+                ofNullable(options.getObjectOwnership()).ifPresent(builder::objectOwnership);
+                ofNullable(options.getCannedAcl()).ifPresent(builder::acl);
 
-                // Send the request to Amazon S3
-                bucket = service.createBucket(createBucketRequest);
+                service.createBucket(builder.build());
 
                 if (log.isInfoEnabled()) {
-                    log.info("Created new bucket [" + bucket + "]");
+                    log.info("Created new bucket [" + rootName.getBucket() + "]");
                 }
-            } else {
-                bucket = new Bucket(rootName.getBucket());
             }
-        } catch (AmazonServiceException e) {
-            String s3message = e.getMessage();
-
-            if (s3message != null) {
-                throw new FileSystemException(s3message, e);
+        } catch (AwsServiceException e) {
+            String message = e.getMessage();
+            if (message != null) {
+                throw new FileSystemException(message, e);
             } else {
                 throw new FileSystemException(e);
             }
@@ -72,57 +71,49 @@ public class S3FileSystem extends AbstractFileSystem {
         caps.addAll(S3FileProvider.capabilities);
     }
 
-    AmazonS3 getService() {
+    S3Client getService() {
         return service;
     }
 
-    TransferManager getTransferManager() {
-        return transferManager;
+    S3Presigner getPresigner() {
+        return presigner;
     }
 
     @Override
     protected FileObject createFile(FileName fileName) throws Exception {
-        S3FileObject s3FileObject = new S3FileObject((S3FileName) fileName, this);
-
-        return s3FileObject;
+        return new S3FileObject((S3FileName) fileName, this);
     }
 
     @Override
     protected void doCloseCommunicationLink() {
-        if (transferManager != null) {
-            transferManager.shutdownNow(true);
-
+        if (presigner != null) {
+            presigner.close();
+            presigner = null;
+        }
+        if (service != null) {
+            service.close();
             service = null;
-            transferManager = null;
         }
     }
 
-    /**
-     * Implementation from AWS SDK but with exception on AccessForbidden status.
-     *
-     * @param bucketName
-     * @return
-     * @throws FileSystemException
-     */
     private boolean doesBucketExist(String bucketName) throws FileSystemException {
         try {
-            return service.doesBucketExistV2(bucketName);
-        } catch (AmazonServiceException e) {
-            if (e.getStatusCode() == BUCKET_ACCESS_FORBIDDEN_STATUS_CODE) {
+            service.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
+            return true;
+        } catch (NoSuchBucketException e) {
+            return false;
+        } catch (AwsServiceException e) {
+            int status = e.statusCode();
+            if (status == BUCKET_ACCESS_FORBIDDEN_STATUS_CODE) {
                 throw new FileSystemException("vfs.provider.s3/connection-forbidden.error", bucketName, e);
             }
-
-            // A redirect error or a forbidden error means the bucket exists. So
-            // returning true.
-            if ((e.getStatusCode() == BUCKET_REDIRECT_STATUS_CODE)) {
+            // A redirect status means the bucket exists in another region — treat as exists.
+            if (status == BUCKET_REDIRECT_STATUS_CODE) {
                 return true;
             }
-
-            if (e.getStatusCode() == NO_SUCH_BUCKET_STATUS_CODE) {
+            if (status == 404) {
                 return false;
             }
-
-            // Unknown exception
             throw new FileSystemException(e);
         }
     }

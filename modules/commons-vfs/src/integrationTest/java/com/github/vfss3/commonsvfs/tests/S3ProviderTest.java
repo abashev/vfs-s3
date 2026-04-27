@@ -10,7 +10,6 @@ import static org.apache.commons.vfs2.Selectors.SELECT_SELF;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.github.vfss3.commonsvfs.S3IntegrationContext;
 import com.github.vfss3.commonsvfs.operations.IMD5HashGetter;
 import com.github.vfss3.commonsvfs.operations.IPublicUrlsGetter;
@@ -170,7 +169,8 @@ class S3ProviderTest {
 
         assertTrue(bigFile.exists(), "Big file should exists");
 
-        assertTrue(bigFile.getContent().getSize() > new TransferManagerConfiguration().getMultipartUploadThreshold());
+        // 16 MB — historical multipart-upload threshold of AWS SDK v1's TransferManager.
+        assertTrue(bigFile.getContent().getSize() > 16L * 1024 * 1024);
 
         dest.copyFrom(bigFile, SELECT_SELF);
 

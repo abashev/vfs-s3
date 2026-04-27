@@ -1,13 +1,13 @@
 package com.github.vfss3.commonsvfs;
 
-import static com.amazonaws.services.s3.model.ownership.ObjectOwnership.ObjectWriter;
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.services.s3.model.ObjectOwnership;
 
 /**
  * Runs every test in {@code com.github.vfss3.commonsvfs.tests} against a freshly-started
@@ -31,11 +31,11 @@ public class LocalStackSuite {
         container.start();
 
         S3FileSystemOptions options = new S3FileSystemOptions();
-        options.setCredentialsProvider(new AWSStaticCredentialsProvider(
-                new BasicAWSCredentials(container.getAccessKey(), container.getSecretKey())));
+        options.setCredentialsProvider(StaticCredentialsProvider.create(
+                AwsBasicCredentials.create(container.getAccessKey(), container.getSecretKey())));
         options.setUseHttps(false);
         options.setDisableChunkedEncoding(true);
-        options.setObjectOwnership(ObjectWriter);
+        options.setObjectOwnership(ObjectOwnership.OBJECT_WRITER);
 
         S3IntegrationContext.initialize(container.getEndpointOverride(S3), options);
     }

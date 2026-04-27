@@ -1,10 +1,10 @@
 package com.github.vfss3.commonsvfs;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.ownership.ObjectOwnership;
 import org.apache.commons.vfs2.FileSystemOptions;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.services.s3.model.BucketCannedACL;
+import software.amazon.awssdk.services.s3.model.ObjectOwnership;
 
 /**
  * Wrapper around FileSystemOptions for storing and retrieving various options. It can't be immutable because it use
@@ -47,140 +47,77 @@ public class S3FileSystemOptions implements Cloneable {
         }
     }
 
-    /**
-     * @return true if server-side encryption is being used.
-     * @see #setServerSideEncryption(boolean)
-     */
     public boolean getServerSideEncryption() {
         return S3FileSystemConfigBuilder.getInstance().getServerSideEncryption(options);
     }
 
-    /**
-     * use server-side encryption.
-     *
-     * @param serverSideEncryption true if server-side encryption should be used.
-     */
     public void setServerSideEncryption(boolean serverSideEncryption) {
         S3FileSystemConfigBuilder.getInstance().setServerSideEncryption(options, serverSideEncryption);
     }
 
     /**
-     * @return The AWS ClientConfiguration object to use when creating the
-     * connection.  If none has been set, a default ClientConfiguration is returend,
-     * with the following differences:
-     *   1. The maxErrorRetry is 8 instead of the AWS default (3).  This
-     *      is generally a better setting to use when operating in a production
-     *      environment and means approximately up to 2 minutes of retries for
-     *      failed operations.
+     * Override the default {@link ClientOverrideConfiguration} (retry strategy, timeouts, …) used when building the
+     * S3 client.
      */
-    public ClientConfiguration getClientConfiguration() {
-        return S3FileSystemConfigBuilder.getInstance().getClientConfiguration(options);
+    public ClientOverrideConfiguration getClientOverrideConfiguration() {
+        return S3FileSystemConfigBuilder.getInstance().getClientOverrideConfiguration(options);
     }
 
-    /**
-     * @param clientConfiguration The AWS ClientConfiguration object to
-     *                            use when creating the connection.
-     */
-    public void setClientConfiguration(ClientConfiguration clientConfiguration) {
-        S3FileSystemConfigBuilder.getInstance().setClientConfiguration(options, clientConfiguration);
+    public void setClientOverrideConfiguration(ClientOverrideConfiguration configuration) {
+        S3FileSystemConfigBuilder.getInstance().setClientOverrideConfiguration(options, configuration);
     }
 
-    /**
-     * Get
-     *
-     * @return true if per-file locking should be used.
-     */
     public boolean isDisableChunkedEncoding() {
         return S3FileSystemConfigBuilder.getInstance().getDisableChunkedEncoding(options);
     }
 
-    /**
-     * Set option to disable chunked encoding
-     *
-     * @param disableChunkedEncoding
-     */
     public void setDisableChunkedEncoding(boolean disableChunkedEncoding) {
         S3FileSystemConfigBuilder.getInstance().setDisableChunkedEncoding(options, disableChunkedEncoding);
     }
 
-    /**
-     * Use https for endpoint calls. true by default
-     *
-     * @return true if use https for all communications
-     */
     public boolean isUseHttps() {
         return S3FileSystemConfigBuilder.getInstance().isUseHttps(options);
     }
 
-    /**
-     * Use https for endpoint calls. true by default
-     */
     public void setUseHttps(boolean useHttps) {
         S3FileSystemConfigBuilder.getInstance().setUseHttps(options, useHttps);
     }
 
-    /**
-     * Create bucket in case of missed one.
-     */
     public boolean isCreateBucket() {
         return S3FileSystemConfigBuilder.getInstance().isCreateBucket(options);
     }
 
-    /**
-     * Create bucket in case of missed one.
-     */
     public void setCreateBucket(boolean createBucket) {
         S3FileSystemConfigBuilder.getInstance().setCreateBucket(options, createBucket);
     }
 
     /**
-     * Get credentials provider for a file system - DefaultAWSCredentialsProviderChain by default
+     * Get credentials provider for a file system - {@code DefaultCredentialsProvider} by default.
      */
-    public AWSCredentialsProvider getCredentialsProvider() {
+    public AwsCredentialsProvider getCredentialsProvider() {
         return S3FileSystemConfigBuilder.getInstance().getCredentialsProvider(options);
     }
 
-    /**
-     * Set credentials provider for a file system
-     */
-    public void setCredentialsProvider(AWSCredentialsProvider provider) {
+    public void setCredentialsProvider(AwsCredentialsProvider provider) {
         S3FileSystemConfigBuilder.getInstance().setCredentialsProvider(options, provider);
     }
 
-    /**
-     * Object ownership for new buckets.
-     */
     public ObjectOwnership getObjectOwnership() {
         return S3FileSystemConfigBuilder.getInstance().getObjectOwnership(options);
     }
 
-    /**
-     * Set parameter 'Object ownership' for new buckets.
-     * @param ownership
-     */
     public void setObjectOwnership(ObjectOwnership ownership) {
         S3FileSystemConfigBuilder.getInstance().setObjectOwnership(options, ownership);
     }
 
-    /**
-     * CannedAccessControlList for new buckets.
-     */
-    public CannedAccessControlList getCannedAcl() {
+    public BucketCannedACL getCannedAcl() {
         return S3FileSystemConfigBuilder.getInstance().getCannedAcl(options);
     }
 
-    /**
-     * Set CannedAccessControlList for new buckets.
-     */
-    public void setCannedAcl(CannedAccessControlList acl) {
+    public void setCannedAcl(BucketCannedACL acl) {
         S3FileSystemConfigBuilder.getInstance().setCannedAcl(options, acl);
     }
 
-    /**
-     * Returns clone of options object for some legacy things.
-     *
-     * @return
-     */
     public FileSystemOptions toFileSystemOptions() {
         return (FileSystemOptions) options.clone();
     }
