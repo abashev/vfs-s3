@@ -18,6 +18,7 @@ spring7 = "7.0.6"
 commons-vfs2 = { module = "org.apache.commons:commons-vfs2", version.ref = "commons-vfs2" }
 aws-sdk-s3 = { module = "com.amazonaws:aws-java-sdk-s3", version.ref = "aws-sdk-s3" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
+junit-platform-suite = { module = "org.junit.platform:junit-platform-suite", version.ref = "junit-jupiter" }
 commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
 commons-httpclient = { module = "commons-httpclient:commons-httpclient", version = "3.1" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }

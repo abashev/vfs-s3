@@ -14,6 +14,7 @@ dependencies {
     api libs.aws.sdk.s3
 
     testImplementation libs.junit.jupiter
+    testImplementation libs.junit.platform.suite
     testImplementation libs.commons.io
     testImplementation libs.commons.httpclient
     testImplementation libs.logback.classic
@@ -22,6 +23,18 @@ dependencies {
     testImplementation libs.testcontainers.core
     testImplementation libs.testcontainers.localstack
     testImplementation libs.testcontainers.junit.jupiter
+}
+
+// Integration tests are organised as a set of @Suite classes (LocalStackTestSuite,
+// MinioTestSuite, …) — each starts its own container in @BeforeSuite, then runs the
+// shared *Test classes in com.github.vfss3.commonsvfs.tests. Restrict top-level
+// discovery to the suite engine so the test classes aren't picked up directly by
+// junit-jupiter (without a container) on top of running inside each suite — see
+// https://junit.org/junit5/docs/current/user-guide/#junit-platform-suite-engine
+tasks.named('integrationTest', Test) {
+    useJUnitPlatform {
+        includeEngines 'junit-platform-suite'
+    }
 }
 
 // Shadow (shaded) JAR configuration

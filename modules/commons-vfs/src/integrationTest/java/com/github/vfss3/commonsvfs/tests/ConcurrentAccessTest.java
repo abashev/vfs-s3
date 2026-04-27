@@ -1,8 +1,8 @@
-package com.github.vfss3.commonsvfs;
+package com.github.vfss3.commonsvfs.tests;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.vfss3.commonsvfs.support.BaseIntegrationTest;
+import com.github.vfss3.commonsvfs.S3IntegrationContext;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
@@ -15,20 +15,28 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.Selectors;
+import org.apache.commons.vfs2.VFS;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
- */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ConcurrentAccessIT extends BaseIntegrationTest {
+class ConcurrentAccessTest {
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
+    private FileObject root;
+
     @BeforeAll
     void setUp() throws IOException {
+        root = VFS.getManager().resolveFile(S3IntegrationContext.rootUrl(), S3IntegrationContext.options());
+        if (root.exists()) {
+            root.delete(Selectors.EXCLUDE_SELF);
+        }
         root.resolveFile("/concurrent/").createFolder();
         root.resolveFile("/read-deadlock/").createFolder();
         root.resolveFile("/read-deadlock/file1").createFile();
@@ -38,8 +46,6 @@ class ConcurrentAccessIT extends BaseIntegrationTest {
     @RepeatedTest(200)
     @Execution(ExecutionMode.CONCURRENT)
     void createFileOk() throws FileSystemException {
-        // was running into too many random collisions with random numbers in the range of 0-999
-        // so added thread id into the mix
         String fileName = "folder-" + Thread.currentThread().getId() + "-" + (new Random()).nextInt(1000) + "/";
 
         FileObject parent = root.resolveFile("/concurrent/");
@@ -85,7 +91,6 @@ class ConcurrentAccessIT extends BaseIntegrationTest {
         final long interval =
                 Integer.parseUnsignedInt(System.getProperty("ConcurrentAccessTest.deadlockCheckInterval", "1000"));
 
-        // create a bunch of files
         for (int i = 0; i < childCount; i++) {
             String fileName = "deadlock-" + i;
             FileObject file = parent.resolveFile(fileName);
@@ -94,7 +99,6 @@ class ConcurrentAccessIT extends BaseIntegrationTest {
             assertTrue(file.exists());
         }
 
-        // create threads to continuously do getParent and another one to list files
         final AtomicInteger wrongResults = new AtomicInteger(0);
         final AtomicBoolean stopFlag = new AtomicBoolean(false);
 
@@ -178,11 +182,8 @@ class ConcurrentAccessIT extends BaseIntegrationTest {
                         System.err.printf("\n\n");
                     }
                     for (Thread t : threads) {
-                        // at least make an attempt at killing the deadlocked threads
                         t.stop();
                     }
-                    // clear the cache because there are locked file objects in there and may block when we try to
-                    // delete them
                     parent.getFileSystem()
                             .getFileSystemManager()
                             .getFilesCache()
