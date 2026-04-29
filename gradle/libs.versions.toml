@@ -1,5 +1,5 @@
 [versions]
-commons-vfs2 = "2.9.0"
+commons-vfs2 = "2.10.0"
 aws-sdk-s3 = "1.12.797"
 junit-jupiter = "6.0.3"
 commons-io = "2.22.0"
