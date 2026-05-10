@@ -1,5 +1,7 @@
-package com.github.vfss3.commonsvfs;
+package com.github.vfss3.commonsvfs.local;
 
+import com.github.vfss3.commonsvfs.S3FileSystemOptions;
+import com.github.vfss3.commonsvfs.S3IntegrationContext;
 import java.net.URI;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.GenericContainer;
@@ -10,24 +12,26 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * Runs every test in {@code com.github.vfss3.commonsvfs.tests} against a freshly-started
- * MiniStack container — a free MIT-licensed drop-in replacement for LocalStack
- * (https://github.com/Nahuel990/ministack).
+ * RustFS container.
  */
 @Suite
-@SuiteDisplayName("MiniStack integration tests")
+@SuiteDisplayName("RustFS integration tests")
 @SelectPackages("com.github.vfss3.commonsvfs.tests")
-public class MiniStackSuite {
-    private static final DockerImageName IMAGE = DockerImageName.parse("ministackorg/ministack:1.3");
-    private static final int API_PORT = 4566;
-    // MiniStack accepts the same default credentials LocalStack used.
-    private static final String ACCESS_KEY = "test";
-    private static final String SECRET_KEY = "test";
+public class RustFsSuite {
+    private static final DockerImageName IMAGE = DockerImageName.parse("rustfs/rustfs:1.0.0-alpha.99");
+    private static final int API_PORT = 9000;
+    private static final String ACCESS_KEY = "rustfsadmin";
+    private static final String SECRET_KEY = "rustfsadmin";
 
     private static GenericContainer<?> container;
 
     @BeforeSuite
     static void startContainer() {
-        container = new GenericContainer<>(IMAGE).withExposedPorts(API_PORT).waitingFor(Wait.forListeningPort());
+        container = new GenericContainer<>(IMAGE)
+                .withEnv("RUSTFS_ROOT_USER", ACCESS_KEY)
+                .withEnv("RUSTFS_ROOT_PASSWORD", SECRET_KEY)
+                .withExposedPorts(API_PORT)
+                .waitingFor(Wait.forListeningPort());
         container.start();
 
         S3FileSystemOptions options = new S3FileSystemOptions();

@@ -1,7 +1,9 @@
-package com.github.vfss3.commonsvfs;
+package com.github.vfss3.commonsvfs.local;
 
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 
+import com.github.vfss3.commonsvfs.S3FileSystemOptions;
+import com.github.vfss3.commonsvfs.S3IntegrationContext;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;

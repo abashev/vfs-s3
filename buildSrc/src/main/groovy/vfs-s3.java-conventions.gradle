@@ -13,42 +13,43 @@ repositories {
     mavenCentral()
 }
 
+// JVM Test Suites (Gradle 7.3+) — declarative test source sets that auto-wire
+// source folders, dependencies, configurations, and Test tasks. `implementation
+// project()` brings the main source set's classes onto the suite's classpath, so
+// no explicit `compileClasspath +=` plumbing is needed.
 testing {
     suites {
         test {
             useJUnitJupiter()
         }
+        integrationTest(JvmTestSuite) {
+            useJUnitJupiter()
+            dependencies {
+                implementation project()
+            }
+            targets {
+                all {
+                    testTask.configure {
+                        shouldRunAfter test
+                    }
+                }
+            }
+        }
     }
+}
+
+// Share unit-test dependencies (logback, assertj, commons-io, …) with integration
+// tests. Integration-only deps (testcontainers, junit-platform-suite) are added
+// via `integrationTestImplementation` directly in the module's build.gradle.
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
-}
-
-// Integration test source set
-sourceSets {
-    integrationTest {
-        java.srcDir 'src/integrationTest/java'
-        resources.srcDir 'src/integrationTest/resources'
-        compileClasspath += sourceSets.main.output + sourceSets.test.output
-        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
-    }
-}
-
-configurations {
-    integrationTestImplementation.extendsFrom testImplementation
-    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
-}
-
-tasks.register('integrationTest', Test) {
-    group = 'verification'
-    description = 'Runs integration tests.'
-    testClassesDirs = sourceSets.integrationTest.output.classesDirs
-    classpath = sourceSets.integrationTest.runtimeClasspath
-    useJUnitPlatform()
-    shouldRunAfter(tasks.test)
 }
 
 // JaCoCo — aggregate coverage from both unit and integration tests

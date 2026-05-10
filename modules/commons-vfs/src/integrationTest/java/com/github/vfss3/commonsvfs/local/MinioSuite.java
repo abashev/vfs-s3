@@ -1,5 +1,7 @@
-package com.github.vfss3.commonsvfs;
+package com.github.vfss3.commonsvfs.local;
 
+import com.github.vfss3.commonsvfs.S3FileSystemOptions;
+import com.github.vfss3.commonsvfs.S3IntegrationContext;
 import java.net.URI;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.GenericContainer;
@@ -10,26 +12,30 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * Runs every test in {@code com.github.vfss3.commonsvfs.tests} against a freshly-started
- * RustFS container.
+ * MinIO container. Uses {@link GenericContainer} because the bundled testcontainers
+ * version pre-dates the dedicated {@code MinIOContainer} module — once we bump
+ * testcontainers we can swap to that.
  */
 @Suite
-@SuiteDisplayName("RustFS integration tests")
+@SuiteDisplayName("MinIO integration tests")
 @SelectPackages("com.github.vfss3.commonsvfs.tests")
-public class RustFsSuite {
-    private static final DockerImageName IMAGE = DockerImageName.parse("rustfs/rustfs:1.0.0-alpha.99");
+public class MinioSuite {
+    private static final DockerImageName MINIO_IMAGE =
+            DockerImageName.parse("minio/minio:RELEASE.2025-09-07T16-13-09Z");
+    private static final String ACCESS_KEY = "minioadmin";
+    private static final String SECRET_KEY = "minioadmin";
     private static final int API_PORT = 9000;
-    private static final String ACCESS_KEY = "rustfsadmin";
-    private static final String SECRET_KEY = "rustfsadmin";
 
     private static GenericContainer<?> container;
 
     @BeforeSuite
     static void startContainer() {
-        container = new GenericContainer<>(IMAGE)
-                .withEnv("RUSTFS_ROOT_USER", ACCESS_KEY)
-                .withEnv("RUSTFS_ROOT_PASSWORD", SECRET_KEY)
+        container = new GenericContainer<>(MINIO_IMAGE)
+                .withCommand("server", "/data")
+                .withEnv("MINIO_ROOT_USER", ACCESS_KEY)
+                .withEnv("MINIO_ROOT_PASSWORD", SECRET_KEY)
                 .withExposedPorts(API_PORT)
-                .waitingFor(Wait.forListeningPort());
+                .waitingFor(Wait.forHttp("/minio/health/live").forPort(API_PORT));
         container.start();
 
         S3FileSystemOptions options = new S3FileSystemOptions();

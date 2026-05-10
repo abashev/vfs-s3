@@ -1,5 +1,7 @@
-package com.github.vfss3.commonsvfs;
+package com.github.vfss3.commonsvfs.local;
 
+import com.github.vfss3.commonsvfs.S3FileSystemOptions;
+import com.github.vfss3.commonsvfs.S3IntegrationContext;
 import java.net.URI;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.GenericContainer;

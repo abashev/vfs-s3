@@ -1,5 +1,7 @@
-package com.github.vfss3.commonsvfs;
+package com.github.vfss3.commonsvfs.local;
 
+import com.github.vfss3.commonsvfs.S3FileSystemOptions;
+import com.github.vfss3.commonsvfs.S3IntegrationContext;
 import java.net.URI;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.GenericContainer;
@@ -10,32 +12,33 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * Runs every test in {@code com.github.vfss3.commonsvfs.tests} against a freshly-started
- * SeaweedFS container in S3 gateway mode.
+ * MiniStack container — a free MIT-licensed drop-in replacement for LocalStack
+ * (https://github.com/Nahuel990/ministack).
  */
 @Suite
-@SuiteDisplayName("SeaweedFS integration tests")
+@SuiteDisplayName("MiniStack integration tests")
 @SelectPackages("com.github.vfss3.commonsvfs.tests")
-public class SeaweedFsSuite {
-    private static final DockerImageName IMAGE = DockerImageName.parse("chrislusf/seaweedfs:4.22");
-    private static final int S3_PORT = 8333;
+public class MiniStackSuite {
+    private static final DockerImageName IMAGE = DockerImageName.parse("ministackorg/ministack:1.3");
+    private static final int API_PORT = 4566;
+    // MiniStack accepts the same default credentials LocalStack used.
+    private static final String ACCESS_KEY = "test";
+    private static final String SECRET_KEY = "test";
 
     private static GenericContainer<?> container;
 
     @BeforeSuite
     static void startContainer() {
-        container = new GenericContainer<>(IMAGE)
-                .withCommand("server", "-s3", "-dir=/data")
-                .withExposedPorts(S3_PORT)
-                .waitingFor(Wait.forListeningPort());
+        container = new GenericContainer<>(IMAGE).withExposedPorts(API_PORT).waitingFor(Wait.forListeningPort());
         container.start();
 
-        // SeaweedFS S3 API runs anonymous by default — any access key is accepted.
         S3FileSystemOptions options = new S3FileSystemOptions();
-        options.setCredentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("any", "any")));
+        options.setCredentialsProvider(
+                StaticCredentialsProvider.create(AwsBasicCredentials.create(ACCESS_KEY, SECRET_KEY)));
         options.setUseHttps(false);
         options.setDisableChunkedEncoding(true);
 
-        URI endpoint = URI.create("http://" + container.getHost() + ":" + container.getMappedPort(S3_PORT));
+        URI endpoint = URI.create("http://" + container.getHost() + ":" + container.getMappedPort(API_PORT));
         S3IntegrationContext.initialize(endpoint, options);
     }
 

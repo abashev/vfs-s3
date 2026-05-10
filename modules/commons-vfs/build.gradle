@@ -23,16 +23,32 @@ dependencies {
     testImplementation libs.testcontainers.junit.jupiter
 }
 
-// Integration tests are organised as a set of @Suite classes (LocalStackTestSuite,
-// MinioTestSuite, …) — each starts its own container in @BeforeSuite, then runs the
-// shared *Test classes in com.github.vfss3.commonsvfs.tests. Restrict top-level
-// discovery to the suite engine so the test classes aren't picked up directly by
-// junit-jupiter (without a container) on top of running inside each suite — see
+// Integration tests are organised as a set of @Suite classes under
+// com.github.vfss3.commonsvfs.{local,remote} — one per backend. Each suite starts its
+// own container (or talks to a real service) in @BeforeSuite and runs the shared
+// *Test classes in com.github.vfss3.commonsvfs.tests against it.
+//
+// includeEngines 'junit-platform-suite' restricts top-level discovery to the suite
+// engine so the inner *Test classes aren't picked up directly by junit-jupiter
+// (without a container) on top of running inside each suite — see
 // https://junit.org/junit5/docs/current/user-guide/#junit-platform-suite-engine
+//
+// Selection from the CLI / CI uses --tests with the full FQCN of one suite class.
+// Wildcard patterns like "*.SuiteName" make Gradle keep all other @Suite classes in
+// the test plan (where they then fail with NoTestsDiscoveredException), but a
+// fully-qualified pattern excludes the others at discovery time:
+//
+//   ./gradlew :modules:commons-vfs:integrationTest \
+//       --tests "com.github.vfss3.commonsvfs.local.S3MockSuite"
+//
+//   BASE_URL=… AWS_ACCESS_KEY_ID=… AWS_SECRET_KEY=… \
+//     ./gradlew :modules:commons-vfs:integrationTest \
+//       --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite"
+//
+// Without --tests, every suite on the classpath runs; that's fine for the umbrella
+// run but heavy — CI invokes one suite per matrix job.
 tasks.named('integrationTest', Test) {
-    useJUnitPlatform {
-        includeEngines 'junit-platform-suite'
-    }
+    useJUnitPlatform { includeEngines 'junit-platform-suite' }
 }
 
 // Maven publishing
