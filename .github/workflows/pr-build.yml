@@ -27,12 +27,11 @@ jobs:
         run: ./gradlew check jacocoTestReport -x integrationTest
 
       - name: Publish Test Report
-        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        uses: mikepenz/action-junit-report@bccf2e31636835cf0874589931c4116687171386 # v6.4.0
         if: ${{ !cancelled() }}
         with:
-          name: Unit test results
-          path: '**/build/test-results/test/*.xml'
-          reporter: java-junit
+          check_name: Unit test results
+          report_paths: '**/build/test-results/test/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Jacoco Report
@@ -52,6 +51,7 @@ jobs:
 
   local-suites:
     name: Local suite — ${{ matrix.suite }}
+    needs: build
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -80,10 +80,9 @@ jobs:
         run: ./gradlew :modules:commons-vfs:integrationTest --tests "com.github.vfss3.commonsvfs.local.${{ matrix.suite }}"
 
       - name: Publish Test Report
-        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2 # v3.0.0
+        uses: mikepenz/action-junit-report@bccf2e31636835cf0874589931c4116687171386 # v6.4.0
         if: ${{ !cancelled() }}
         with:
-          name: ${{ matrix.suite }}
-          path: '**/build/test-results/integrationTest/*.xml'
-          reporter: java-junit
+          check_name: ${{ matrix.suite }}
+          report_paths: '**/build/test-results/integrationTest/*.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
