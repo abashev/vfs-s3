@@ -96,7 +96,7 @@ jobs:
         environment: [ AWS-1, YANDEX-1, YANDEX-2 ]
     environment: ${{ matrix.environment }}
     env:
-      BASE_URL: ${{ secrets.BASE_URL }}
+      BASE_URL: ${{ vars.BASE_URL }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
     steps:
