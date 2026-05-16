@@ -30,9 +30,9 @@ jobs:
         uses: mikepenz/action-junit-report@bccf2e31636835cf0874589931c4116687171386 # v6.4.0
         if: ${{ !cancelled() }}
         with:
-          check_name: Unit test results
           report_paths: '**/build/test-results/test/*.xml'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          annotate_only: true
+          job_summary: true
 
       - name: Jacoco Report
         uses: madrapps/jacoco-report@50d3aff4548aa991e6753342d9ba291084e63848 # v1.7.2
@@ -83,6 +83,6 @@ jobs:
         uses: mikepenz/action-junit-report@bccf2e31636835cf0874589931c4116687171386 # v6.4.0
         if: ${{ !cancelled() }}
         with:
-          check_name: ${{ matrix.suite }}
           report_paths: '**/build/test-results/integrationTest/*.xml'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          annotate_only: true
+          job_summary: true
