@@ -4,9 +4,11 @@ import com.github.vfss3.commonsvfs.operations.PlatformFeatures;
 import java.util.Objects;
 
 /**
+ * Immutable platform feature flags for a concrete S3-compatible backend.
+ *
  * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */
-class PlatformFeaturesImpl implements PlatformFeatures {
+public class PlatformFeaturesImpl implements PlatformFeatures {
     private final boolean defaultAllowForOwner;
     private final boolean allowDenyForOwner;
     private final boolean supportsServerSideEncryption;
@@ -59,16 +61,22 @@ class PlatformFeaturesImpl implements PlatformFeatures {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        PlatformFeaturesImpl that = (PlatformFeaturesImpl) o;
+        if (!(o instanceof PlatformFeaturesImpl that)) return false;
         return defaultAllowForOwner == that.defaultAllowForOwner
                 && allowDenyForOwner == that.allowDenyForOwner
-                && supportsServerSideEncryption == that.supportsServerSideEncryption;
+                && supportsServerSideEncryption == that.supportsServerSideEncryption
+                && supportsAuthorizedGroup == that.supportsAuthorizedGroup
+                && supportsAcl == that.supportsAcl;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(defaultAllowForOwner, allowDenyForOwner, supportsServerSideEncryption);
+        return Objects.hash(
+                defaultAllowForOwner,
+                allowDenyForOwner,
+                supportsServerSideEncryption,
+                supportsAuthorizedGroup,
+                supportsAcl);
     }
 
     @Override
@@ -77,6 +85,7 @@ class PlatformFeaturesImpl implements PlatformFeatures {
                 + defaultAllowForOwner + ", allowDenyForOwner="
                 + allowDenyForOwner + ", supportsServerSideEncryption="
                 + supportsServerSideEncryption + ", supportsAuthorizedGroup="
-                + supportsAuthorizedGroup + '}';
+                + supportsAuthorizedGroup + ", supportsAcl="
+                + supportsAcl + '}';
     }
 }

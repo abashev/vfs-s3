@@ -1,0 +1,121 @@
+name: Main branch build
+
+on:
+  push:
+    branches: [ '17.0' ]
+
+permissions:
+  checks: write
+  contents: read
+
+jobs:
+  build:
+    name: Compile + unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+        with:
+          java-version: 17
+          distribution: 'liberica'
+          cache: 'gradle'
+
+      - name: Build + unit tests + coverage
+        run: ./gradlew check jacocoTestReport -x integrationTest
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@bccf2e31636835cf0874589931c4116687171386 # v6.4.0
+        if: ${{ !cancelled() }}
+        with:
+          check_name: Unit test results
+          report_paths: '**/build/test-results/test/*.xml'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Jacoco Report
+        uses: madrapps/jacoco-report@50d3aff4548aa991e6753342d9ba291084e63848 # v1.7.2
+        if: ${{ !cancelled() }}
+        with:
+          paths: >-
+            ${{ github.workspace }}/modules/commons-vfs/build/reports/jacoco/test/jacocoTestReport.xml,
+            ${{ github.workspace }}/modules/jdk/build/reports/jacoco/test/jacocoTestReport.xml,
+            ${{ github.workspace }}/modules/spring-6/build/reports/jacoco/test/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 40
+          min-coverage-changed-files: 60
+          title: Code Coverage
+          comment-type: summary
+          update-comment: true
+
+  local-suites:
+    name: Local suite — ${{ matrix.suite }}
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - LocalStackSuite
+          - MinioSuite
+          - CloudServerSuite
+          - SeaweedFsSuite
+          - MiniStackSuite
+          - FlociSuite
+          - S3MockSuite
+          - GarageSuite
+          - RustFsSuite
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+        with:
+          java-version: 17
+          distribution: 'liberica'
+          cache: 'gradle'
+
+      - name: Run ${{ matrix.suite }}
+        run: ./gradlew :modules:commons-vfs:integrationTest --tests "com.github.vfss3.commonsvfs.local.${{ matrix.suite }}"
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@bccf2e31636835cf0874589931c4116687171386 # v6.4.0
+        if: ${{ !cancelled() }}
+        with:
+          check_name: ${{ matrix.suite }}
+          report_paths: '**/build/test-results/integrationTest/*.xml'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  remote-suites:
+    name: Remote — ${{ matrix.environment }}
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [ AWS-1, YANDEX-1, YANDEX-2 ]
+    environment: ${{ matrix.environment }}
+    env:
+      BASE_URL: ${{ secrets.BASE_URL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+        with:
+          java-version: 17
+          distribution: 'liberica'
+          cache: 'gradle'
+
+      - name: Run EnvironmentBasedSuite against ${{ matrix.environment }}
+        run: ./gradlew :modules:commons-vfs:integrationTest --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite"
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@bccf2e31636835cf0874589931c4116687171386 # v6.4.0
+        if: ${{ !cancelled() }}
+        with:
+          check_name: Remote — ${{ matrix.environment }}
+          report_paths: '**/build/test-results/integrationTest/*.xml'
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,20 +1,20 @@
-package com.github.vfss3.commonsvfs;
+package com.github.vfss3.commonsvfs.tests;
 
 import static com.github.vfss3.commonsvfs.S3FileSystemOptions.PREFIX;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.AnonymousAWSCredentials;
+import com.github.vfss3.commonsvfs.S3FileSystemOptions;
 import org.apache.commons.vfs2.*;
 import org.apache.commons.vfs2.util.DelegatingFileSystemOptionsBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 
 /**
- * Integration test for accessing public buckets.
+ * Integration test for accessing public buckets — does not need the suite's container.
  */
-class PublicAccessBucketIT {
+public class PublicAccessBucketTest {
 
     @Test
     void testCreate() throws Exception {
@@ -35,7 +35,7 @@ class PublicAccessBucketIT {
         FileSystemManager manager = VFS.getManager();
         S3FileSystemOptions options = new S3FileSystemOptions();
 
-        options.setCredentialsProvider(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()));
+        options.setCredentialsProvider(AnonymousCredentialsProvider.create());
 
         String bucket = "s3://osm-pds.s3.amazonaws.com/";
 
@@ -52,7 +52,7 @@ class PublicAccessBucketIT {
         FileSystemManager manager = VFS.getManager();
         S3FileSystemOptions options = new S3FileSystemOptions();
 
-        options.setCredentialsProvider(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials()));
+        options.setCredentialsProvider(AnonymousCredentialsProvider.create());
 
         String bucket = "s3://s3.amazonaws.com/osm-pds";
 

@@ -1,4 +1,4 @@
-package com.github.vfss3.commonsvfs;
+package com.github.vfss3.commonsvfs.tests;
 
 import static com.github.vfss3.commonsvfs.FileAssert.assertHasChildren;
 import static java.nio.file.Files.readAllBytes;
@@ -10,10 +10,9 @@ import static org.apache.commons.vfs2.Selectors.SELECT_SELF;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
+import com.github.vfss3.commonsvfs.S3IntegrationContext;
 import com.github.vfss3.commonsvfs.operations.IMD5HashGetter;
 import com.github.vfss3.commonsvfs.operations.IPublicUrlsGetter;
-import com.github.vfss3.commonsvfs.support.BaseIntegrationTest;
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -24,18 +23,35 @@ import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.Selectors;
+import org.apache.commons.vfs2.VFS;
 import org.junit.jupiter.api.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class S3ProviderIT extends BaseIntegrationTest {
+class S3ProviderTest {
     private static final String BIG_FILE = "big_file.iso";
+
+    private FileObject root;
+    private FileObject binaryFile;
+    private FileObject bigFile;
 
     private String fileName, dirName;
     private FileObject file, dir;
 
     @BeforeAll
-    void setUp() {
+    void setUp() throws FileSystemException {
+        var manager = VFS.getManager();
+        root = manager.resolveFile(S3IntegrationContext.rootUrl(), S3IntegrationContext.options());
+        // Each test class starts with a clean bucket — replicates the original per-class isolation
+        // (the suite shares one bucket across all tests).
+        if (root.exists()) {
+            root.delete(Selectors.EXCLUDE_SELF);
+        }
+        File backupFile = new File(S3IntegrationContext.BINARY_FILE);
+        assertTrue(backupFile.exists(), "Backup file should exist at " + backupFile.getAbsolutePath());
+        binaryFile = manager.resolveFile(backupFile.getAbsolutePath());
+        bigFile = manager.resolveFile(S3IntegrationContext.BIG_FILE);
+
         Random r = new Random();
         fileName = "vfs-file" + r.nextInt(1000);
         dirName = "vfs-dir" + r.nextInt(1000);
@@ -71,10 +87,6 @@ class S3ProviderIT extends BaseIntegrationTest {
         });
     }
 
-    /**
-     * Create folder on already existed file
-     * @throws FileSystemException
-     */
     @Test
     @Order(3)
     void createFileFailed2() throws FileSystemException {
@@ -94,10 +106,6 @@ class S3ProviderIT extends BaseIntegrationTest {
         assertEquals(FileType.FOLDER, dir.getName().getType());
     }
 
-    /**
-     * Create file on already existed folder
-     * @throws FileSystemException
-     */
     @Test
     @Order(3)
     void createDirFailed2() throws FileSystemException {
@@ -110,15 +118,12 @@ class S3ProviderIT extends BaseIntegrationTest {
     @Test
     @Order(8)
     void exists() throws IOException {
-        // Existed dir
         FileObject existedDir = root.resolveFile("/test-place");
         assertTrue(existedDir.exists());
 
-        // Existed file
         FileObject existedFile = root.resolveFile("/test-place/backup.zip");
         assertTrue(existedFile.exists());
 
-        // Non-existed file
         FileObject nonExistedFile = root.resolveFile("/ne/bыlo/i/net");
         assertFalse(nonExistedFile.exists());
     }
@@ -128,13 +133,11 @@ class S3ProviderIT extends BaseIntegrationTest {
     void upload() throws IOException {
         FileObject dest = root.resolveFile("/test-place/backup.zip");
 
-        // Delete file if exists
         if (dest.exists()) {
             dest.delete();
         }
 
-        // Copy data
-        dest.copyFrom(binaryFile(), SELECT_SELF);
+        dest.copyFrom(binaryFile, SELECT_SELF);
 
         assertTrue(dest.exists() && dest.getType().equals(FILE));
     }
@@ -144,15 +147,13 @@ class S3ProviderIT extends BaseIntegrationTest {
     void uploadMultiple() throws Exception {
         FileObject dest = root.resolveFile("/test-place/backup.zip");
 
-        // Delete file if exists
         if (dest.exists()) {
             dest.delete();
         }
 
-        // copy twice
-        dest.copyFrom(binaryFile(), SELECT_SELF);
+        dest.copyFrom(binaryFile, SELECT_SELF);
         Thread.sleep(2000L);
-        dest.copyFrom(binaryFile(), SELECT_SELF);
+        dest.copyFrom(binaryFile, SELECT_SELF);
 
         assertTrue(dest.exists() && dest.getType().equals(FILE));
     }
@@ -162,23 +163,20 @@ class S3ProviderIT extends BaseIntegrationTest {
     void uploadBigFile() throws IOException {
         FileObject dest = root.resolveFile("/" + BIG_FILE);
 
-        // Delete file if exists
         if (dest.exists()) {
             dest.delete();
         }
 
-        // Copy data
-        FileObject src = bigFile();
+        assertTrue(bigFile.exists(), "Big file should exists");
 
-        assertTrue(src.exists(), "Big file should exists");
+        // 16 MB — historical multipart-upload threshold of AWS SDK v1's TransferManager.
+        assertTrue(bigFile.getContent().getSize() > 16L * 1024 * 1024);
 
-        assertTrue(src.getContent().getSize() > (new TransferManagerConfiguration()).getMultipartUploadThreshold());
-
-        dest.copyFrom(src, SELECT_SELF);
+        dest.copyFrom(bigFile, SELECT_SELF);
 
         assertTrue(dest.exists(), "Destination file should be on place");
         assertEquals(FILE, dest.getType());
-        assertEquals(src.getContent().getSize(), dest.getContent().getSize());
+        assertEquals(bigFile.getContent().getSize(), dest.getContent().getSize());
         assertEquals(63963136, dest.getContent().getSize());
     }
 
@@ -187,20 +185,18 @@ class S3ProviderIT extends BaseIntegrationTest {
     void outputStream() throws IOException {
         FileObject dest = root.resolveFile("/test-place/output.txt");
 
-        // Delete file if exists
         if (dest.exists()) {
             dest.delete();
         }
 
-        // Copy data
-        final byte[] bytes = readAllBytes(binaryFile().getPath());
+        final byte[] bytes = readAllBytes(binaryFile.getPath());
 
         try (OutputStream os = dest.getContent().getOutputStream()) {
             os.write(bytes);
         }
 
         assertTrue(dest.exists() && dest.getType().equals(FILE));
-        assertEquals(binaryFile().getPath().toFile().length(), dest.getContent().getSize());
+        assertEquals(binaryFile.getPath().toFile().length(), dest.getContent().getSize());
 
         try (InputStream in = dest.getContent().getInputStream()) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -219,11 +215,9 @@ class S3ProviderIT extends BaseIntegrationTest {
         FileObject typica = root.resolveFile("/test-place/backup.zip");
         File localCache = File.createTempFile("vfs.", ".s3-test");
 
-        // Copy from S3 to localfs
         FileOutputStream out = new FileOutputStream(localCache);
         IOUtils.copy(typica.getContent().getInputStream(), out);
 
-        // Test that file sizes equals
         assertEquals(typica.getContent().getSize(), localCache.length());
 
         localCache.delete();
@@ -276,7 +270,6 @@ class S3ProviderIT extends BaseIntegrationTest {
         FileObject baseDir = dir.resolveFile("find-tests");
         baseDir.createFolder();
 
-        // Create files and dirs
         baseDir.resolveFile("child-file.tmp").createFile();
         baseDir.resolveFile("child-file2.tmp").createFile();
         baseDir.resolveFile("child-dir").createFolder();
@@ -340,8 +333,7 @@ class S3ProviderIT extends BaseIntegrationTest {
     void getTypeAfterCopyToSubFolder() throws FileSystemException {
         FileObject dest = dir.resolveFile("type-tests/sub1/sub2/backup.zip");
 
-        // Copy data
-        dest.copyFrom(binaryFile(), SELECT_SELF);
+        dest.copyFrom(binaryFile, SELECT_SELF);
 
         assertTrue(dest.exists() && dest.getType().equals(FILE));
 
@@ -407,7 +399,7 @@ class S3ProviderIT extends BaseIntegrationTest {
 
         assertNotNull(md5Remote);
 
-        String md5Local = toHex(computeMD5Hash(binaryFile().getContent().getInputStream()));
+        String md5Local = toHex(computeMD5Hash(binaryFile.getContent().getInputStream()));
 
         assertTrue(md5Remote.equalsIgnoreCase(md5Local), "Local and remote md5 should be equal");
     }
@@ -429,26 +421,17 @@ class S3ProviderIT extends BaseIntegrationTest {
         FileObject testsDir = dir.resolveFile("find-tests");
         testsDir.delete(Selectors.EXCLUDE_SELF);
 
-        // Only tests dir must remains
         FileObject[] files = testsDir.findFiles(SELECT_ALL);
         assertEquals(1, files.length);
     }
 
-    /**
-     * Converts byte data to a Hex-encoded string.
-     *
-     * @param data data to hex encode.
-     * @return hex-encoded string.
-     */
     private String toHex(byte[] data) {
         StringBuilder sb = new StringBuilder(data.length * 2);
         for (byte aData : data) {
             String hex = Integer.toHexString(aData);
             if (hex.length() == 1) {
-                // Append leading zero.
                 sb.append("0");
             } else if (hex.length() == 8) {
-                // Remove ff prefix from negative numbers.
                 hex = hex.substring(6);
             }
             sb.append(hex);

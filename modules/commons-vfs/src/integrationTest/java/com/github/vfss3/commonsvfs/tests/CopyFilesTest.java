@@ -1,33 +1,42 @@
-package com.github.vfss3.commonsvfs;
+package com.github.vfss3.commonsvfs.tests;
 
 import static org.apache.commons.vfs2.FileType.FOLDER;
 import static org.apache.commons.vfs2.Selectors.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.vfss3.commonsvfs.support.BaseIntegrationTest;
+import com.github.vfss3.commonsvfs.S3IntegrationContext;
 import java.util.Arrays;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.Selectors;
+import org.apache.commons.vfs2.VFS;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 
-/**
- * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
- */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class CopyFilesIT extends BaseIntegrationTest {
+class CopyFilesTest {
+    private FileObject root;
+
+    @BeforeAll
+    void resolveRoot() throws FileSystemException {
+        root = VFS.getManager().resolveFile(S3IntegrationContext.rootUrl(), S3IntegrationContext.options());
+        if (root.exists()) {
+            root.delete(EXCLUDE_SELF);
+            root.refresh();
+        }
+    }
+
     @Test
     @Order(1)
     void createDirOk() throws FileSystemException {
         assertTrue(root.exists());
         assertEquals(FOLDER, root.getName().getType());
 
-        // Create files and dirs
         root.resolveFile("child-file.tmp").createFile();
         root.resolveFile("child-file2.tmp").createFile();
         root.resolveFile("child-dir").createFolder();
@@ -59,7 +68,6 @@ class CopyFilesIT extends BaseIntegrationTest {
 
         assertTrue(testsDirCopy.exists());
 
-        // Should have same number of files
         FileObject[] files = testsDir.findFiles(SELECT_SELF_AND_CHILDREN);
         FileObject[] filesCopy = testsDirCopy.findFiles(SELECT_SELF_AND_CHILDREN);
 

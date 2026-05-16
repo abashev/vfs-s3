@@ -1,19 +1,21 @@
 package com.github.vfss3.commonsvfs;
 
-import static com.amazonaws.services.s3.transfer.TransferManagerBuilder.standard;
-
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.transfer.TransferManager;
 import com.github.vfss3.commonsvfs.parser.S3FileNameParser;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.*;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 /**
  * An S3 file provider. Create an S3 file system out of an S3 file name. Also
@@ -39,81 +41,67 @@ public class S3FileProvider extends CachingFileProvider {
         setFileNameParser(new S3FileNameParser());
     }
 
-    /**
-     * Create a file system with the S3 root provided.
-     *
-     * @param fileName the S3 file name that defines the root (bucket)
-     * @param fileSystemOptions file system options
-     * @return an S3 file system
-     * @throws FileSystemException if the file system cannot be created
-     */
     @Override
     protected FileSystem doCreateFileSystem(FileName fileName, FileSystemOptions fileSystemOptions)
             throws FileSystemException {
-        final S3FileName root = (S3FileName) fileName;
+        final S3FileName parsedRoot = (S3FileName) fileName;
         final S3FileSystemOptions options = new S3FileSystemOptions(fileSystemOptions);
+        final var platformFeatures = options.getPlatformFeatures();
+        final S3FileName root =
+                (platformFeatures != null) ? parsedRoot.withPlatformFeatures(platformFeatures) : parsedRoot;
 
-        final AmazonS3ClientBuilder clientBuilder =
-                AmazonS3ClientBuilder.standard().withClientConfiguration(options.getClientConfiguration());
-
+        final AwsCredentialsProvider credentialsProvider;
         if (root.hasCredentials()) {
-            clientBuilder.withCredentials(new AWSStaticCredentialsProvider(
-                    new BasicAWSCredentials(root.getAccessKey(), root.getSecretKey())));
+            credentialsProvider = StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(root.getAccessKey(), root.getSecretKey()));
         } else {
-            clientBuilder.withCredentials(options.getCredentialsProvider());
+            credentialsProvider = options.getCredentialsProvider();
         }
 
-        if (options.isDisableChunkedEncoding()) {
-            clientBuilder.disableChunkedEncoding();
-        }
+        final URI endpoint = URI.create((options.isUseHttps() ? "https://" : "http://") + root.getEndpoint());
 
-        if (root.hasPathPrefix()) {
-            clientBuilder.enablePathStyleAccess();
+        if (log.isDebugEnabled()) {
+            log.debug("Endpoint configuration [endpoint=" + endpoint + ",region=" + root.getSigningRegion() + "]");
         }
 
         if (options.getServerSideEncryption() && !root.getPlatformFeatures().supportsServerSideEncryption()) {
             log.warn("Try to use Server-Side Encryption with cloud that doesn't support it");
         }
 
-        StringBuilder endpoint = new StringBuilder();
+        final S3Configuration.Builder s3ConfigBuilder =
+                S3Configuration.builder().pathStyleAccessEnabled(root.hasPathPrefix());
 
-        if (options.isUseHttps()) {
-            endpoint.append("https://");
-        } else {
-            endpoint.append("http://");
+        if (options.isDisableChunkedEncoding()) {
+            s3ConfigBuilder.chunkedEncodingEnabled(false);
         }
 
-        endpoint.append(root.getEndpoint());
+        final S3ClientBuilder clientBuilder = S3Client.builder()
+                .credentialsProvider(credentialsProvider)
+                .region(Region.of(root.getSigningRegion()))
+                .endpointOverride(endpoint)
+                .serviceConfiguration(s3ConfigBuilder.build());
 
-        if (log.isDebugEnabled()) {
-            log.debug("Endpoint configuration [endpoint=" + endpoint + ",region=" + root.getSigningRegion() + "]");
+        if (options.getClientOverrideConfiguration() != null) {
+            clientBuilder.overrideConfiguration(options.getClientOverrideConfiguration());
         }
 
-        clientBuilder.withEndpointConfiguration(
-                new EndpointConfiguration(endpoint.toString(), root.getSigningRegion()));
+        final S3Client s3Client = clientBuilder.build();
 
-        TransferManager transferManager =
-                standard().withS3Client(clientBuilder.build()).build();
+        final S3Presigner presigner = S3Presigner.builder()
+                .credentialsProvider(credentialsProvider)
+                .region(Region.of(root.getSigningRegion()))
+                .endpointOverride(endpoint)
+                .serviceConfiguration(s3ConfigBuilder.build())
+                .build();
 
-        return (new S3FileSystem(root, options, transferManager));
+        return new S3FileSystem(root, options, s3Client, presigner);
     }
 
-    /**
-     * Get the capabilities of the file system provider.
-     *
-     * @return the file system capabilities
-     */
     @Override
     public Collection<Capability> getCapabilities() {
         return capabilities;
     }
 
-    /**
-     * Return config builder.
-     *
-     * @return A config builder for S3FileSystem.
-     * @see org.apache.commons.vfs2.provider.AbstractFileProvider#getConfigBuilder()
-     */
     @Override
     public FileSystemConfigBuilder getConfigBuilder() {
         return S3FileSystemConfigBuilder.getInstance();

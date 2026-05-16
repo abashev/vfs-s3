@@ -3,29 +3,29 @@ package com.github.vfss3.commonsvfs;
 import static com.github.vfss3.commonsvfs.S3FileSystemOptions.PREFIX;
 import static java.util.Objects.requireNonNull;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.ownership.ObjectOwnership;
+import com.github.vfss3.commonsvfs.operations.PlatformFeatures;
 import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemConfigBuilder;
 import org.apache.commons.vfs2.FileSystemOptions;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.services.s3.model.BucketCannedACL;
+import software.amazon.awssdk.services.s3.model.ObjectOwnership;
 
 /**
  * The config builder for various AWS S3 configuration options.
  */
 public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final String SERVER_SIDE_ENCRYPTION = "serverSideEncryption";
-    private static final String CLIENT_CONFIGURATION = "clientConfiguration";
-    private static final String DISABLE_CHUNKED_ENCODING = "disableChunkedEncoding"; // Useful for localstack
-    private static final String USE_HTTPS = "useHttps"; // Useful for localstack
+    private static final String CLIENT_OVERRIDE_CONFIGURATION = "clientOverrideConfiguration";
+    private static final String DISABLE_CHUNKED_ENCODING = "disableChunkedEncoding";
+    private static final String USE_HTTPS = "useHttps";
     private static final String CREATE_BUCKET = "createBucket";
     private static final String CREDENTIALS_PROVIDER = "credentialsProvider";
     private static final String OBJECT_OWNERSHIP = "objectOwnership";
     private static final String CANNED_ACL = "cannedAcl";
-
-    private static final int DEFAULT_MAX_ERROR_RETRY = 8;
+    private static final String PLATFORM_FEATURES = "platformFeatures";
 
     private static final S3FileSystemConfigBuilder BUILDER = new S3FileSystemConfigBuilder();
 
@@ -33,11 +33,6 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         super(PREFIX + ".");
     }
 
-    /**
-     * Gets the singleton builder.
-     *
-     * @return the singleton builder.
-     */
     public static S3FileSystemConfigBuilder getInstance() {
         return BUILDER;
     }
@@ -59,14 +54,6 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         return getBoolean(opts, name, defaultValue);
     }
 
-    String getStringOption(FileSystemOptions opts, String name, String defaultValue) {
-        return getString(opts, name, defaultValue);
-    }
-
-    int getIntegerOption(FileSystemOptions opts, String name, int defaultValue) {
-        return getInteger(opts, name, defaultValue);
-    }
-
     public boolean getServerSideEncryption(FileSystemOptions opts) {
         return getBooleanOption(opts, SERVER_SIDE_ENCRYPTION, false);
     }
@@ -75,162 +62,69 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
         setOption(opts, SERVER_SIDE_ENCRYPTION, serverSideEncryption);
     }
 
-    /**
-     * @param clientConfiguration The AWS ClientConfiguration object to
-     *                            use when creating the connection.
-     */
-    public void setClientConfiguration(FileSystemOptions opts, ClientConfiguration clientConfiguration) {
-        setOption(opts, CLIENT_CONFIGURATION, requireNonNull(clientConfiguration));
+    public void setClientOverrideConfiguration(FileSystemOptions opts, ClientOverrideConfiguration configuration) {
+        setOption(opts, CLIENT_OVERRIDE_CONFIGURATION, requireNonNull(configuration));
     }
 
-    /**
-     * @return The AWS ClientConfiguration object to use when creating the
-     * connection.  If none has been set, a default ClientConfiguration is returend,
-     * with the following differences:
-     *   1. The maxErrorRetry is 8 instead of the AWS default (3).  This
-     *      is generally a better setting to use when operating in a production
-     *      environment and means approximately up to 2 minutes of retries for
-     *      failed operations.
-     */
-    public ClientConfiguration getClientConfiguration(FileSystemOptions opts) {
-        ClientConfiguration clientConfiguration = (ClientConfiguration) getOption(opts, CLIENT_CONFIGURATION);
-
-        if (clientConfiguration == null) {
-            clientConfiguration = new ClientConfiguration();
-
-            clientConfiguration.setMaxErrorRetry(DEFAULT_MAX_ERROR_RETRY);
-        }
-
-        return clientConfiguration;
+    public ClientOverrideConfiguration getClientOverrideConfiguration(FileSystemOptions opts) {
+        return (ClientOverrideConfiguration) getOption(opts, CLIENT_OVERRIDE_CONFIGURATION);
     }
 
-    /**
-     * Don't use chunked encoding for AWS calls - useful for localstack because it doesn't support it.
-     *
-     * @return true if use https for all communications
-     */
     public boolean getDisableChunkedEncoding(FileSystemOptions opts) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        return builder.getBooleanOption(opts, DISABLE_CHUNKED_ENCODING, false);
+        return getBooleanOption(opts, DISABLE_CHUNKED_ENCODING, false);
     }
 
-    /**
-     * Don't use chunked encoding for AWS calls - useful for localstack because it doesn't support it.
-     *
-     * @param disableChunkedEncoding
-     */
     public void setDisableChunkedEncoding(FileSystemOptions opts, boolean disableChunkedEncoding) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        builder.setOption(opts, DISABLE_CHUNKED_ENCODING, disableChunkedEncoding);
+        setOption(opts, DISABLE_CHUNKED_ENCODING, disableChunkedEncoding);
     }
 
-    /**
-     * Use https for endpoint calls. true by default
-     *
-     * @return true if use https for all communications
-     */
     public boolean isUseHttps(FileSystemOptions opts) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        return builder.getBooleanOption(opts, USE_HTTPS, true);
+        return getBooleanOption(opts, USE_HTTPS, true);
     }
 
-    /**
-     * Use https for endpoint calls. true by default
-     *
-     * @param opts
-     * @param useHttps
-     */
     public void setUseHttps(FileSystemOptions opts, boolean useHttps) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        builder.setOption(opts, USE_HTTPS, useHttps);
+        setOption(opts, USE_HTTPS, useHttps);
     }
 
-    /**
-     * Should we do 'create bucket' call in case of missed bucket.
-     *
-     * @return
-     */
     public boolean isCreateBucket(FileSystemOptions opts) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        return builder.getBooleanOption(opts, CREATE_BUCKET, false);
+        return getBooleanOption(opts, CREATE_BUCKET, false);
     }
 
-    /**
-     * Should we do 'create bucket' call in case of missed bucket.
-     *
-     * @param opts
-     * @param createBucket
-     */
     public void setCreateBucket(FileSystemOptions opts, boolean createBucket) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        builder.setOption(opts, CREATE_BUCKET, createBucket);
+        setOption(opts, CREATE_BUCKET, createBucket);
     }
 
-    /**
-     * Get credentials provider for a file system - DefaultAWSCredentialsProviderChain by default
-     *
-     * @return
-     */
-    public AWSCredentialsProvider getCredentialsProvider(FileSystemOptions opts) {
-        S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-        AWSCredentialsProvider provider = (AWSCredentialsProvider) builder.getOption(opts, CREDENTIALS_PROVIDER);
+    public AwsCredentialsProvider getCredentialsProvider(FileSystemOptions opts) {
+        AwsCredentialsProvider provider = (AwsCredentialsProvider) getOption(opts, CREDENTIALS_PROVIDER);
 
-        return (provider != null) ? provider : (new DefaultAWSCredentialsProviderChain());
+        return (provider != null) ? provider : DefaultCredentialsProvider.create();
     }
 
-    /**
-     * Set credentials provider for a file system
-     *
-     * @param opts
-     * @param provider
-     */
-    public void setCredentialsProvider(FileSystemOptions opts, AWSCredentialsProvider provider) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        builder.setOption(opts, CREDENTIALS_PROVIDER, provider);
+    public void setCredentialsProvider(FileSystemOptions opts, AwsCredentialsProvider provider) {
+        setOption(opts, CREDENTIALS_PROVIDER, provider);
     }
 
-    /*
-     * Get ObjectOwnership parameter for new buckets
-     *
-     * @return
-     */
     public ObjectOwnership getObjectOwnership(FileSystemOptions opts) {
-        S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        return (ObjectOwnership) builder.getOption(opts, OBJECT_OWNERSHIP);
+        return (ObjectOwnership) getOption(opts, OBJECT_OWNERSHIP);
     }
 
-    /**
-     * Set ObjectOwnership parameter for new buckets
-     */
     public void setObjectOwnership(FileSystemOptions opts, ObjectOwnership ownership) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        builder.setOption(opts, OBJECT_OWNERSHIP, ownership);
+        setOption(opts, OBJECT_OWNERSHIP, ownership);
     }
 
-    /*
-     * Get CannedAccessControlList object for new buckets.
-     */
-    public CannedAccessControlList getCannedAcl(FileSystemOptions opts) {
-        S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
-
-        return (CannedAccessControlList) builder.getOption(opts, CANNED_ACL);
+    public BucketCannedACL getCannedAcl(FileSystemOptions opts) {
+        return (BucketCannedACL) getOption(opts, CANNED_ACL);
     }
 
-    /**
-     * Set CannedAccessControlList object for new buckets.
-     */
-    public void setCannedAcl(FileSystemOptions opts, CannedAccessControlList acl) {
-        final S3FileSystemConfigBuilder builder = new S3FileSystemConfigBuilder();
+    public void setCannedAcl(FileSystemOptions opts, BucketCannedACL acl) {
+        setOption(opts, CANNED_ACL, acl);
+    }
 
-        builder.setOption(opts, CANNED_ACL, acl);
+    public PlatformFeatures getPlatformFeatures(FileSystemOptions opts) {
+        return (PlatformFeatures) getOption(opts, PLATFORM_FEATURES);
+    }
+
+    public void setPlatformFeatures(FileSystemOptions opts, PlatformFeatures features) {
+        setOption(opts, PLATFORM_FEATURES, features);
     }
 }

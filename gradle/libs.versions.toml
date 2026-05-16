@@ -1,6 +1,6 @@
 [versions]
 commons-vfs2 = "2.9.0"
-aws-sdk-s3 = "1.12.797"
+aws-sdk-v2 = "2.42.41"
 junit-jupiter = "6.0.3"
 commons-io = "2.22.0"
 logback = "1.5.32"
@@ -16,8 +16,9 @@ spring7 = "7.0.6"
 
 [libraries]
 commons-vfs2 = { module = "org.apache.commons:commons-vfs2", version.ref = "commons-vfs2" }
-aws-sdk-s3 = { module = "com.amazonaws:aws-java-sdk-s3", version.ref = "aws-sdk-s3" }
+aws-sdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "aws-sdk-v2" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
+junit-platform-suite = { module = "org.junit.platform:junit-platform-suite", version.ref = "junit-jupiter" }
 commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
 commons-httpclient = { module = "commons-httpclient:commons-httpclient", version = "3.1" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
@@ -34,5 +35,4 @@ spring7-core = { module = "org.springframework:spring-core", version.ref = "spri
 spring7-context = { module = "org.springframework:spring-context", version.ref = "spring7" }
 
 [plugins]
-shadow = { id = "com.gradleup.shadow", version = "9.4.1" }
 nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version = "2.0.0" }
