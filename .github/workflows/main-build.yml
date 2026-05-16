@@ -96,9 +96,10 @@ jobs:
         environment: [ AWS-1, YANDEX-1, YANDEX-2 ]
     environment: ${{ matrix.environment }}
     env:
-      BASE_URL: ${{ secrets.BASE_URL }}
+      BASE_URL: ${{ vars.BASE_URL || secrets.BASE_URL }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY || secrets.AWS_SECRET_KEY }}
+      AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
@@ -108,6 +109,30 @@ jobs:
           java-version: 17
           distribution: 'liberica'
           cache: 'gradle'
+
+      - name: Validate remote suite configuration
+        run: |
+          missing=0
+
+          if [ -z "$BASE_URL" ]; then
+            echo "::error title=Missing BASE_URL::Set BASE_URL as an environment variable or secret in GitHub Environment '${{ matrix.environment }}'. It must contain a %s bucket-name placeholder."
+            missing=1
+          elif [[ "$BASE_URL" != *"%s"* ]]; then
+            echo "::error title=Invalid BASE_URL::BASE_URL in GitHub Environment '${{ matrix.environment }}' must contain a %s bucket-name placeholder."
+            missing=1
+          fi
+
+          if [ -z "$AWS_ACCESS_KEY_ID" ]; then
+            echo "::error title=Missing AWS_ACCESS_KEY_ID::Set AWS_ACCESS_KEY_ID as a secret in GitHub Environment '${{ matrix.environment }}'."
+            missing=1
+          fi
+
+          if [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+            echo "::error title=Missing AWS secret key::Set AWS_SECRET_ACCESS_KEY or AWS_SECRET_KEY as a secret in GitHub Environment '${{ matrix.environment }}'."
+            missing=1
+          fi
+
+          exit "$missing"
 
       - name: Run EnvironmentBasedSuite against ${{ matrix.environment }}
         run: ./gradlew :modules:commons-vfs:integrationTest --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite"
