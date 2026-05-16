@@ -2,6 +2,7 @@ package com.github.vfss3.commonsvfs.local;
 
 import com.github.vfss3.commonsvfs.S3FileSystemOptions;
 import com.github.vfss3.commonsvfs.S3IntegrationContext;
+import com.github.vfss3.commonsvfs.parser.PlatformFeaturesImpl;
 import java.net.URI;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.GenericContainer;
@@ -36,6 +37,7 @@ public class SeaweedFsSuite {
         options.setCredentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("any", "any")));
         options.setUseHttps(false);
         options.setDisableChunkedEncoding(true);
+        options.setPlatformFeatures(new PlatformFeaturesImpl(true, true, false, true, false));
 
         URI endpoint = URI.create("http://" + container.getHost() + ":" + container.getMappedPort(S3_PORT));
         S3IntegrationContext.initialize(endpoint, options);

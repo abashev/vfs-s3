@@ -3,6 +3,7 @@ package com.github.vfss3.commonsvfs;
 import static com.github.vfss3.commonsvfs.S3FileSystemOptions.PREFIX;
 import static java.util.Objects.requireNonNull;
 
+import com.github.vfss3.commonsvfs.operations.PlatformFeatures;
 import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemConfigBuilder;
 import org.apache.commons.vfs2.FileSystemOptions;
@@ -24,6 +25,7 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
     private static final String CREDENTIALS_PROVIDER = "credentialsProvider";
     private static final String OBJECT_OWNERSHIP = "objectOwnership";
     private static final String CANNED_ACL = "cannedAcl";
+    private static final String PLATFORM_FEATURES = "platformFeatures";
 
     private static final S3FileSystemConfigBuilder BUILDER = new S3FileSystemConfigBuilder();
 
@@ -116,5 +118,13 @@ public class S3FileSystemConfigBuilder extends FileSystemConfigBuilder {
 
     public void setCannedAcl(FileSystemOptions opts, BucketCannedACL acl) {
         setOption(opts, CANNED_ACL, acl);
+    }
+
+    public PlatformFeatures getPlatformFeatures(FileSystemOptions opts) {
+        return (PlatformFeatures) getOption(opts, PLATFORM_FEATURES);
+    }
+
+    public void setPlatformFeatures(FileSystemOptions opts, PlatformFeatures features) {
+        setOption(opts, PLATFORM_FEATURES, features);
     }
 }

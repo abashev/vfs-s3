@@ -2,6 +2,7 @@ package com.github.vfss3.commonsvfs;
 
 import static java.util.Optional.ofNullable;
 
+import com.github.vfss3.commonsvfs.operations.PlatformFeatures;
 import java.util.Collection;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -28,6 +29,7 @@ public class S3FileSystem extends AbstractFileSystem {
     private static final int BUCKET_ACCESS_FORBIDDEN_STATUS_CODE = 403;
 
     private final Log log = LogFactory.getLog(getClass());
+    private final PlatformFeatures platformFeatures;
     private S3Client service;
     private S3Presigner presigner;
 
@@ -37,6 +39,7 @@ public class S3FileSystem extends AbstractFileSystem {
 
         this.service = service;
         this.presigner = presigner;
+        this.platformFeatures = options.getPlatformFeatures();
 
         if (log.isInfoEnabled()) {
             log.info("Init new S3 FileSystem [root=" + rootName + ",opts=" + options + "]");
@@ -81,7 +84,11 @@ public class S3FileSystem extends AbstractFileSystem {
 
     @Override
     protected FileObject createFile(FileName fileName) throws Exception {
-        return new S3FileObject((S3FileName) fileName, this);
+        var s3FileName = (S3FileName) fileName;
+        if (platformFeatures != null) {
+            s3FileName = s3FileName.withPlatformFeatures(platformFeatures);
+        }
+        return new S3FileObject(s3FileName, this);
     }
 
     @Override

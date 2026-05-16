@@ -45,10 +45,15 @@ dependencies {
 //     ./gradlew :modules:commons-vfs:integrationTest \
 //       --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite"
 //
-// Without --tests, every suite on the classpath runs; that's fine for the umbrella
-// run but heavy — CI invokes one suite per matrix job.
+// Without --tests, every local suite on the classpath runs; that's fine for the
+// umbrella run but heavy — CI invokes one suite per matrix job. The remote suite
+// needs explicit environment configuration, so keep it out of default discovery
+// unless BASE_URL is present.
 tasks.named('integrationTest', Test) {
     useJUnitPlatform { includeEngines 'junit-platform-suite' }
+    if (!providers.environmentVariable('BASE_URL').isPresent()) {
+        exclude '**/remote/EnvironmentBasedSuite.class'
+    }
 }
 
 // Maven publishing

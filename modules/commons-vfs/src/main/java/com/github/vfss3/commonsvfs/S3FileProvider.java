@@ -44,8 +44,11 @@ public class S3FileProvider extends CachingFileProvider {
     @Override
     protected FileSystem doCreateFileSystem(FileName fileName, FileSystemOptions fileSystemOptions)
             throws FileSystemException {
-        final S3FileName root = (S3FileName) fileName;
+        final S3FileName parsedRoot = (S3FileName) fileName;
         final S3FileSystemOptions options = new S3FileSystemOptions(fileSystemOptions);
+        final var platformFeatures = options.getPlatformFeatures();
+        final S3FileName root =
+                (platformFeatures != null) ? parsedRoot.withPlatformFeatures(platformFeatures) : parsedRoot;
 
         final AwsCredentialsProvider credentialsProvider;
         if (root.hasCredentials()) {

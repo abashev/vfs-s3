@@ -167,6 +167,20 @@ public class S3FileName extends AbstractFileName {
         return platformFeatures;
     }
 
+    S3FileName withPlatformFeatures(PlatformFeatures features) {
+        return new S3FileName(
+                endpoint,
+                urlPrefix,
+                pathPrefix,
+                bucket,
+                signingRegion,
+                getPath(),
+                getType(),
+                accessKey,
+                secretKey,
+                features);
+    }
+
     /**
      * Returns S3 key from name or empty for a bucket.
      *

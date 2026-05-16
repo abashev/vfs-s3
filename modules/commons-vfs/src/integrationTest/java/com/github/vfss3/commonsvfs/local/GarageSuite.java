@@ -2,6 +2,7 @@ package com.github.vfss3.commonsvfs.local;
 
 import com.github.vfss3.commonsvfs.S3FileSystemOptions;
 import com.github.vfss3.commonsvfs.S3IntegrationContext;
+import com.github.vfss3.commonsvfs.parser.PlatformFeaturesImpl;
 import java.net.URI;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -76,6 +77,7 @@ public class GarageSuite {
                 StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)));
         options.setUseHttps(false);
         options.setDisableChunkedEncoding(true);
+        options.setPlatformFeatures(new PlatformFeaturesImpl(true, true, false, true, false));
 
         URI endpoint = URI.create("http://" + container.getHost() + ":" + container.getMappedPort(S3_PORT));
         S3IntegrationContext.initialize(endpoint, options);

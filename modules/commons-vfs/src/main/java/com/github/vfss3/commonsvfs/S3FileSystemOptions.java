@@ -1,5 +1,6 @@
 package com.github.vfss3.commonsvfs;
 
+import com.github.vfss3.commonsvfs.operations.PlatformFeatures;
 import org.apache.commons.vfs2.FileSystemOptions;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
@@ -116,6 +117,14 @@ public class S3FileSystemOptions implements Cloneable {
 
     public void setCannedAcl(BucketCannedACL acl) {
         S3FileSystemConfigBuilder.getInstance().setCannedAcl(options, acl);
+    }
+
+    public PlatformFeatures getPlatformFeatures() {
+        return S3FileSystemConfigBuilder.getInstance().getPlatformFeatures(options);
+    }
+
+    public void setPlatformFeatures(PlatformFeatures features) {
+        S3FileSystemConfigBuilder.getInstance().setPlatformFeatures(options, features);
     }
 
     public FileSystemOptions toFileSystemOptions() {
