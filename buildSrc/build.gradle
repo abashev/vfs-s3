@@ -6,9 +6,14 @@ repositories {
     gradlePluginPortal()
 }
 
+configurations.configureEach {
+    resolutionStrategy.force 'org.eclipse.jgit:org.eclipse.jgit:5.13.5.202508271544-r'
+}
+
 dependencies {
     implementation 'com.diffplug.spotless:spotless-plugin-gradle:8.4.0'
     implementation 'net.ltgt.gradle:gradle-errorprone-plugin:4.4.0'
     implementation 'net.ltgt.gradle:gradle-nullaway-plugin:3.0.0'
     implementation 'io.freefair.gradle:lombok-plugin:9.5.0'
+    implementation 'org.jreleaser:org.jreleaser.gradle.plugin:1.24.0'
 }

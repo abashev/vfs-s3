@@ -8,3 +8,7 @@ run = "./gradlew spotlessApply"
 [tasks."format.check"]
 description = "Check Java formatting (fails if unformatted)"
 run = "./gradlew spotlessCheck"
+
+[tasks.release]
+description = "Stage, sign, and publish the release to Maven Central with JReleaser"
+run = "./gradlew clean jreleaserDeploy"

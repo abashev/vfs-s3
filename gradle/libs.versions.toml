@@ -33,6 +33,3 @@ spring-core = { module = "org.springframework:spring-core", version.ref = "sprin
 spring-context = { module = "org.springframework:spring-context", version.ref = "spring" }
 spring7-core = { module = "org.springframework:spring-core", version.ref = "spring7" }
 spring7-context = { module = "org.springframework:spring-context", version.ref = "spring7" }
-
-[plugins]
-nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version = "2.0.0" }

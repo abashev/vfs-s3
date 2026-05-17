@@ -1,8 +1,6 @@
 plugins {
     id 'vfs-s3.java-conventions'
-
-    id 'maven-publish'
-    id 'signing'
+    id 'vfs-s3.publishing-conventions'
 }
 
 description = 'Amazon S3 driver for VFS (Apache Commons Virtual File System)'
@@ -54,45 +52,4 @@ tasks.named('integrationTest', Test) {
     if (!providers.environmentVariable('BASE_URL').isPresent()) {
         exclude '**/remote/EnvironmentBasedSuite.class'
     }
-}
-
-// Maven publishing
-java {
-    withSourcesJar()
-    withJavadocJar()
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-            pom {
-                name = "${project.group}:${project.name}"
-                description = project.description
-                url = 'https://github.com/abashev/vfs-s3'
-                licenses {
-                    license {
-                        name = 'The Apache Software License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                        distribution = 'repo'
-                    }
-                }
-                developers {
-                    developer {
-                        name = 'Alexey Abashev'
-                        email = 'alexey@abashev.ru'
-                    }
-                }
-                scm {
-                    connection = 'scm:git:git://github.com/abashev/vfs-s3.git'
-                    developerConnection = 'scm:git:ssh://github.com:abashev/vfs-s3.git'
-                    url = 'https://github.com/abashev/vfs-s3'
-                }
-            }
-        }
-    }
-}
-
-signing {
-    sign publishing.publications.mavenJava
 }

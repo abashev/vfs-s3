@@ -1,0 +1,46 @@
+plugins {
+    id 'maven-publish'
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            pom {
+                name.set(project.provider { "${project.group}:${project.name}" })
+                description.set(project.provider { project.description ?: project.name })
+                url = 'https://github.com/abashev/vfs-s3'
+                licenses {
+                    license {
+                        name = 'The Apache Software License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution = 'repo'
+                    }
+                }
+                developers {
+                    developer {
+                        name = 'Alexey Abashev'
+                        email = 'alexey@abashev.ru'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/abashev/vfs-s3.git'
+                    developerConnection = 'scm:git:ssh://github.com:abashev/vfs-s3.git'
+                    url = 'https://github.com/abashev/vfs-s3'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = 'staging'
+            url = layout.buildDirectory.dir('staging-deploy')
+        }
+    }
+}

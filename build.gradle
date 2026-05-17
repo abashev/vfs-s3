@@ -2,14 +2,5 @@
 // Module-specific build logic lives in each subproject's build.gradle.
 
 plugins {
-    alias(libs.plugins.nexus.publish)
-}
-
-nexusPublishing {
-    repositories {
-        sonatype {
-            nexusUrl = uri('https://oss.sonatype.org/service/local/')
-            snapshotRepositoryUrl = uri('https://oss.sonatype.org/content/repositories/snapshots/')
-        }
-    }
+    id 'vfs-s3.release-conventions'
 }
