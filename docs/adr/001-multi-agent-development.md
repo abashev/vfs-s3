@@ -1,6 +1,6 @@
 # ADR-001: Multi-Agent AI Development Workflow
 
-**Status:** Accepted
+**Status:** Accepted, amended by [ADR-004](004-multi-agent-dispatch.md)
 **Date:** 2026-03-10
 **Author:** @abashev
 
@@ -11,13 +11,13 @@ that allows AI agents to contribute to the project while maintaining quality and
 
 ## Decision
 
-We adopt a multi-agent workflow using Claude Code GitHub Actions with four specialized roles:
-Architect, Developer, Reviewer, and Triage. Each role has its own GitHub Actions workflow file,
-trigger phrase, and system prompt. Agents communicate through GitHub issues and PR comments.
+We adopt a multi-agent workflow with four specialized roles: Architect, Developer, Reviewer, and
+Triage. Each role has its own trigger phrase and system prompt. Agents communicate through GitHub
+issues and PR comments.
 
 ### Key design choices:
 
-1. **Separate workflows per role** rather than a single workflow with mode switching.
+1. **Separate role prompts** rather than a single prompt with mode switching.
    This keeps each agent's permissions, model choice, and prompt isolated.
 
 2. **Human gating at two checkpoints:** design approval (label `ready-for-dev`) and
@@ -25,8 +25,8 @@ trigger phrase, and system prompt. Agents communicate through GitHub issues and 
 
 3. **Structured comment format** so agents and humans can quickly parse agent output.
 
-4. **Opus for architecture, Sonnet for implementation/review, Haiku for triage.**
-   Matches cost to complexity.
+4. **Codex on GPT-5.5 for architecture, implementation, and review by default.**
+   Lower-cost models may be used for simple triage when appropriate.
 
 ## Consequences
 
@@ -39,5 +39,5 @@ trigger phrase, and system prompt. Agents communicate through GitHub issues and 
 ## Alternatives Considered
 
 1. **Single agent with all roles** - Rejected: too much prompt context, hard to tune
-2. **External orchestrator (e.g., Ruflo)** - Rejected: adds complexity, GitHub Actions is sufficient
+2. **External orchestrator (e.g., Ruflo)** - Rejected: adds complexity; Codex automation or Claude Code routines are sufficient
 3. **Claude Code Agent Teams** - Considered for Phase 4 when the feature is stable

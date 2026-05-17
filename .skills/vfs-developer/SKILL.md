@@ -1,6 +1,6 @@
 ---
 name: vfs-developer
-description: "Implement features and fix bugs for the vfs-s3 project. Use when the user asks to implement an issue, write code for a feature, fix a bug, create a PR, or fix review comments for vfs-s3. Also trigger when the user says 'develop this', 'implement #123', 'fix this issue', or wants code changes made to the vfs-s3 codebase. Also handles review feedback on existing PRs: when @abashev posts review comments, the bot reads the feedback, fixes the code, and pushes a new commit. Triggered via GitHub by: @vfs-s3-bot please proceed with development OR @vfs-s3-bot please fix review comments"
+description: "Implement features and fix bugs for the vfs-s3 project. Use when the user asks to implement an issue, write code for a feature, fix a bug, create a PR, or fix review comments for vfs-s3. Also trigger when the user says 'develop this', 'implement #123', 'fix this issue', or wants code changes made to the vfs-s3 codebase. Also handles review feedback on existing PRs: when @abashev posts review comments, the bot reads the feedback, fixes the code, and pushes a new commit. Intended for dispatch from Codex automation or Claude routines; GitHub trigger phrases: @vfs-s3-bot please proceed with development OR @vfs-s3-bot please fix review comments"
 ---
 
 # Developer Agent for vfs-s3
@@ -18,22 +18,25 @@ Verify required tools are present (pre-installed on the host — no container se
 ```bash
 command -v gh   >/dev/null || { echo "ERROR: gh not found";   exit 1; }
 command -v mise >/dev/null || { echo "ERROR: mise not found"; exit 1; }
-export GH_TOKEN=$(cat /Users/abashev/vfs-s3/.cowork/github-bot-token)
-export GIT_AUTHOR_NAME="Claude (vfs-s3 bot)"
+test -n "${GH_TOKEN:-}" || gh auth status >/dev/null
+export GIT_AUTHOR_NAME="Codex (vfs-s3 bot)"
 export GIT_AUTHOR_EMAIL="267615948+vfs-s3-bot@users.noreply.github.com"
-export GIT_COMMITTER_NAME="Claude (vfs-s3 bot)"
+export GIT_COMMITTER_NAME="Codex (vfs-s3 bot)"
 export GIT_COMMITTER_EMAIL="267615948+vfs-s3-bot@users.noreply.github.com"
 ```
 
-**IMPORTANT — Git lock workaround ([claude-code#11005](https://github.com/anthropics/claude-code/issues/11005)):**
-The repo folder is shared with host macOS. Claude Code's `git status` polling creates stale lock files.
+Authentication should be provided by the automation runner (`GH_TOKEN`) or by an already-authenticated
+`gh` CLI session. Do not read tokens from repository files.
+
+**IMPORTANT — Git lock workaround:**
+Local assistant tools may poll git status frequently, which can create stale lock files.
 - Use `--no-optional-locks` on all read-only git commands: `git status --no-optional-locks`, `git diff --no-optional-locks`
 - Never use bare `git status` or `git diff` — always add `--no-optional-locks`
 
 ## Context
 
-Read `CLAUDE.md` in the project root for:
-- Build commands (use `mise exec -- mvn` locally)
+Read `AGENTS.md` and `CONTRIBUTING.md` in the project root for:
+- Build commands (use `mise exec -- ./gradlew` locally)
 - Java 17 style rules (var, records, sealed, pattern matching, text blocks, switch expressions)
 - Palantir Java Format (4-space indent, 120 char lines)
 - Project structure and roadmap
@@ -52,7 +55,7 @@ Read `CLAUDE.md` in the project root for:
 
 3. **Create a feature branch in a worktree.** For every issue, work in an isolated git worktree:
    ```bash
-   git worktree add ../vfs-s3-issue-<number> 17.0 -b issue-<number>
+   git worktree add ../vfs-s3-issue-<number> 17.0 -b feature/issue-<number>
    cd ../vfs-s3-issue-<number>
    ```
    This keeps the main working copy clean and allows parallel work on multiple issues.
@@ -65,7 +68,7 @@ Read `CLAUDE.md` in the project root for:
    - Keep changes focused — one feature or fix
    - Make sure imports are explicit (no wildcards)
 
-5. **Build and test.** Run `mise exec -- mvn compile` and `mise exec -- mvn test` to verify everything works.
+5. **Build and test.** Run `mise exec -- ./gradlew compile` and `mise exec -- ./gradlew test` to verify everything works.
 
 6. **Create a commit.** Use a descriptive commit message:
    - `feat:` for new features
@@ -79,7 +82,7 @@ After committing, switch to reviewer mode and review your own changes. Repeat un
 
 7. **Self-review.** Examine the diff against the base branch:
    ```bash
-   git diff 17.0...HEAD
+   git --no-optional-locks diff 17.0...HEAD
    ```
    Review as if you are @reviewer. Check for:
    - Logic bugs, edge cases, null handling
@@ -101,7 +104,7 @@ After committing, switch to reviewer mode and review your own changes. Repeat un
 
 10. **Push the branch.**
     ```bash
-    git push -u origin issue-<number>
+    git push -u origin feature/issue-<number>
     ```
 
 11. **Create a PR** via `gh` CLI targeting `17.0`:
@@ -123,12 +126,13 @@ After committing, switch to reviewer mode and review your own changes. Repeat un
     - What the self-review caught and fixed
 
     ## Testing
-    - [ ] `mvn test` passes
-    - [ ] `mvn verify` passes (if integration tests changed)
+    - [ ] `mise exec -- ./gradlew test` passes
+    - [ ] `mise exec -- ./gradlew integrationTest` passes (if integration tests changed)
     EOF
     )"
     ```
-    The `gh` CLI uses the bot token from `.cowork/github-bot-token`, so the PR will be created from the bot account.
+    The `gh` CLI uses `GH_TOKEN` or the active `gh` authentication, so the PR will be created from whichever account
+    the automation runner provides.
 
 12. **Enable auto-merge** on the PR immediately after creation:
     ```bash
@@ -177,11 +181,11 @@ a mention on an existing PR.
 17. **Navigate to the existing worktree.** The branch should already exist:
     ```bash
     cd ../vfs-s3-issue-<number>
-    git pull origin issue-<number>
+    git pull origin feature/issue-<number>
     ```
     If the worktree was cleaned up, recreate it:
     ```bash
-    git worktree add ../vfs-s3-issue-<number> issue-<number>
+    git worktree add ../vfs-s3-issue-<number> feature/issue-<number>
     cd ../vfs-s3-issue-<number>
     ```
 
@@ -190,7 +194,7 @@ a mention on an existing PR.
     - Apply the fix as @abashev requested
     - If the request is ambiguous, make the most reasonable interpretation
 
-19. **Build and test.** Run `mise exec -- mvn compile test-compile` and `mise exec -- mvn test`
+19. **Build and test.** Run `mise exec -- ./gradlew compile testClasses` and `mise exec -- ./gradlew test`
     to verify the fixes don't break anything.
 
 20. **Commit and push.** Create a NEW commit (do not amend):
@@ -199,7 +203,7 @@ a mention on an existing PR.
     git commit -m "fix: address review feedback for #<issue-number>
 
     - <brief summary of each fix applied>"
-    git push origin issue-<number>
+    git push origin feature/issue-<number>
     ```
 
 21. **Reply on the PR.** Post a comment summarizing what was fixed:
