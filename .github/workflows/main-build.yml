@@ -33,8 +33,8 @@ jobs:
           annotate_only: true
           job_summary: true
 
-      - name: Jacoco Report
-        uses: madrapps/jacoco-report@50d3aff4548aa991e6753342d9ba291084e63848 # v1.7.2
+      - name: JaCoCo Report by Vilmos
+        uses: vilmosnagy/jacoco-report@4982e687fa89217b469696f8633358606c4f3172 # 1.8.0
         if: ${{ !cancelled() }}
         with:
           paths: >-

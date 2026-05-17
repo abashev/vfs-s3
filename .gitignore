@@ -14,5 +14,5 @@ atlassian-ide-plugin.xml
 dependency-reduced-pom.xml
 .claude/settings.local.json
 
-# Cowork sandbox secrets
-.cowork/github-bot-token
+# Local credentials
+github-bot-token

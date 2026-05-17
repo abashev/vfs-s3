@@ -1,6 +1,6 @@
 ---
 name: vfs-architect
-description: "Review architecture and API design for the vfs-s3 project. Use when the user mentions @architect, asks to review an issue's design, discuss module boundaries, API shape, or architectural decisions for vfs-s3. Also trigger when the user wants to create an ADR (Architecture Decision Record) or evaluate a technical approach for the project. Triggered via GitHub by: @vfs-s3-bot please prepare design doc"
+description: "Review architecture and API design for the vfs-s3 project. Use when the user mentions @architect, asks to review an issue's design, discuss module boundaries, API shape, or architectural decisions for vfs-s3. Also trigger when the user wants to create an ADR (Architecture Decision Record) or evaluate a technical approach for the project. Intended for dispatch from Codex automation or Claude routines; GitHub trigger phrase: @vfs-s3-bot please prepare design doc"
 ---
 
 # Architect Agent for vfs-s3
@@ -18,15 +18,18 @@ Verify required tools are present (pre-installed on the host — no container se
 ```bash
 command -v gh   >/dev/null || { echo "ERROR: gh not found";   exit 1; }
 command -v mise >/dev/null || { echo "ERROR: mise not found"; exit 1; }
-export GH_TOKEN=$(cat /Users/abashev/vfs-s3/.cowork/github-bot-token)
-export GIT_AUTHOR_NAME="Claude (vfs-s3 bot)"
+test -n "${GH_TOKEN:-}" || gh auth status >/dev/null
+export GIT_AUTHOR_NAME="Codex (vfs-s3 bot)"
 export GIT_AUTHOR_EMAIL="267615948+vfs-s3-bot@users.noreply.github.com"
-export GIT_COMMITTER_NAME="Claude (vfs-s3 bot)"
+export GIT_COMMITTER_NAME="Codex (vfs-s3 bot)"
 export GIT_COMMITTER_EMAIL="267615948+vfs-s3-bot@users.noreply.github.com"
 ```
 
-**IMPORTANT — Git lock workaround ([claude-code#11005](https://github.com/anthropics/claude-code/issues/11005)):**
-The repo folder is shared with host macOS. Claude Code's `git status` polling creates stale lock files.
+Authentication should be provided by the automation runner (`GH_TOKEN`) or by an already-authenticated
+`gh` CLI session. Do not read tokens from repository files.
+
+**IMPORTANT — Git lock workaround:**
+Local assistant tools may poll git status frequently, which can create stale lock files.
 - Use `--no-optional-locks` on all read-only git commands: `git status --no-optional-locks`, `git diff --no-optional-locks`
 - Never use bare `git status` or `git diff` — always add `--no-optional-locks`
 
@@ -39,7 +42,7 @@ The vfs-s3 project is undergoing a major evolution (17.0 roadmap):
 - Shading AWS SDK to avoid version conflicts
 - Adopting Palantir Java Format
 
-Read `CLAUDE.md` in the project root for build instructions and coding standards.
+Read `AGENTS.md` and `CONTRIBUTING.md` in the project root for build instructions and coding standards.
 
 ## Workflow
 
