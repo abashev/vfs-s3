@@ -1,0 +1,62 @@
+plugins {
+    id 'base'
+    id 'org.jreleaser'
+}
+
+jreleaser {
+    dependsOnAssemble = false
+
+    project {
+        name = 'vfs-s3'
+        description = 'S3 virtual file system for Java'
+        license = 'Apache-2.0'
+        links {
+            homepage = 'https://github.com/abashev/vfs-s3'
+        }
+        languages {
+            java {
+                groupId = 'com.github.abashev'
+                multiProject = true
+                version = '17'
+            }
+        }
+    }
+
+    release {
+        github {
+            enabled = false
+        }
+    }
+
+    signing {
+        pgp {
+            active = 'ALWAYS'
+            armored = true
+            verify = false
+        }
+    }
+
+    deploy {
+        maven {
+            mavenCentral {
+                sonatype {
+                    active = 'ALWAYS'
+                    url = 'https://central.sonatype.com/api/v1/publisher'
+                    namespace = 'com.github.abashev'
+                    applyMavenCentralRules = true
+                    stagingRepository('modules/commons-vfs/build/staging-deploy')
+                    stagingRepository('modules/jdk/build/staging-deploy')
+                    stagingRepository('modules/spring-6/build/staging-deploy')
+                    stagingRepository('modules/spring-7/build/staging-deploy')
+                }
+            }
+        }
+    }
+}
+
+tasks.named('jreleaserDeploy') {
+    dependsOn ':modules:commons-vfs:publishAllPublicationsToStagingRepository'
+    dependsOn ':modules:jdk:publishAllPublicationsToStagingRepository'
+    dependsOn ':modules:spring-6:publishAllPublicationsToStagingRepository'
+    dependsOn ':modules:spring-7:publishAllPublicationsToStagingRepository'
+}

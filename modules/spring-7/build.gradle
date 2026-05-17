@@ -1,5 +1,6 @@
 plugins {
     id 'vfs-s3.java-conventions'
+    id 'vfs-s3.publishing-conventions'
 }
 
 description = 'Amazon S3 Spring 7 Resource / ResourceLoader implementation'
