@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.services.s3.model.ObjectOwnership;
 
 /**
  * Runs every test in {@code com.github.vfss3.commonsvfs.tests} against a real remote
@@ -84,6 +85,7 @@ public class EnvironmentBasedSuite {
         S3FileSystemOptions options = new S3FileSystemOptions();
         options.setCredentialsProvider(credentialsProvider);
         options.setCreateBucket(true);
+        options.setObjectOwnership(ObjectOwnership.OBJECT_WRITER);
 
         S3IntegrationContext.initialize(bucketUrl, options);
     }
