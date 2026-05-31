@@ -3,49 +3,77 @@ package com.github.vfss3.spring7;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Objects;
-import org.springframework.core.io.Resource;
+import org.springframework.core.io.WritableResource;
 
 /**
- * Spring {@link Resource} implementation for {@code s3://bucket/key} URIs.
+ * Spring {@link WritableResource} implementation for {@code s3://bucket/key} URIs.
  *
- * <p>Initially backed by a local-tmp mock; real S3 backend will be added in a follow-up.
+ * <p>Initially backed by a local-tmp mock — all S3 paths are stored under a temporary
+ * directory as {@code {tmpDir}/bucket/key}. Real S3 backend will be added in a follow-up.
  *
- * <p>Usage:
+ * <p>Usage (via loader):
  * <pre>{@code
- * Resource resource = new S3Resource("s3://my-bucket/path/to/object.txt");
- * InputStream stream = resource.getInputStream();
+ * S3ResourceLoader loader = new S3ResourceLoader();
+ * WritableResource resource = (WritableResource) loader.getResource("s3://my-bucket/path/to/object.txt");
+ * try (OutputStream out = resource.getOutputStream()) {
+ *     out.write("Hello".getBytes());
+ * }
+ * try (InputStream in = resource.getInputStream()) {
+ *     // read back
+ * }
  * }</pre>
  */
-public class S3Resource implements Resource {
+public class S3Resource implements WritableResource {
 
     static final String S3_SCHEME = "s3";
 
     private final URI uri;
 
     /**
-     * Creates a new {@code S3Resource} from a {@code s3://} URI string.
+     * Local path for mock backend. When {@code null}, I/O operations throw; {@link #exists()}
+     * returns {@code false}.
+     */
+    private final Path localPath;
+
+    /**
+     * Creates a new {@code S3Resource} from a {@code s3://} URI string (no mock backend).
      *
      * @param uri the S3 URI, e.g. {@code s3://my-bucket/path/to/object.txt}
      * @throws IllegalArgumentException if the URI scheme is not {@code s3}
      */
     public S3Resource(String uri) {
-        this(URI.create(uri));
+        this(URI.create(uri), null);
     }
 
     /**
-     * Creates a new {@code S3Resource} from a {@link URI}.
+     * Creates a new {@code S3Resource} from a {@link URI} (no mock backend).
      *
      * @param uri the S3 URI
      * @throws IllegalArgumentException if the URI scheme is not {@code s3}
      */
     public S3Resource(URI uri) {
+        this(uri, null);
+    }
+
+    /**
+     * Creates a new {@code S3Resource} backed by a local file for mock I/O.
+     *
+     * @param uri       the S3 URI
+     * @param localPath the local path where S3 data is stored (mock mode); may be {@code null}
+     * @throws IllegalArgumentException if the URI scheme is not {@code s3}
+     */
+    S3Resource(URI uri, Path localPath) {
         if (!S3_SCHEME.equalsIgnoreCase(uri.getScheme())) {
             throw new IllegalArgumentException("URI scheme must be 's3': " + uri);
         }
         this.uri = uri;
+        this.localPath = localPath;
     }
 
     /** Returns the bucket extracted from the URI host. */
@@ -61,7 +89,10 @@ public class S3Resource implements Resource {
 
     @Override
     public boolean exists() {
-        return false;
+        if (localPath == null) {
+            return false;
+        }
+        return Files.exists(localPath);
     }
 
     @Override
@@ -81,21 +112,23 @@ public class S3Resource implements Resource {
 
     @Override
     public long contentLength() throws IOException {
-        throw new IOException("Not yet implemented");
+        requireLocalPath("contentLength");
+        return Files.size(localPath);
     }
 
     @Override
     public long lastModified() throws IOException {
-        throw new IOException("Not yet implemented");
+        requireLocalPath("lastModified");
+        return Files.getLastModifiedTime(localPath).toMillis();
     }
 
     @Override
-    public Resource createRelative(String relativePath) throws IOException {
+    public S3Resource createRelative(String relativePath) throws IOException {
         var base = uri.toString();
         if (!base.endsWith("/")) {
             base = base + "/";
         }
-        return new S3Resource(base + relativePath);
+        return new S3Resource(URI.create(base + relativePath), null);
     }
 
     @Override
@@ -115,7 +148,26 @@ public class S3Resource implements Resource {
 
     @Override
     public InputStream getInputStream() throws IOException {
-        throw new IOException("Not yet implemented — real S3 backend pending");
+        requireLocalPath("getInputStream");
+        if (!Files.exists(localPath)) {
+            throw new IOException("S3 resource does not exist: " + uri);
+        }
+        return Files.newInputStream(localPath);
+    }
+
+    @Override
+    public boolean isWritable() {
+        return localPath != null;
+    }
+
+    @Override
+    public OutputStream getOutputStream() throws IOException {
+        requireLocalPath("getOutputStream");
+        var parent = localPath.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
+        return Files.newOutputStream(localPath);
     }
 
     @Override
@@ -133,5 +185,11 @@ public class S3Resource implements Resource {
     @Override
     public String toString() {
         return getDescription();
+    }
+
+    private void requireLocalPath(String operation) throws IOException {
+        if (localPath == null) {
+            throw new IOException("Cannot perform " + operation + " without a mock backend — real S3 backend pending");
+        }
     }
 }
