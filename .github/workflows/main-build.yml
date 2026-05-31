@@ -109,6 +109,15 @@ jobs:
           distribution: 'liberica'
           cache: 'gradle'
 
+      # Deterministic per-commit, per-environment bucket token (lowercase — S3 names must be)
+      # shared by the test run and the cleanup step below, so cleanup can target the exact
+      # bucket even if the test JVM died before its own @AfterSuite teardown ran. The
+      # environment suffix keeps matrix jobs that share a BASE_URL from colliding on one bucket.
+      - name: Compute bucket token
+        env:
+          ENVIRONMENT: ${{ matrix.environment }}
+        run: echo "BUCKET_TOKEN=${GITHUB_SHA::12}-${ENVIRONMENT,,}" >> "$GITHUB_ENV"
+
       - name: Run EnvironmentBasedSuite against ${{ matrix.environment }}
         run: ./gradlew :modules:commons-vfs:integrationTest --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite"
 
@@ -119,3 +128,9 @@ jobs:
           report_paths: '**/build/test-results/integrationTest/*.xml'
           annotate_only: true
           job_summary: true
+
+      # Runs regardless of test outcome — deletes the per-commit bucket (BASE_URL +
+      # BUCKET_TOKEN) so failed/killed runs don't leak buckets on the remote backend.
+      - name: Drop remote test bucket
+        if: always()
+        run: ./gradlew :modules:commons-vfs:dropRemoteBucket
