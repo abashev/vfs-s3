@@ -53,3 +53,17 @@ tasks.named('integrationTest', Test) {
         exclude '**/remote/EnvironmentBasedSuite.class'
     }
 }
+
+// Standalone cleanup for the remote integration bucket. Reuses the suite's VFS deleteAll()
+// path but runs as a separate process so CI can invoke it in an `if: always()` step —
+// guaranteeing the per-commit bucket (BASE_URL + BUCKET_TOKEN) is removed even when the
+// test JVM failed or was killed before EnvironmentBasedSuite's @AfterSuite ran.
+//
+//   BASE_URL=… BUCKET_TOKEN=… AWS_ACCESS_KEY_ID=… AWS_SECRET_KEY=… \
+//     ./gradlew :modules:commons-vfs:dropRemoteBucket
+tasks.register('dropRemoteBucket', JavaExec) {
+    group = 'verification'
+    description = 'Delete the remote S3 test bucket named by BASE_URL + BUCKET_TOKEN.'
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    mainClass = 'com.github.vfss3.commonsvfs.remote.RemoteBucketCleaner'
+}
