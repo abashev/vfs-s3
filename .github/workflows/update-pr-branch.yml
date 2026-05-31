@@ -11,7 +11,7 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: adRise/update-pr-branch@a51c014567e5be98445551cce9b8f5ad42dd8acf # v0.10.2
+      - uses: adRise/update-pr-branch@fe3b7082713cc6b51fab6cc16765fa6cbcae8ba4 # v0.11.0
         with:
           token: ${{ secrets.BOT_PAT }}
           base: '17.0'
