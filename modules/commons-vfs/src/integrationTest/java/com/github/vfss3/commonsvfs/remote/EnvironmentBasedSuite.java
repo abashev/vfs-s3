@@ -31,12 +31,18 @@ import software.amazon.awssdk.services.s3.model.ObjectOwnership;
  * <table>
  *   <tr><th>Variable</th><th>Required by</th><th>Notes</th></tr>
  *   <tr><td>{@code BASE_URL}</td><td>this suite</td>
- *       <td>{@code printf}-style URL template — the literal {@code %s} is replaced with a
- *           random hex token at suite start so every run targets a fresh, uniquely-named
- *           bucket. Examples:<br>
+ *       <td>{@code printf}-style URL template — the literal {@code %s} is replaced with the
+ *           bucket-name token at suite start so every run targets a uniquely-named bucket.
+ *           Examples:<br>
  *           {@code s3://s3-tests-%s.ams3.digitaloceanspaces.com/}<br>
  *           {@code s3://s3-tests-%s.s3.eu-west-1.amazonaws.com/}<br>
  *           {@code s3://s3-tests-%s.storage.yandexcloud.net/}</td></tr>
+ *   <tr><td>{@code BUCKET_TOKEN}</td><td>optional</td>
+ *       <td>Token substituted for the {@code %s} placeholder. When set (CI passes the commit
+ *           SHA), the bucket name is deterministic, so a separate {@code if: always()} CI
+ *           step can delete the same bucket via {@link RemoteBucketCleaner} even if the test
+ *           JVM died before {@code @AfterSuite} ran. When blank, a random hex token is used —
+ *           handy for ad-hoc local runs.</td></tr>
  *   <tr><td>{@code AWS_ACCESS_KEY_ID}</td><td>AWS SDK</td>
  *       <td>Picked up automatically by {@code DefaultCredentialsProvider}.</td></tr>
  *   <tr><td>{@code AWS_SECRET_KEY} / {@code AWS_SECRET_ACCESS_KEY}</td><td>AWS SDK</td>
@@ -52,6 +58,7 @@ import software.amazon.awssdk.services.s3.model.ObjectOwnership;
 @SelectPackages("com.github.vfss3.commonsvfs.tests")
 public class EnvironmentBasedSuite {
     static final String ENV_BASE_URL = "BASE_URL";
+    static final String ENV_BUCKET_TOKEN = "BUCKET_TOKEN";
 
     private static final Logger log = LoggerFactory.getLogger(EnvironmentBasedSuite.class);
 
@@ -78,7 +85,14 @@ public class EnvironmentBasedSuite {
                     + " configure ~/.aws/credentials / instance profile. " + e.getMessage());
         }
 
-        String bucketUrl = String.format(urlTemplate, S3IntegrationContext.randomBucketToken());
+        // CI passes a deterministic token (the commit SHA) so the standalone
+        // RemoteBucketCleaner can target the same bucket; locally we fall back to a random one.
+        String token = System.getenv(ENV_BUCKET_TOKEN);
+        if (isBlank(token)) {
+            token = S3IntegrationContext.randomBucketToken();
+        }
+
+        String bucketUrl = String.format(urlTemplate, token);
 
         log.info("EnvironmentBasedSuite — provisioning fresh bucket at {}", bucketUrl);
 
