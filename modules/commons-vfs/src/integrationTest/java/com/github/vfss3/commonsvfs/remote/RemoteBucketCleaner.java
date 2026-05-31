@@ -2,7 +2,6 @@ package com.github.vfss3.commonsvfs.remote;
 
 import com.github.vfss3.commonsvfs.S3FileSystemOptions;
 import org.apache.commons.vfs2.FileObject;
-import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.VFS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +57,11 @@ public final class RemoteBucketCleaner {
             int deleted = root.deleteAll();
 
             log.info("RemoteBucketCleaner — deleted bucket {} ({} object(s) removed)", bucketUrl, deleted);
-        } catch (FileSystemException e) {
+        } catch (Exception e) {
+            // VFS rethrows the SDK's NoSuchBucketException (a RuntimeException) as-is rather than
+            // wrapping it in FileSystemException, so we have to catch the broader type and let
+            // isMissingBucket() decide. Only a missing bucket is the happy path; anything else
+            // is a real failure and must bubble up so CI surfaces it as a red step.
             if (isMissingBucket(e)) {
                 log.info("RemoteBucketCleaner — bucket {} already gone, nothing to delete", bucketUrl);
             } else {
