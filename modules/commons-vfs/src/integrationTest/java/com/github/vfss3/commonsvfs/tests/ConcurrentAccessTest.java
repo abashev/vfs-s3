@@ -1,6 +1,9 @@
 package com.github.vfss3.commonsvfs.tests;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.vfss3.commonsvfs.S3IntegrationContext;
 import java.io.IOException;
@@ -16,6 +19,7 @@ import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.Selectors;
 import org.apache.commons.vfs2.VFS;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -25,8 +29,17 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Suite G: Concurrent Access — see {@code docs/test-cases/g-concurrent-access.md}.
+ *
+ * <p>Works in the isolated {@code /concurrent/} prefix; the whole prefix is deleted in
+ * {@code @AfterAll}.
+ */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConcurrentAccessTest {
+    private static final String FOLDERS = "/concurrent/folders/";
+    private static final String READ_TEST = "/concurrent/read-test/";
+
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private FileObject root;
@@ -34,54 +47,62 @@ class ConcurrentAccessTest {
     @BeforeAll
     void setUp() throws IOException {
         root = VFS.getManager().resolveFile(S3IntegrationContext.rootUrl(), S3IntegrationContext.options());
-        if (root.exists()) {
-            root.delete(Selectors.EXCLUDE_SELF);
+        FileObject prefix = root.resolveFile("/concurrent/");
+        if (prefix.exists()) {
+            prefix.deleteAll();
         }
-        root.resolveFile("/concurrent/").createFolder();
-        root.resolveFile("/read-deadlock/").createFolder();
-        root.resolveFile("/read-deadlock/file1").createFile();
-        root.resolveFile("/read-deadlock/file2").createFile();
+        root.resolveFile(FOLDERS).createFolder();
+        root.resolveFile(READ_TEST).createFolder();
+        root.resolveFile(READ_TEST + "file1").createFile();
+        root.resolveFile(READ_TEST + "file2").createFile();
     }
 
-    @RepeatedTest(200)
-    @Execution(ExecutionMode.CONCURRENT)
-    void createFileOk() throws FileSystemException {
-        String fileName = "folder-" + Thread.currentThread().getId() + "-" + (new Random()).nextInt(1000) + "/";
-
-        FileObject parent = root.resolveFile("/concurrent/");
-        FileObject file = parent.resolveFile(fileName);
-
-        file.createFolder();
-        assertTrue(file.exists());
-
-        file.refresh();
-
-        assertTrue(file.exists());
-
-        file.delete();
-
-        file.refresh();
-
-        assertFalse(file.exists());
+    @AfterAll
+    void tearDown() throws FileSystemException {
+        FileObject prefix = root.resolveFile("/concurrent/");
+        if (prefix.exists()) {
+            prefix.deleteAll();
+        }
     }
 
+    /** Step 1: repeatedly create, refresh, and delete a per-iteration folder. */
     @RepeatedTest(200)
     @Execution(ExecutionMode.CONCURRENT)
-    void checkReadDeadlock() throws FileSystemException {
-        FileObject file = root.resolveFile("/read-deadlock");
+    void testConcurrentCreateDelete() throws FileSystemException {
+        String name = "folder-" + Thread.currentThread().getId() + "-" + new Random().nextInt(1000) + "/";
+
+        FileObject folder = root.resolveFile(FOLDERS).resolveFile(name);
+
+        folder.createFolder();
+        assertTrue(folder.exists());
+
+        folder.refresh();
+        assertTrue(folder.exists());
+
+        folder.delete();
+
+        folder.refresh();
+        assertFalse(folder.exists());
+    }
+
+    /** Step 2: repeatedly resolve a folder and walk parent/children. */
+    @RepeatedTest(200)
+    @Execution(ExecutionMode.CONCURRENT)
+    void testConcurrentRead() throws FileSystemException {
+        FileObject file = root.resolveFile(READ_TEST);
 
         assertNotNull(file.getParent());
 
         file.refresh();
 
         assertNotNull(file.getChildren());
-
         assertTrue(file.exists());
     }
 
+    /** Step 3: hammer getParent()/getChildren() from many threads and watch for deadlocks. */
     @Test
     void testGetChildrenGetParentDeadlock() throws FileSystemException, InterruptedException {
-        final FileObject parent = root.resolveFile("/concurrent/");
+        final FileObject parent = root.resolveFile(FOLDERS);
         parent.delete(Selectors.EXCLUDE_SELF);
 
         final int childCount =
@@ -92,10 +113,8 @@ class ConcurrentAccessTest {
                 Integer.parseUnsignedInt(System.getProperty("ConcurrentAccessTest.deadlockCheckInterval", "1000"));
 
         for (int i = 0; i < childCount; i++) {
-            String fileName = "deadlock-" + i;
-            FileObject file = parent.resolveFile(fileName);
+            FileObject file = parent.resolveFile("deadlock-" + i);
             file.createFile();
-
             assertTrue(file.exists());
         }
 
@@ -104,62 +123,49 @@ class ConcurrentAccessTest {
 
         List<Thread> threads = new ArrayList<>();
 
-        Thread thread = new Thread(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        while (!stopFlag.get()) {
-                            for (int i = 0; i < childCount; i++) {
-                                String fileName = "deadlock-" + i;
-
-                                try {
-                                    FileObject file = parent.resolveFile(fileName);
-                                    FileObject p = file.getParent();
-
-                                    if (p == null) {
-                                        wrongResults.incrementAndGet();
-
-                                        log.error("Parent is null");
-                                    }
-                                } catch (FileSystemException e) {
-                                    log.error("Not able to get parent for {}", fileName, e);
+        Thread getParent = new Thread(
+                () -> {
+                    while (!stopFlag.get()) {
+                        for (int i = 0; i < childCount; i++) {
+                            String name = "deadlock-" + i;
+                            try {
+                                FileObject p = parent.resolveFile(name).getParent();
+                                if (p == null) {
+                                    wrongResults.incrementAndGet();
+                                    log.error("Parent is null");
                                 }
+                            } catch (FileSystemException e) {
+                                log.error("Not able to get parent for {}", name, e);
                             }
                         }
                     }
                 },
                 "getParent");
-        thread.setDaemon(true);
-        threads.add(thread);
-        thread.start();
+        getParent.setDaemon(true);
+        threads.add(getParent);
+        getParent.start();
 
         for (int i = 0; i < 3; i++) {
-            thread = new Thread(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            while (!stopFlag.get()) {
-                                try {
-                                    final FileObject parent = root.resolveFile("/concurrent/");
-                                    int count = parent.getChildren().length;
-
-                                    if (count != childCount) {
-                                        wrongResults.incrementAndGet();
-
-                                        log.error("Wrong number of children - {}", count);
-                                    }
-
-                                    parent.refresh();
-                                } catch (FileSystemException e) {
-                                    log.error("Not able to get children for /concurrent/", e);
+            Thread getChildren = new Thread(
+                    () -> {
+                        while (!stopFlag.get()) {
+                            try {
+                                FileObject p = root.resolveFile(FOLDERS);
+                                int count = p.getChildren().length;
+                                if (count != childCount) {
+                                    wrongResults.incrementAndGet();
+                                    log.error("Wrong number of children - {}", count);
                                 }
+                                p.refresh();
+                            } catch (FileSystemException e) {
+                                log.error("Not able to get children for {}", FOLDERS, e);
                             }
                         }
                     },
                     "getChildren" + i);
-            thread.setDaemon(true);
-            threads.add(thread);
-            thread.start();
+            getChildren.setDaemon(true);
+            threads.add(getChildren);
+            getChildren.start();
         }
 
         try {
@@ -167,22 +173,16 @@ class ConcurrentAccessTest {
 
             for (int i = 0; i < duration; i++) {
                 Thread.sleep(interval);
-                long[] deadlockedThreads = threadMXBean.findDeadlockedThreads();
-                if (deadlockedThreads != null) {
-                    System.err.printf("Deadlock detected\n\n");
-                    for (ThreadInfo threadInfo : threadMXBean.getThreadInfo(deadlockedThreads, true, true)) {
+                long[] deadlocked = threadMXBean.findDeadlockedThreads();
+                if (deadlocked != null) {
+                    System.err.print("Deadlock detected\n\n");
+                    for (ThreadInfo info : threadMXBean.getThreadInfo(deadlocked, true, true)) {
                         System.err.printf(
-                                "'%s\n   java.lang.Thread.State: %s\n",
-                                threadInfo.getThreadName(),
-                                threadInfo.getThreadState().toString());
-                        final StackTraceElement[] stackTraceElements = threadInfo.getStackTrace();
-                        for (StackTraceElement stackTraceElement : stackTraceElements) {
-                            System.err.printf("        at %s\n", stackTraceElement.toString());
+                                "'%s\n   java.lang.Thread.State: %s\n", info.getThreadName(), info.getThreadState());
+                        for (StackTraceElement element : info.getStackTrace()) {
+                            System.err.printf("        at %s\n", element);
                         }
-                        System.err.printf("\n\n");
-                    }
-                    for (Thread t : threads) {
-                        t.stop();
+                        System.err.print("\n\n");
                     }
                     parent.getFileSystem()
                             .getFileSystemManager()
@@ -193,15 +193,10 @@ class ConcurrentAccessTest {
             }
         } finally {
             stopFlag.set(true);
-
             for (Thread t : threads) {
-                try {
-                    t.join(1000);
-                } catch (InterruptedException ignored) {
-                }
+                t.join(1000);
             }
-
-            root.resolveFile("/concurrent/").delete(Selectors.SELECT_CHILDREN);
+            parent.delete(Selectors.SELECT_CHILDREN);
         }
 
         assertEquals(0, wrongResults.get(), "Number of wrong calculations should be zero");

@@ -160,6 +160,8 @@ class S3ProviderTest {
 
     @Test
     @Order(6)
+    @Disabled("Unreliable external dependency: downloads a ~64 MB ISO from archive.ubuntu.com at "
+            + "test time and asserts an exact byte count. See docs/test-cases/changes-from-original.md")
     void uploadBigFile() throws IOException {
         FileObject dest = root.resolveFile("/" + BIG_FILE);
 
@@ -240,6 +242,8 @@ class S3ProviderTest {
 
     @Test
     @Order(7)
+    @Disabled("Depends on big_file.iso created by the disabled uploadBigFile; the listing checks "
+            + "are split into Suite B and Suite E. See docs/test-cases/changes-from-original.md")
     void listChildrenRoot() throws FileSystemException {
         assertHasChildren(root.resolveFile("/"), "test-place", BIG_FILE);
         assertHasChildren(

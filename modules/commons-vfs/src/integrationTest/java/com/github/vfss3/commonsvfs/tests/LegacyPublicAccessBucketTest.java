@@ -14,7 +14,7 @@ import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 /**
  * Integration test for accessing public buckets — does not need the suite's container.
  */
-public class PublicAccessBucketTest {
+public class LegacyPublicAccessBucketTest {
 
     @Test
     void testCreate() throws Exception {
