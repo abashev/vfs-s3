@@ -1,5 +1,5 @@
 [versions]
-commons-vfs2 = "2.9.0"
+commons-vfs2 = "2.10.0"
 aws-sdk-v2 = "2.46.7"
 junit-jupiter = "6.1.0"
 commons-io = "2.22.0"
@@ -20,7 +20,6 @@ aws-sdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "aws-sdk-v2" 
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
 junit-platform-suite = { module = "org.junit.platform:junit-platform-suite", version.ref = "junit-jupiter" }
 commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
-commons-httpclient = { module = "commons-httpclient:commons-httpclient", version = "3.1" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 jcl-over-slf4j = { module = "org.slf4j:jcl-over-slf4j", version.ref = "slf4j" }
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
