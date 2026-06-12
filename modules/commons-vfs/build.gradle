@@ -12,7 +12,6 @@ dependencies {
     testImplementation libs.junit.jupiter
     testImplementation libs.junit.platform.suite
     testImplementation libs.commons.io
-    testImplementation libs.commons.httpclient
     testImplementation libs.logback.classic
     testImplementation libs.jcl.over.slf4j
     testImplementation libs.assertj.core

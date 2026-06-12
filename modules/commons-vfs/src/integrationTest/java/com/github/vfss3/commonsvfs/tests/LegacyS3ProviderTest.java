@@ -33,7 +33,6 @@ class S3ProviderTest {
 
     private FileObject root;
     private FileObject binaryFile;
-    private FileObject bigFile;
 
     private String fileName, dirName;
     private FileObject file, dir;
@@ -50,7 +49,6 @@ class S3ProviderTest {
         File backupFile = new File(S3IntegrationContext.BINARY_FILE);
         assertTrue(backupFile.exists(), "Backup file should exist at " + backupFile.getAbsolutePath());
         binaryFile = manager.resolveFile(backupFile.getAbsolutePath());
-        bigFile = manager.resolveFile(S3IntegrationContext.BIG_FILE);
 
         Random r = new Random();
         fileName = "vfs-file" + r.nextInt(1000);
@@ -163,6 +161,11 @@ class S3ProviderTest {
     @Disabled("Unreliable external dependency: downloads a ~64 MB ISO from archive.ubuntu.com at "
             + "test time and asserts an exact byte count. See docs/test-cases/changes-from-original.md")
     void uploadBigFile() throws IOException {
+        // Resolved lazily here (not in @BeforeAll): S3IntegrationContext.BIG_FILE is an http:// URL,
+        // and resolving it requires VFS's http provider. This is the only test that needs it, so the
+        // rest of the class — and every suite that runs it — stays free of any http-provider dependency.
+        FileObject bigFile = VFS.getManager().resolveFile(S3IntegrationContext.BIG_FILE);
+
         FileObject dest = root.resolveFile("/" + BIG_FILE);
 
         if (dest.exists()) {
