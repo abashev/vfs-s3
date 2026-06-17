@@ -1,6 +1,6 @@
 [versions]
 commons-vfs2 = "2.10.0"
-aws-sdk-v2 = "2.46.7"
+aws-sdk-v2 = "2.46.12"
 junit-jupiter = "6.1.0"
 commons-io = "2.22.0"
 logback = "1.5.34"
