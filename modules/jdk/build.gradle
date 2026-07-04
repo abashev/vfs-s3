@@ -6,5 +6,19 @@ plugins {
 description = 'Amazon S3 FileSystemProvider for JDK NIO.2 (java.nio.file.spi.FileSystemProvider)'
 
 dependencies {
+    api libs.aws.sdk.s3
+
     testImplementation libs.junit.jupiter
+    testImplementation libs.junit.platform.suite
+    testImplementation libs.testcontainers.core
+    testImplementation libs.testcontainers.localstack
+    testImplementation libs.testcontainers.junit.jupiter
+}
+
+// Integration tests are organised as a set of @Suite classes under
+// com.github.vfss3.jdk.local — one per backend. Each suite starts its own container in
+// @BeforeSuite and runs the shared *Test classes in com.github.vfss3.jdk against it.
+// See modules/commons-vfs/build.gradle for the same pattern in more detail.
+tasks.named('integrationTest', Test) {
+    useJUnitPlatform { includeEngines 'junit-platform-suite' }
 }
