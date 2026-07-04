@@ -51,14 +51,16 @@ On CI runners, Java is installed via `actions/setup-java`. The Gradle wrapper is
 
 # AI-Assisted Development
 
-Use Codex or standard Claude Code sessions with the shared workflow in `docs/multi-agent-development.md`.
-Role-specific automation prompts are kept in `.skills/`.
+Claude Code is the engine for this workflow: one continuous session per issue moving through
+Spec → Plan → Build in-context, with Review as a deliberately separate fresh session. See
+[ADR-005](docs/adr/005-single-session-agent-lifecycle.md) and `docs/multi-agent-development.md`
+for the full lifecycle. Role-specific persona prompts are kept in `.skills/`.
 
 ## Agent Roles
 
 - **Architect** - Architectural review and API design before non-trivial implementation
 - **Developer** - Feature implementation and bug fixes
-- **Reviewer** - Code review on PRs
+- **Reviewer** - Code review on PRs, run as a separate fresh-context session
 
 ## Git Lock Workaround
 
@@ -80,12 +82,6 @@ This repository may be edited by local tools that poll git state frequently. To 
 7. Reference the related issue number in every PR when one exists
 8. All GitHub postings must be in **US English**
 9. Use `gh` CLI with an authenticated local environment for creating PRs and posting comments
-
-## Bot Identity
-
-- **Git commits**: `Codex (vfs-s3 bot) <267615948+vfs-s3-bot@users.noreply.github.com>`
-- **GitHub account**: `@vfs-s3-bot`
-- **GitHub PRs/comments**: via `gh` CLI when authenticated as the bot account
 
 ## Roadmap Context
 

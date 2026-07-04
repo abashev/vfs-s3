@@ -83,16 +83,13 @@ Closes #123
 
 ## AI-Assisted Contributions
 
-Codex and standard Claude Code sessions are welcome, but they must follow the same quality bar as
-human-written code.
+Claude Code sessions are welcome, but they must follow the same quality bar as human-written code.
 
-Role-specific prompts for automated architect, developer, and reviewer agents live in `.skills/`.
-They may be invoked through Codex automation, Claude routines, or an interactive assistant session.
-
-For this repository, Codex on GPT-5.5 is the preferred default assistant. In project practice it has
-worked much better than Opus for implementation and review because it reads the local codebase
-carefully, keeps patches scoped, follows repository instructions, and validates changes with
-concrete commands.
+Role-specific persona prompts for architect, developer, and reviewer live in `.skills/`, invoked
+within an interactive session. See [ADR-005](docs/adr/005-single-session-agent-lifecycle.md) and
+`docs/multi-agent-development.md` for the lifecycle: one continuous session per issue moving
+through Spec → Plan → Build in-context, then a separate fresh session for Review, then a
+human-only merge gate.
 
 Assistant expectations:
 
