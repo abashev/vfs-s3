@@ -4,21 +4,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -29,25 +26,20 @@ import org.junit.jupiter.api.TestMethodOrder;
 /**
  * Suite E: Copy Operations — see {@code docs/test-cases/e-copy-operations.md}. A recursive copy
  * is implemented with {@link Files#walk} since {@link Files#copy} does not recurse into
- * directories.
- *
- * <p>Not yet adapted to {@link com.github.vfss3.jdk.JdkIntegrationContext} —
- * {@code S3Path.relativize()} and {@code copy()} land in Task 7 of {@code tasks/plan.md}, which
- * also re-enables this suite.
+ * directories. Runs against whatever real S3-compatible backend the enclosing {@code @Suite}
+ * wired up via {@link JdkIntegrationContext}.
  */
-@Disabled("S3Path.relativize()/copy() not yet implemented — see Task 7 of tasks/plan.md")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CopyOperationsTest {
 
-    private static final String BUCKET = "test-bucket";
     private static final String PREFIX = "/copy/";
 
     private FileSystem fs;
 
     @BeforeEach
-    void setUp() throws IOException {
-        fs = FileSystems.newFileSystem(URI.create("s3://" + BUCKET), Map.of());
+    void setUp() {
+        fs = JdkIntegrationContext.fileSystem();
     }
 
     @AfterEach
@@ -58,7 +50,6 @@ class CopyOperationsTest {
                 walk.sorted(Comparator.reverseOrder()).forEach(CopyOperationsTest::deleteQuietly);
             }
         }
-        fs.close();
     }
 
     @Test

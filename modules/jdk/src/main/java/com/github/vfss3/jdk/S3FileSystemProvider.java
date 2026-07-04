@@ -17,6 +17,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
@@ -214,8 +215,41 @@ public class S3FileSystemProvider extends FileSystemProvider {
     }
 
     @Override
-    public void copy(Path source, Path target, CopyOption... options) {
-        throw new UnsupportedOperationException("Not yet implemented");
+    public void copy(Path source, Path target, CopyOption... options) throws IOException {
+        var src = asS3Path(source);
+        var dst = asS3Path(target);
+        var fs = src.getFileSystem();
+        var client = fs.client();
+        var srcKey = fs.toKey(src);
+        var dstKey = fs.toKey(dst);
+
+        var attrs = lookupAttributes(client, fs.getBucket(), srcKey)
+                .orElseThrow(() -> new NoSuchFileException(source.toString()));
+
+        if (attrs.isDirectory()) {
+            // Per Files.copy's contract: copying a directory creates an empty directory at the
+            // target — entries are not copied (that's the caller's job, e.g. via Files.walk).
+            if (objectExists(client, fs.getBucket(), folderPrefix(srcKey))) {
+                client.putObject(
+                        PutObjectRequest.builder()
+                                .bucket(fs.getBucket())
+                                .key(folderPrefix(dstKey))
+                                .build(),
+                        RequestBody.empty());
+            }
+            return;
+        }
+
+        if (!Arrays.asList(options).contains(StandardCopyOption.REPLACE_EXISTING)
+                && pathExists(client, fs.getBucket(), dstKey)) {
+            throw new FileAlreadyExistsException(target.toString());
+        }
+        client.copyObject(CopyObjectRequest.builder()
+                .sourceBucket(fs.getBucket())
+                .sourceKey(srcKey)
+                .destinationBucket(fs.getBucket())
+                .destinationKey(dstKey)
+                .build());
     }
 
     @Override

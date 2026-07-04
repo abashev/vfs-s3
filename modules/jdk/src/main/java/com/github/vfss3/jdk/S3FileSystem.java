@@ -50,7 +50,16 @@ public class S3FileSystem extends FileSystem {
     /** Maps an {@link S3Path} to its S3 object key (no leading slash). */
     String toKey(S3Path s3Path) {
         var key = s3Path.toString();
-        return key.startsWith("/") ? key.substring(1) : key;
+        if (key.startsWith("/")) {
+            key = key.substring(1);
+        }
+        // Always normalized without a trailing slash, even if the path string has one (e.g.
+        // fs.getPath("/copy/")) — otherwise the plain-file key and the folder-marker key
+        // (S3FileSystemProvider.folderPrefix) would collide for such paths.
+        while (key.endsWith("/")) {
+            key = key.substring(0, key.length() - 1);
+        }
+        return key;
     }
 
     @Override
