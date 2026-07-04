@@ -9,7 +9,7 @@ See `tasks/plan.md` for full task descriptions, acceptance criteria, and verific
 
 ## Phase 2: Core provider, proven against MinIO
 - [x] Task 3: Real file-level CRUD + MinIO harness (Suite A)
-- [ ] Task 4: Directory operations (Suite B)
+- [x] Task 4: Directory operations (Suite B)
 - [ ] Task 5: Upload/download streaming (Suite C)
 - [ ] Task 6: File metadata (Suite D)
 - [ ] Task 7: Copy operations + `S3Path.relativize()` (Suite E)

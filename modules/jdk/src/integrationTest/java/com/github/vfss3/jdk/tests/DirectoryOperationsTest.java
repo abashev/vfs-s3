@@ -4,21 +4,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -28,30 +25,24 @@ import org.junit.jupiter.api.TestMethodOrder;
 /**
  * Suite B: Directory Operations — see {@code docs/test-cases/b-directory-operations.md}. Folder
  * listing and the find selectors are expressed with {@link DirectoryStream} and
- * {@link Files#walk}.
- *
- * <p>Not yet adapted to {@link com.github.vfss3.jdk.JdkIntegrationContext} — {@code
- * createDirectory}/{@code newDirectoryStream} land in Task 4 of {@code tasks/plan.md}, which
- * also re-enables this suite.
+ * {@link Files#walk}. Runs against whatever real S3-compatible backend the enclosing
+ * {@code @Suite} wired up via {@link JdkIntegrationContext}.
  */
-@Disabled("createDirectory/newDirectoryStream not yet implemented — see Task 4 of tasks/plan.md")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DirectoryOperationsTest {
 
-    private static final String BUCKET = "test-bucket";
     private static final String PREFIX = "/dir-ops/";
 
     private FileSystem fs;
 
     @BeforeEach
-    void setUp() throws IOException {
-        fs = FileSystems.newFileSystem(URI.create("s3://" + BUCKET), Map.of());
+    void setUp() {
+        fs = JdkIntegrationContext.fileSystem();
     }
 
     @AfterEach
     void tearDown() throws IOException {
         deleteRecursively(fs.getPath(PREFIX));
-        fs.close();
     }
 
     /** Step 1: create a folder and assert it exists as a directory. */
