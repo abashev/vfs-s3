@@ -4,19 +4,16 @@ import static java.time.ZoneOffset.UTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -25,15 +22,11 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Only the metadata the NIO.2 API exposes is checked: size and last-modified time. The
  * S3-specific items from the original suite (content type, signed URL, MD5 hash) have no NIO.2
- * analog and are intentionally omitted.
- *
- * <p>Not yet adapted to {@link com.github.vfss3.jdk.JdkIntegrationContext} — re-enabled in Task
- * 6 of {@code tasks/plan.md}.
+ * analog and are intentionally omitted. Runs against whatever real S3-compatible backend the
+ * enclosing {@code @Suite} wired up via {@link JdkIntegrationContext}.
  */
-@Disabled("Not yet adapted to JdkIntegrationContext — see Task 6 of tasks/plan.md")
 class FileMetadataTest {
 
-    private static final String BUCKET = "test-bucket";
     private static final String PREFIX = "/metadata/";
 
     private FileSystem fs;
@@ -41,7 +34,7 @@ class FileMetadataTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        fs = FileSystems.newFileSystem(URI.create("s3://" + BUCKET), Map.of());
+        fs = JdkIntegrationContext.fileSystem();
         payload = new byte[12_345];
         new Random(7).nextBytes(payload);
         Files.write(fs.getPath(PREFIX + "backup.bin"), payload);
@@ -61,7 +54,6 @@ class FileMetadataTest {
                 });
             }
         }
-        fs.close();
     }
 
     /** Step 2: content size matches the written payload. */
