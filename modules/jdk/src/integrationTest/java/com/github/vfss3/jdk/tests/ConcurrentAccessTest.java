@@ -1,4 +1,4 @@
-package com.github.vfss3.jdk;
+package com.github.vfss3.jdk.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -22,14 +22,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Suite G: Concurrent Access for the JDK NIO.2 mock backend — see
- * {@code docs/test-cases/g-concurrent-access.md}. Exercises the provider from many threads and
- * watches for deadlocks via {@link java.lang.management.ThreadMXBean}.
+ * Suite G: Concurrent Access — see {@code docs/test-cases/g-concurrent-access.md}. Exercises the
+ * provider from many threads and watches for deadlocks via
+ * {@link java.lang.management.ThreadMXBean}.
+ *
+ * <p>Not yet adapted to {@link com.github.vfss3.jdk.JdkIntegrationContext} — depends on
+ * directory operations (Task 4); re-enabled in Task 9 of {@code tasks/plan.md}.
  */
+@Disabled("Depends on createDirectory/newDirectoryStream — see Task 9 of tasks/plan.md")
 class ConcurrentAccessTest {
 
     private static final String BUCKET = "test-bucket";
@@ -167,7 +172,7 @@ class ConcurrentAccessTest {
         try {
             for (int i = 0; i < iterations; i++) {
                 final int index = i;
-                pool.submit(() -> {
+                var unused = pool.submit(() -> {
                     try {
                         task.run(index);
                     } catch (Throwable t) {

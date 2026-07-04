@@ -1,4 +1,4 @@
-package com.github.vfss3.jdk;
+package com.github.vfss3.jdk.tests;
 
 import static java.time.ZoneOffset.UTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,17 +16,21 @@ import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Suite D: File Metadata for the JDK NIO.2 mock backend — see
- * {@code docs/test-cases/d-file-metadata.md}.
+ * Suite D: File Metadata — see {@code docs/test-cases/d-file-metadata.md}.
  *
  * <p>Only the metadata the NIO.2 API exposes is checked: size and last-modified time. The
  * S3-specific items from the original suite (content type, signed URL, MD5 hash) have no NIO.2
  * analog and are intentionally omitted.
+ *
+ * <p>Not yet adapted to {@link com.github.vfss3.jdk.JdkIntegrationContext} — re-enabled in Task
+ * 6 of {@code tasks/plan.md}.
  */
+@Disabled("Not yet adapted to JdkIntegrationContext — see Task 6 of tasks/plan.md")
 class FileMetadataTest {
 
     private static final String BUCKET = "test-bucket";

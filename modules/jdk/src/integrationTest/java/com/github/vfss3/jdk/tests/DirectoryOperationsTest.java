@@ -1,4 +1,4 @@
-package com.github.vfss3.jdk;
+package com.github.vfss3.jdk.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -25,10 +26,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 /**
- * Suite B: Directory Operations for the JDK NIO.2 mock backend — see
- * {@code docs/test-cases/b-directory-operations.md}. Folder listing and the find selectors
- * are expressed with {@link DirectoryStream} and {@link Files#walk}.
+ * Suite B: Directory Operations — see {@code docs/test-cases/b-directory-operations.md}. Folder
+ * listing and the find selectors are expressed with {@link DirectoryStream} and
+ * {@link Files#walk}.
+ *
+ * <p>Not yet adapted to {@link com.github.vfss3.jdk.JdkIntegrationContext} — {@code
+ * createDirectory}/{@code newDirectoryStream} land in Task 4 of {@code tasks/plan.md}, which
+ * also re-enables this suite.
  */
+@Disabled("createDirectory/newDirectoryStream not yet implemented — see Task 4 of tasks/plan.md")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DirectoryOperationsTest {
 

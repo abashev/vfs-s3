@@ -5,7 +5,9 @@ import java.util.Map;
 import java.util.Optional;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /**
@@ -36,13 +38,29 @@ public record S3FileSystemConfig(String region, URI endpoint, AwsCredentialsProv
     }
 
     public S3Client buildS3Client() {
-        var builder = S3Client.builder().credentialsProvider(credentialsProvider);
-        if (region != null) {
-            builder.region(Region.of(region));
-        }
+        var builder =
+                S3Client.builder().credentialsProvider(credentialsProvider).region(resolveRegion());
         if (endpoint != null) {
-            builder.endpointOverride(endpoint);
+            // A custom endpoint is never an AWS virtual-hosted-style domain, so path-style
+            // addressing is required (LocalStack, MinIO, and similar local emulators).
+            builder.endpointOverride(endpoint).forcePathStyle(true);
         }
         return builder.build();
+    }
+
+    /**
+     * Falls back to {@link Region#US_EAST_1} when neither an explicit override nor the SDK
+     * default provider chain can resolve one — keeps client construction offline-safe (no
+     * region configured anywhere) instead of throwing at build time.
+     */
+    private Region resolveRegion() {
+        if (region != null) {
+            return Region.of(region);
+        }
+        try {
+            return DefaultAwsRegionProviderChain.builder().build().getRegion();
+        } catch (SdkClientException e) {
+            return Region.US_EAST_1;
+        }
     }
 }

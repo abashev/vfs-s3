@@ -3,12 +3,12 @@
 See `tasks/plan.md` for full task descriptions, acceptance criteria, and verification commands.
 
 ## Phase 1: Foundation
-- [ ] Task 1: Gradle dependencies for the jdk module
-- [ ] Task 2: `S3FileSystemConfig` — minimal env-override config
-- [ ] Checkpoint: Foundation
+- [x] Task 1: Gradle dependencies for the jdk module
+- [x] Task 2: `S3FileSystemConfig` — minimal env-override config
+- [x] Checkpoint: Foundation
 
 ## Phase 2: Core provider, proven against MinIO
-- [ ] Task 3: Real file-level CRUD + MinIO harness (Suite A)
+- [x] Task 3: Real file-level CRUD + MinIO harness (Suite A)
 - [ ] Task 4: Directory operations (Suite B)
 - [ ] Task 5: Upload/download streaming (Suite C)
 - [ ] Task 6: File metadata (Suite D)
