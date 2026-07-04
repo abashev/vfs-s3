@@ -12,7 +12,9 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystemException;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
@@ -29,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
@@ -56,6 +59,8 @@ public class S3FileSystemProvider extends FileSystemProvider {
 
     static final String SCHEME = "s3";
 
+    private final Map<String, S3FileSystem> openFileSystems = new ConcurrentHashMap<>();
+
     @Override
     public String getScheme() {
         return SCHEME;
@@ -64,19 +69,35 @@ public class S3FileSystemProvider extends FileSystemProvider {
     @Override
     public FileSystem newFileSystem(URI uri, Map<String, ?> env) {
         checkUri(uri);
-        return new S3FileSystem(this, uri, env);
+        var bucket = uri.getHost();
+        var fs = new S3FileSystem(this, uri, env);
+        if (openFileSystems.putIfAbsent(bucket, fs) != null) {
+            throw new FileSystemAlreadyExistsException("s3://" + bucket);
+        }
+        return fs;
     }
 
     @Override
     public FileSystem getFileSystem(URI uri) {
         checkUri(uri);
-        throw new UnsupportedOperationException("Use newFileSystem to obtain an S3FileSystem");
+        var fs = openFileSystems.get(uri.getHost());
+        if (fs == null) {
+            throw new FileSystemNotFoundException("s3://" + uri.getHost());
+        }
+        return fs;
     }
 
     @Override
     public Path getPath(URI uri) {
         checkUri(uri);
-        throw new UnsupportedOperationException("Not yet implemented");
+        var fs = (S3FileSystem) getFileSystem(uri);
+        var path = uri.getPath();
+        return fs.getPath(path == null || path.isEmpty() ? "/" : path);
+    }
+
+    /** Called from {@link S3FileSystem#close()} so a closed bucket can be reopened. */
+    void unregister(String bucket) {
+        openFileSystems.remove(bucket);
     }
 
     @Override
@@ -291,7 +312,7 @@ public class S3FileSystemProvider extends FileSystemProvider {
 
     @Override
     public FileStore getFileStore(Path path) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return new S3FileStore(asS3Path(path).getFileSystem().getBucket());
     }
 
     @Override

@@ -71,6 +71,7 @@ public class S3FileSystem extends FileSystem {
     public void close() {
         open = false;
         client.close();
+        provider.unregister(bucket);
     }
 
     @Override
@@ -95,7 +96,7 @@ public class S3FileSystem extends FileSystem {
 
     @Override
     public Iterable<FileStore> getFileStores() {
-        return Set.of();
+        return Set.of(new S3FileStore(bucket));
     }
 
     @Override
