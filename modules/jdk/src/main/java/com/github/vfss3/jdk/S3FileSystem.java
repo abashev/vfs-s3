@@ -1,5 +1,7 @@
 package com.github.vfss3.jdk;
 
+import static java.util.Comparator.reverseOrder;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileStore;
@@ -10,7 +12,6 @@ import java.nio.file.PathMatcher;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -75,7 +76,7 @@ public class S3FileSystem extends FileSystem {
                 return;
             }
             try (var walk = Files.walk(root)) {
-                walk.sorted(Comparator.reverseOrder()).forEach(p -> {
+                walk.sorted(reverseOrder()).forEach(p -> {
                     try {
                         Files.deleteIfExists(p);
                     } catch (IOException ignored) {

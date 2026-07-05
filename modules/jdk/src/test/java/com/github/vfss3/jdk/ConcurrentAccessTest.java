@@ -1,5 +1,6 @@
 package com.github.vfss3.jdk;
 
+import static java.util.Comparator.reverseOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -12,7 +13,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -52,7 +52,7 @@ class ConcurrentAccessTest {
         var prefix = fs.getPath("/concurrent/");
         if (Files.exists(prefix)) {
             try (Stream<Path> walk = Files.walk(prefix)) {
-                walk.sorted(Comparator.reverseOrder()).forEach(p -> {
+                walk.sorted(reverseOrder()).forEach(p -> {
                     try {
                         Files.deleteIfExists(p);
                     } catch (IOException ignored) {

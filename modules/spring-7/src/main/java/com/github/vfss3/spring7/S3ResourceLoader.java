@@ -1,11 +1,12 @@
 package com.github.vfss3.spring7;
 
+import static java.util.Comparator.reverseOrder;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 
@@ -126,7 +127,7 @@ public class S3ResourceLoader extends DefaultResourceLoader implements Closeable
             return;
         }
         try (var walk = Files.walk(tmpDir)) {
-            walk.sorted(Comparator.reverseOrder()).forEach(p -> {
+            walk.sorted(reverseOrder()).forEach(p -> {
                 try {
                     Files.deleteIfExists(p);
                 } catch (IOException ignored) {
