@@ -1,18 +1,18 @@
 package com.github.vfss3.jdk.tests;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Comparator.reverseOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -147,9 +147,7 @@ class DirectoryOperationsTest {
         Files.write(base.resolve("child-dir/descendant.tmp"), bytes("c"));
 
         try (Stream<Path> walk = Files.walk(base)) {
-            walk.filter(p -> !p.equals(base))
-                    .sorted(Comparator.reverseOrder())
-                    .forEach(DirectoryOperationsTest::deleteQuietly);
+            walk.filter(p -> !p.equals(base)).sorted(reverseOrder()).forEach(DirectoryOperationsTest::deleteQuietly);
         }
 
         try (Stream<Path> walk = Files.walk(base)) {
@@ -166,7 +164,7 @@ class DirectoryOperationsTest {
     }
 
     private static byte[] bytes(String s) {
-        return s.getBytes(StandardCharsets.UTF_8);
+        return s.getBytes(UTF_8);
     }
 
     private static void deleteQuietly(Path p) {
@@ -182,7 +180,7 @@ class DirectoryOperationsTest {
             return;
         }
         try (Stream<Path> walk = Files.walk(root)) {
-            walk.sorted(Comparator.reverseOrder()).forEach(DirectoryOperationsTest::deleteQuietly);
+            walk.sorted(reverseOrder()).forEach(DirectoryOperationsTest::deleteQuietly);
         }
     }
 }

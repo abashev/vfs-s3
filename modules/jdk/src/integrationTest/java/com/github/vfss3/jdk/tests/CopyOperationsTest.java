@@ -1,17 +1,17 @@
 package com.github.vfss3.jdk.tests;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Comparator.reverseOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -47,7 +47,7 @@ class CopyOperationsTest {
         var prefix = fs.getPath(PREFIX);
         if (Files.exists(prefix)) {
             try (Stream<Path> walk = Files.walk(prefix)) {
-                walk.sorted(Comparator.reverseOrder()).forEach(CopyOperationsTest::deleteQuietly);
+                walk.sorted(reverseOrder()).forEach(CopyOperationsTest::deleteQuietly);
             }
         }
     }
@@ -92,9 +92,7 @@ class CopyOperationsTest {
 
         // Step 4: delete every child of the prefix.
         try (Stream<Path> walk = Files.walk(base)) {
-            walk.filter(p -> !p.equals(base))
-                    .sorted(Comparator.reverseOrder())
-                    .forEach(CopyOperationsTest::deleteQuietly);
+            walk.filter(p -> !p.equals(base)).sorted(reverseOrder()).forEach(CopyOperationsTest::deleteQuietly);
         }
         assertFalse(Files.exists(base.resolve("child-dir")), "child-dir should be gone");
     }
@@ -124,7 +122,7 @@ class CopyOperationsTest {
     }
 
     private static byte[] bytes(String s) {
-        return s.getBytes(StandardCharsets.UTF_8);
+        return s.getBytes(UTF_8);
     }
 
     private static void deleteQuietly(Path p) {
