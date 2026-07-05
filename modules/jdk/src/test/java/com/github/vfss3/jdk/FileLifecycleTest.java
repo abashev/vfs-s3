@@ -3,6 +3,7 @@ package com.github.vfss3.jdk;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.Comparator.reverseOrder;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -51,7 +52,7 @@ class FileLifecycleTest {
         var lifecycleDir = fs.getPath("/file-lifecycle");
         if (Files.exists(lifecycleDir)) {
             try (var walk = Files.walk(lifecycleDir)) {
-                walk.sorted(java.util.Comparator.reverseOrder()).forEach(p -> {
+                walk.sorted(reverseOrder()).forEach(p -> {
                     try {
                         Files.deleteIfExists(p);
                     } catch (IOException ignored) {

@@ -1,5 +1,6 @@
 package com.github.vfss3.jdk;
 
+import static java.util.Comparator.reverseOrder;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,7 +12,6 @@ import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -45,7 +45,7 @@ class UploadDownloadTest {
         var prefix = fs.getPath(PREFIX);
         if (Files.exists(prefix)) {
             try (Stream<java.nio.file.Path> walk = Files.walk(prefix)) {
-                walk.sorted(Comparator.reverseOrder()).forEach(p -> {
+                walk.sorted(reverseOrder()).forEach(p -> {
                     try {
                         Files.deleteIfExists(p);
                     } catch (IOException ignored) {

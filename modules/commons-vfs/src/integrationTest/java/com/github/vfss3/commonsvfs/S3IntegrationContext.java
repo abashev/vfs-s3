@@ -1,9 +1,9 @@
 package com.github.vfss3.commonsvfs;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
 import java.net.URI;
-import java.util.Objects;
 import java.util.Random;
 import org.apache.commons.vfs2.FileSystemOptions;
 
@@ -37,8 +37,8 @@ public final class S3IntegrationContext {
      * which can freely create and delete throwaway buckets.
      */
     public static void initialize(URI endpoint, S3FileSystemOptions backendOptions) {
-        Objects.requireNonNull(endpoint, "endpoint");
-        Objects.requireNonNull(backendOptions, "backendOptions");
+        requireNonNull(endpoint, "endpoint");
+        requireNonNull(backendOptions, "backendOptions");
 
         backendOptions.setCreateBucket(true);
 
@@ -57,8 +57,8 @@ public final class S3IntegrationContext {
      * bucket the test user has read+write access to.
      */
     public static void initialize(String bucketUrl, S3FileSystemOptions backendOptions) {
-        Objects.requireNonNull(bucketUrl, "bucketUrl");
-        Objects.requireNonNull(backendOptions, "backendOptions");
+        requireNonNull(bucketUrl, "bucketUrl");
+        requireNonNull(backendOptions, "backendOptions");
 
         rootUrl = bucketUrl;
         options = backendOptions.toFileSystemOptions();
@@ -80,11 +80,10 @@ public final class S3IntegrationContext {
     }
 
     public static String rootUrl() {
-        return Objects.requireNonNull(
-                rootUrl, "S3IntegrationContext is not initialized — must run inside a configured @Suite");
+        return requireNonNull(rootUrl, "S3IntegrationContext is not initialized — must run inside a configured @Suite");
     }
 
     public static FileSystemOptions options() {
-        return Objects.requireNonNull(options, "S3IntegrationContext is not initialized");
+        return requireNonNull(options, "S3IntegrationContext is not initialized");
     }
 }

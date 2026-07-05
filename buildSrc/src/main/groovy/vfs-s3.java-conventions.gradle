@@ -77,8 +77,22 @@ spotless {
 dependencies {
     errorprone libs.errorprone.core
     errorprone libs.nullaway
+    // Picnic's error-prone-support: extra bug checkers on top of stock Error Prone. We only use
+    // it for StaticImport today (promoted to an error below) — it flags qualified calls to
+    // commonly-static-imported JDK/JUnit members (Objects.requireNonNull, Comparator.reverseOrder,
+    // StandardCharsets.UTF_8, …) more precisely and more broadly than a hand-rolled Checkstyle
+    // regex ever could, since it works on the AST. The version pinned in the catalog must stay
+    // compatible with our errorprone version (2.42.0) per
+    // https://error-prone.picnic.tech/compatibility/ — bump both together.
+    errorprone libs.error.prone.support.contrib
 }
 
 nullaway {
     annotatedPackages.add('com.github.vfss3')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.errorprone {
+        error('StaticImport')
+    }
 }
