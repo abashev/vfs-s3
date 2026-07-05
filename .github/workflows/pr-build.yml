@@ -49,8 +49,8 @@ jobs:
           comment-type: pr_comment
           update-comment: true
 
-  local-suites:
-    name: Local suite — ${{ matrix.suite }}
+  commons-vfs-local-suites:
+    name: commons-vfs local suite — ${{ matrix.suite }}
     needs: build
     runs-on: ubuntu-latest
     strategy:

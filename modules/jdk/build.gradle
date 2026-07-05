@@ -16,9 +16,26 @@ dependencies {
 }
 
 // Integration tests are organised as a set of @Suite classes under
-// com.github.vfss3.jdk.local — one per backend. Each suite starts its own container in
-// @BeforeSuite and runs the shared *Test classes in com.github.vfss3.jdk against it.
-// See modules/commons-vfs/build.gradle for the same pattern in more detail.
+// com.github.vfss3.jdk.{local,remote} — one per backend, plus a remote suite that targets a
+// real AWS/Yandex bucket configured through environment variables. Each local suite starts its
+// own container in @BeforeSuite and runs the shared *Test classes in com.github.vfss3.jdk.tests
+// against it. See modules/commons-vfs/build.gradle for the same pattern in more detail.
 tasks.named('integrationTest', Test) {
     useJUnitPlatform { includeEngines 'junit-platform-suite' }
+    if (!providers.environmentVariable('BASE_URL').isPresent()) {
+        exclude '**/remote/EnvironmentBasedSuite.class'
+    }
+}
+
+// Standalone cleanup for the remote integration bucket — see
+// modules/commons-vfs/build.gradle's dropRemoteBucket task for the rationale (CI runs this in
+// an `if: always()` step so a failed/killed test JVM can't leak the bucket).
+//
+//   BASE_URL=… BUCKET_TOKEN=… AWS_ACCESS_KEY_ID=… AWS_SECRET_KEY=… \
+//     ./gradlew :modules:jdk:dropRemoteBucket
+tasks.register('dropRemoteBucket', JavaExec) {
+    group = 'verification'
+    description = 'Delete the remote S3 test bucket named by BASE_URL + BUCKET_TOKEN.'
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    mainClass = 'com.github.vfss3.jdk.remote.RemoteBucketCleaner'
 }
