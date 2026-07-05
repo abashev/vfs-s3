@@ -49,7 +49,11 @@ final class S3FileStore extends FileStore {
 
     @Override
     public boolean supportsFileAttributeView(Class<? extends FileAttributeView> type) {
-        return type.getSimpleName().equals("BasicFileAttributeView");
+        // S3FileSystemProvider.getFileAttributeView always returns null — no FileAttributeView
+        // is ever exposed, so no Class<? extends FileAttributeView> can be claimed as supported
+        // here. (Reading "basic" attributes is still supported, via readAttributes(Path,
+        // Class<BasicFileAttributes>, ...) — that's a different, non-view-based API.)
+        return false;
     }
 
     @Override

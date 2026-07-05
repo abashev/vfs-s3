@@ -45,7 +45,7 @@ class FileLifecycleTest {
 
     @AfterEach
     void tearDown() throws IOException {
-        for (var name : List.of("test-file", "file.txt", "name with space", "renamed")) {
+        for (var name : List.of("test-file", "file.txt", "name with space", "renamed", "existing-destination")) {
             Files.deleteIfExists(fs.getPath(PREFIX + name));
         }
     }
@@ -145,12 +145,31 @@ class FileLifecycleTest {
         assertThrows(FileSystemException.class, () -> Files.move(original, original));
     }
 
+    /** Step 5b: move onto an existing destination without REPLACE_EXISTING throws. */
+    @Test
+    @Order(7)
+    @DisplayName("Step 5b: move onto existing destination throws without REPLACE_EXISTING")
+    void step5b_moveOntoExistingDestinationThrows() throws IOException {
+        var source = fs.getPath(PREFIX + "test-file");
+        var destination = fs.getPath(PREFIX + "existing-destination");
+
+        Files.write(source, CONTENT.getBytes(UTF_8), CREATE, WRITE);
+        Files.write(destination, "already here".getBytes(UTF_8), CREATE, WRITE);
+
+        assertThrows(FileAlreadyExistsException.class, () -> Files.move(source, destination));
+        assertTrue(Files.exists(source), "Source should remain untouched after a rejected move");
+        assertArrayEquals(
+                "already here".getBytes(UTF_8),
+                Files.readAllBytes(destination),
+                "Destination content should be untouched after a rejected move");
+    }
+
     /**
      * Step 6: Non-existent path → does not exist. Existing file path → exists and is a regular
      * file.
      */
     @Test
-    @Order(7)
+    @Order(8)
     @DisplayName("Step 6: file type checks — exists() and isRegularFile()")
     void step6_fileTypeChecks() throws IOException {
         var existing = fs.getPath(PREFIX + "test-file");
@@ -165,7 +184,7 @@ class FileLifecycleTest {
 
     /** Step 7: Deeply nested non-existent path → does not exist. No exception thrown. */
     @Test
-    @Order(8)
+    @Order(9)
     @DisplayName("Step 7: deeply nested non-existent path returns false without exception")
     void step7_deeplyNestedNonExistentPathDoesNotExist() {
         var path = fs.getPath(PREFIX + "does/not/exist");
@@ -174,7 +193,7 @@ class FileLifecycleTest {
 
     /** Verify reading a non-existent file throws NoSuchFileException. */
     @Test
-    @Order(9)
+    @Order(10)
     @DisplayName("Read non-existent file throws NoSuchFileException")
     void readNonExistentFileThrows() {
         var path = fs.getPath("/ghost.txt");

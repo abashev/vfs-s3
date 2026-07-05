@@ -27,6 +27,7 @@ import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -184,7 +185,7 @@ public class S3FileSystemProvider extends FileSystemProvider {
         }
         return new DirectoryStream<>() {
             @Override
-            public java.util.Iterator<Path> iterator() {
+            public Iterator<Path> iterator() {
                 return filtered.iterator();
             }
 
@@ -273,6 +274,10 @@ public class S3FileSystemProvider extends FileSystemProvider {
                 .build());
     }
 
+    /**
+     * Implemented as server-side copy followed by delete — not an atomic rename. An error
+     * between the two calls can leave both the source and the destination present.
+     */
     @Override
     public void move(Path source, Path target, CopyOption... options) throws IOException {
         var src = asS3Path(source);
@@ -285,6 +290,10 @@ public class S3FileSystemProvider extends FileSystemProvider {
         var dstKey = fs.toKey(dst);
         if (!objectExists(fs.client(), fs.getBucket(), srcKey)) {
             throw new NoSuchFileException(source.toString());
+        }
+        if (!Arrays.asList(options).contains(StandardCopyOption.REPLACE_EXISTING)
+                && pathExists(fs.client(), fs.getBucket(), dstKey)) {
+            throw new FileAlreadyExistsException(target.toString());
         }
         fs.client()
                 .copyObject(CopyObjectRequest.builder()
@@ -497,6 +506,12 @@ public class S3FileSystemProvider extends FileSystemProvider {
                 throw new NonWritableChannelException();
             }
             int n = src.remaining();
+            if (position > Integer.MAX_VALUE - n) {
+                // The whole object is buffered in memory as a single byte[] (see class
+                // javadoc) — fail loudly here rather than silently truncating/wrapping the
+                // int arithmetic below once an object would exceed array-size limits.
+                throw new IOException("Object exceeds the " + Integer.MAX_VALUE + "-byte in-memory buffer limit");
+            }
             ensureCapacity((int) position + n);
             src.get(data, (int) position, n);
             position += n;
