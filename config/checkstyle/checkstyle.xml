@@ -7,13 +7,34 @@
   Guardrails for patterns Error Prone/NullAway don't check for. Add a
   RegexpSinglelineJava module below for each new banned pattern, with a
   message that says what to write instead.
+
+  The three modules below mirror the JDK/JUnit entries of Picnic's
+  error-prone-support StaticImport checker's candidate list
+  (https://error-prone.picnic.tech/bugpatterns/StaticImport/) — everything
+  in that list except its Guava entries, since this project doesn't depend
+  on Guava. Adopting that checker directly isn't an option today: it
+  requires JDK 21+ to run, and this project deliberately pins Error Prone
+  at the last release that still runs on JDK 17.
 -->
 <module name="Checker">
     <module name="TreeWalker">
         <module name="RegexpSinglelineJava">
-            <property name="format" value="\bObjects\.requireNonNull\("/>
+            <property name="format"
+                      value="\b(Objects\.(requireNonNullElseGet|requireNonNullElse|requireNonNull|checkFromIndexSize|checkFromToIndex|checkIndex)|Function\.identity|Predicate\.not|UUID\.randomUUID)\("/>
             <property name="message"
-                      value="Use a static import (import static java.util.Objects.requireNonNull;) instead of a qualified Objects.requireNonNull(...) call."/>
+                      value="Use a static import instead of a qualified call to this java.util method (e.g. import static java.util.Objects.requireNonNull;)."/>
+            <property name="ignoreComments" value="true"/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="(?&lt;!\.)\bZoneOffset\.UTC\b"/>
+            <property name="message"
+                      value="Use a static import (import static java.time.ZoneOffset.UTC;) instead of a qualified ZoneOffset.UTC reference."/>
+            <property name="ignoreComments" value="true"/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="\bArguments\.(argumentSet|arguments)\("/>
+            <property name="message"
+                      value="Use a static import (import static org.junit.jupiter.params.provider.Arguments.arguments; or .argumentSet;) instead of a qualified Arguments.*(...) call."/>
             <property name="ignoreComments" value="true"/>
         </module>
     </module>
