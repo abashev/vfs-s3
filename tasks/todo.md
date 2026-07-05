@@ -24,5 +24,5 @@ See `tasks/plan.md` for full task descriptions, acceptance criteria, and verific
 - [x] Checkpoint: All 9 backends green (8/9 verified locally; CloudServer verified in CI, see Task 11)
 
 ## Phase 4: CI wiring
-- [ ] Task 13: CI matrix job for `:modules:jdk:integrationTest`
-- [ ] Checkpoint: Complete
+- [x] Task 13: CI matrix job for `:modules:jdk:integrationTest`
+- [x] Checkpoint: Complete
