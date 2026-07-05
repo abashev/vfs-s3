@@ -1,5 +1,7 @@
 package com.github.vfss3.jdk;
 
+import static java.util.Objects.requireNonNull;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -7,7 +9,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -30,8 +31,8 @@ public final class JdkIntegrationContext {
      * container suites (MinIO, LocalStack, …).
      */
     public static void initialize(URI endpoint, Map<String, ?> env) {
-        Objects.requireNonNull(endpoint, "endpoint");
-        Objects.requireNonNull(env, "env");
+        requireNonNull(endpoint, "endpoint");
+        requireNonNull(env, "env");
 
         var fullEnv = new HashMap<String, Object>(env);
         fullEnv.put("aws.endpoint", endpoint.toString());
@@ -46,8 +47,8 @@ public final class JdkIntegrationContext {
      * prefix.
      */
     public static void initialize(String bucket, Map<String, ?> env) {
-        Objects.requireNonNull(bucket, "bucket");
-        Objects.requireNonNull(env, "env");
+        requireNonNull(bucket, "bucket");
+        requireNonNull(env, "env");
 
         createBucketAndOpen(bucket, env);
     }
@@ -75,7 +76,7 @@ public final class JdkIntegrationContext {
     }
 
     public static FileSystem fileSystem() {
-        return Objects.requireNonNull(
+        return requireNonNull(
                 fileSystem, "JdkIntegrationContext is not initialized — must run inside a configured @Suite");
     }
 
