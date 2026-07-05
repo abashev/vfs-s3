@@ -19,7 +19,7 @@ See `tasks/plan.md` for full task descriptions, acceptance criteria, and verific
 
 ## Phase 3: Roll out to the remaining 8 backends
 - [x] Task 10: Simple GenericContainer backends — LocalStack, MiniStack, Floci, S3Mock
-- [ ] Task 11: Env-configured backends — CloudServer, SeaweedFS, RustFS
+- [x] Task 11: Env-configured backends — CloudServer, SeaweedFS, RustFS (CloudServer verified-in-code only, see commit)
 - [ ] Task 12: Garage (bootstrap-required backend)
 - [ ] Checkpoint: All 9 backends green
 
