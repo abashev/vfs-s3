@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'jacoco'
+    id 'checkstyle'
     id 'com.diffplug.spotless'
     id 'net.ltgt.errorprone'
     id 'net.ltgt.nullaway'
@@ -81,4 +82,11 @@ dependencies {
 
 nullaway {
     annotatedPackages.add('com.github.vfss3')
+}
+
+// Checkstyle — guardrails for patterns Error Prone/NullAway don't check for (see
+// config/checkstyle/checkstyle.xml). Runs as part of `check`, same as the other verifiers here.
+checkstyle {
+    toolVersion = libs.versions.checkstyle.get()
+    configFile = rootProject.file('config/checkstyle/checkstyle.xml')
 }

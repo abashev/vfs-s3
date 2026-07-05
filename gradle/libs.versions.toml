@@ -11,6 +11,7 @@ jackson = "2.15.4"
 palantir-java-format = "2.89.0"
 errorprone = "2.42.0"
 nullaway = "0.13.7"
+checkstyle = "10.21.2"
 spring = "6.2.4"
 spring7 = "7.0.6"
 
