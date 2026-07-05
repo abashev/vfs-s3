@@ -16,6 +16,7 @@
  */
 package com.github.vfss3.commonsvfs;
 
+import static java.util.Collections.emptyMap;
 import static org.apache.commons.vfs2.FileType.FILE;
 import static org.apache.commons.vfs2.FileType.FOLDER;
 
@@ -571,7 +572,7 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      * @throws Exception if an error occurs.
      */
     protected Map<String, Object> doGetAttributes() throws Exception {
-        return Collections.emptyMap();
+        return emptyMap();
     }
 
     /**

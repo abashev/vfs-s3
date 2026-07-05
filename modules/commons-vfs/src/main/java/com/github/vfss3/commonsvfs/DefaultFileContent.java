@@ -16,11 +16,12 @@
  */
 package com.github.vfss3.commonsvfs;
 
+import static java.util.Collections.unmodifiableMap;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.cert.Certificate;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.vfs2.*;
@@ -206,7 +207,7 @@ final class DefaultFileContent implements FileContent {
             try {
                 synchronized (this) {
                     attrs = fileObject.doGetAttributes();
-                    roAttrs = Collections.unmodifiableMap(attrs);
+                    roAttrs = unmodifiableMap(attrs);
                     resetAttributes = false;
                 }
             } catch (final Exception e) {

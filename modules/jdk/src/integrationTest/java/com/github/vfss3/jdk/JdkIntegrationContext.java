@@ -1,6 +1,7 @@
 package com.github.vfss3.jdk;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -10,7 +11,6 @@ import java.nio.file.FileSystems;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 /**
  * Process-wide data holder shared between a backend-specific {@code @Suite} (MinIO, LocalStack,
@@ -86,6 +86,6 @@ public final class JdkIntegrationContext {
      * CI's deterministic {@code BUCKET_TOKEN} isn't set.
      */
     public static String randomBucketToken() {
-        return new Random().ints(3).mapToObj(i -> String.format("%08x", i)).collect(Collectors.joining());
+        return new Random().ints(3).mapToObj(i -> String.format("%08x", i)).collect(joining());
     }
 }

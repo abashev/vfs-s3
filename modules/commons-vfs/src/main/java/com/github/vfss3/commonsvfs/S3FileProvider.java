@@ -1,10 +1,11 @@
 package com.github.vfss3.commonsvfs;
 
+import static java.util.Collections.unmodifiableCollection;
+
 import com.github.vfss3.commonsvfs.parser.S3FileNameParser;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.*;
@@ -26,7 +27,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
  * @author Moritz Siuts
  */
 public class S3FileProvider extends CachingFileProvider {
-    static final Collection<Capability> capabilities = Collections.unmodifiableCollection(Arrays.asList(
+    static final Collection<Capability> capabilities = unmodifiableCollection(Arrays.asList(
             Capability.CREATE,
             Capability.DELETE,
             Capability.GET_TYPE,
