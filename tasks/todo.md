@@ -18,7 +18,7 @@ See `tasks/plan.md` for full task descriptions, acceptance criteria, and verific
 - [x] Checkpoint: MinIO-complete (human review before Phase 3)
 
 ## Phase 3: Roll out to the remaining 8 backends
-- [ ] Task 10: Simple GenericContainer backends — LocalStack, MiniStack, Floci, S3Mock
+- [x] Task 10: Simple GenericContainer backends — LocalStack, MiniStack, Floci, S3Mock
 - [ ] Task 11: Env-configured backends — CloudServer, SeaweedFS, RustFS
 - [ ] Task 12: Garage (bootstrap-required backend)
 - [ ] Checkpoint: All 9 backends green
