@@ -1,14 +1,9 @@
 package com.github.vfss3.jdk.remote;
 
 import com.github.vfss3.jdk.S3FileSystemConfig;
-import java.util.HashMap;
-import java.util.List;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.Delete;
-import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 
@@ -35,30 +30,24 @@ public final class RemoteBucketCleaner {
         var urlTemplate = System.getenv(EnvironmentBasedSuite.ENV_BASE_URL);
         var token = System.getenv(EnvironmentBasedSuite.ENV_BUCKET_TOKEN);
 
-        if (isBlank(urlTemplate) || isBlank(token)) {
+        if (urlTemplate == null || urlTemplate.isBlank() || token == null || token.isBlank()) {
             System.out.println("RemoteBucketCleaner — " + EnvironmentBasedSuite.ENV_BASE_URL + " / "
                     + EnvironmentBasedSuite.ENV_BUCKET_TOKEN + " not set, nothing to clean up");
             return;
         }
 
         var remote = RemoteEndpoint.resolve(urlTemplate, token);
-
-        var env = new HashMap<String, Object>();
-        env.put("aws.region", remote.region);
-        env.put("aws.credentialsProvider", DefaultCredentialsProvider.create());
-        if (remote.endpointOverride != null) {
-            env.put("aws.endpoint", remote.endpointOverride.toString());
-        }
+        var env = remote.toEnv(DefaultCredentialsProvider.create());
 
         try (var client = S3FileSystemConfig.fromEnv(env).buildS3Client()) {
-            deleteBucketAndContents(client, remote.bucket);
-            System.out.println("RemoteBucketCleaner — deleted bucket " + remote.bucket);
+            deleteBucketAndContents(client, remote.bucket());
+            System.out.println("RemoteBucketCleaner — deleted bucket " + remote.bucket());
         } catch (NoSuchBucketException e) {
-            System.out.println("RemoteBucketCleaner — bucket " + remote.bucket + " already gone, nothing to delete");
+            System.out.println("RemoteBucketCleaner — bucket " + remote.bucket() + " already gone, nothing to delete");
         } catch (AwsServiceException e) {
             if (e.statusCode() == 404) {
                 System.out.println(
-                        "RemoteBucketCleaner — bucket " + remote.bucket + " already gone, nothing to delete");
+                        "RemoteBucketCleaner — bucket " + remote.bucket() + " already gone, nothing to delete");
             } else {
                 throw e;
             }
@@ -67,29 +56,14 @@ public final class RemoteBucketCleaner {
 
     /** Deletes every object under {@code bucket} (paginated, batched) and then the bucket itself. */
     static void deleteBucketAndContents(S3Client client, String bucket) {
-        String continuationToken = null;
-        do {
-            var listing = client.listObjectsV2(ListObjectsV2Request.builder()
-                    .bucket(bucket)
-                    .continuationToken(continuationToken)
-                    .build());
-
-            List<ObjectIdentifier> keys = listing.contents().stream()
+        for (var page : client.listObjectsV2Paginator(b -> b.bucket(bucket))) {
+            var keys = page.contents().stream()
                     .map(o -> ObjectIdentifier.builder().key(o.key()).build())
                     .toList();
             if (!keys.isEmpty()) {
-                client.deleteObjects(DeleteObjectsRequest.builder()
-                        .bucket(bucket)
-                        .delete(Delete.builder().objects(keys).build())
-                        .build());
+                client.deleteObjects(b -> b.bucket(bucket).delete(d -> d.objects(keys)));
             }
-            continuationToken = Boolean.TRUE.equals(listing.isTruncated()) ? listing.nextContinuationToken() : null;
-        } while (continuationToken != null);
-
+        }
         client.deleteBucket(b -> b.bucket(bucket));
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
     }
 }

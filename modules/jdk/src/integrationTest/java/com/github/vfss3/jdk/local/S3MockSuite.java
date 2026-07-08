@@ -2,7 +2,6 @@ package com.github.vfss3.jdk.local;
 
 import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.net.URI;
-import java.util.Map;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -31,10 +30,9 @@ public class S3MockSuite {
 
         // S3Mock accepts any credentials.
         var credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"));
-        var env = Map.<String, Object>of("aws.region", "us-east-1", "aws.credentialsProvider", credentialsProvider);
 
         var endpoint = URI.create("http://" + container.getHost() + ":" + container.getMappedPort(HTTP_PORT));
-        JdkIntegrationContext.initialize(endpoint, env);
+        JdkIntegrationContext.initialize(endpoint, credentialsProvider);
     }
 
     @AfterSuite

@@ -2,7 +2,6 @@ package com.github.vfss3.jdk.local;
 
 import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.net.URI;
-import java.util.Map;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -44,9 +43,8 @@ public class CloudServerSuite {
 
         var endpoint = URI.create("http://" + container.getHost() + ":" + container.getMappedPort(API_PORT));
         var credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create(ACCESS_KEY, SECRET_KEY));
-        var env = Map.<String, Object>of("aws.region", "us-east-1", "aws.credentialsProvider", credentialsProvider);
 
-        JdkIntegrationContext.initialize(endpoint, env);
+        JdkIntegrationContext.initialize(endpoint, credentialsProvider);
     }
 
     @AfterSuite

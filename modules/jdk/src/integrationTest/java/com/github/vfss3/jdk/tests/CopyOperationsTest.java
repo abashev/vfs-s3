@@ -12,6 +12,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -44,12 +45,7 @@ class CopyOperationsTest {
 
     @AfterEach
     void tearDown() throws IOException {
-        var prefix = fs.getPath(PREFIX);
-        if (Files.exists(prefix)) {
-            try (Stream<Path> walk = Files.walk(prefix)) {
-                walk.sorted(reverseOrder()).forEach(CopyOperationsTest::deleteQuietly);
-            }
-        }
+        JdkIntegrationContext.deleteRecursively(fs.getPath(PREFIX));
     }
 
     @Test
@@ -86,13 +82,11 @@ class CopyOperationsTest {
                 names.add(child.getFileName().toString());
             }
         }
-        assertEquals(
-                new TreeSet<>(java.util.List.of("child-file.tmp", "child-file2.tmp", "child-dir", "child-dir-copy")),
-                names);
+        assertEquals(new TreeSet<>(List.of("child-file.tmp", "child-file2.tmp", "child-dir", "child-dir-copy")), names);
 
         // Step 4: delete every child of the prefix.
         try (Stream<Path> walk = Files.walk(base)) {
-            walk.filter(p -> !p.equals(base)).sorted(reverseOrder()).forEach(CopyOperationsTest::deleteQuietly);
+            walk.filter(p -> !p.equals(base)).sorted(reverseOrder()).forEach(JdkIntegrationContext::deleteQuietly);
         }
         assertFalse(Files.exists(base.resolve("child-dir")), "child-dir should be gone");
     }
@@ -123,13 +117,5 @@ class CopyOperationsTest {
 
     private static byte[] bytes(String s) {
         return s.getBytes(UTF_8);
-    }
-
-    private static void deleteQuietly(Path p) {
-        try {
-            Files.deleteIfExists(p);
-        } catch (IOException ignored) {
-            // best-effort
-        }
     }
 }

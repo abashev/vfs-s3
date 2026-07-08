@@ -2,7 +2,6 @@ package com.github.vfss3.jdk.remote;
 
 import com.github.vfss3.jdk.JdkIntegrationContext;
 import com.github.vfss3.jdk.S3FileSystemConfig;
-import java.util.HashMap;
 import org.junit.platform.suite.api.AfterSuite;
 import org.junit.platform.suite.api.BeforeSuite;
 import org.junit.platform.suite.api.SelectPackages;
@@ -42,7 +41,7 @@ public class EnvironmentBasedSuite {
     @BeforeSuite
     static void initialize() {
         var urlTemplate = System.getenv(ENV_BASE_URL);
-        if (isBlank(urlTemplate)) {
+        if (urlTemplate == null || urlTemplate.isBlank()) {
             throw new TestAbortedException(
                     "EnvironmentBasedSuite requires the " + ENV_BASE_URL + " environment variable");
         }
@@ -59,20 +58,14 @@ public class EnvironmentBasedSuite {
         // CI passes a deterministic token (commit SHA + module discriminator) so the standalone
         // RemoteBucketCleaner can target the same bucket; locally we fall back to a random one.
         var token = System.getenv(ENV_BUCKET_TOKEN);
-        if (isBlank(token)) {
+        if (token == null || token.isBlank()) {
             token = JdkIntegrationContext.randomBucketToken();
         }
 
         var remote = RemoteEndpoint.resolve(urlTemplate, token);
-        bucket = remote.bucket;
+        bucket = remote.bucket();
 
-        var env = new HashMap<String, Object>();
-        env.put("aws.region", remote.region);
-        env.put("aws.credentialsProvider", credentialsProvider);
-        if (remote.endpointOverride != null) {
-            env.put("aws.endpoint", remote.endpointOverride.toString());
-        }
-
+        var env = remote.toEnv(credentialsProvider);
         cleanupClient = S3FileSystemConfig.fromEnv(env).buildS3Client();
 
         System.out.println("EnvironmentBasedSuite — provisioning bucket " + bucket);
@@ -96,9 +89,5 @@ public class EnvironmentBasedSuite {
             cleanupClient = null;
             bucket = null;
         }
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
     }
 }

@@ -2,7 +2,6 @@ package com.github.vfss3.jdk;
 
 import java.net.URI;
 import java.util.Map;
-import java.util.Optional;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.exception.SdkClientException;
@@ -19,19 +18,27 @@ import software.amazon.awssdk.services.s3.S3Configuration;
  * individual fields, mainly for local-endpoint wiring (LocalStack, MinIO, and similar):
  *
  * <ul>
- *   <li>{@code aws.region} — a region id, e.g. {@code "eu-central-1"}
- *   <li>{@code aws.endpoint} — an endpoint override URI, e.g. {@code "http://localhost:9000"}
- *   <li>{@code aws.credentialsProvider} — a pre-built {@link AwsCredentialsProvider}
+ *   <li>{@link #ENV_REGION} — a region id, e.g. {@code "eu-central-1"}
+ *   <li>{@link #ENV_ENDPOINT} — an endpoint override URI, e.g. {@code "http://localhost:9000"}
+ *   <li>{@link #ENV_CREDENTIALS_PROVIDER} — a pre-built {@link AwsCredentialsProvider}
  * </ul>
  */
 public record S3FileSystemConfig(String region, URI endpoint, AwsCredentialsProvider credentialsProvider) {
 
+    /** Env key for the region id, e.g. {@code "eu-central-1"}. */
+    public static final String ENV_REGION = "aws.region";
+
+    /** Env key for the endpoint override URI, e.g. {@code "http://localhost:9000"}. */
+    public static final String ENV_ENDPOINT = "aws.endpoint";
+
+    /** Env key for a pre-built {@link AwsCredentialsProvider}. */
+    public static final String ENV_CREDENTIALS_PROVIDER = "aws.credentialsProvider";
+
     public static S3FileSystemConfig fromEnv(Map<String, ?> env) {
-        var region = (String) env.get("aws.region");
-        var endpoint = Optional.ofNullable((String) env.get("aws.endpoint"))
-                .map(URI::create)
-                .orElse(null);
-        var providerOverride = env.get("aws.credentialsProvider");
+        var region = (String) env.get(ENV_REGION);
+        var endpointValue = (String) env.get(ENV_ENDPOINT);
+        var endpoint = endpointValue == null ? null : URI.create(endpointValue);
+        var providerOverride = env.get(ENV_CREDENTIALS_PROVIDER);
         var credentialsProvider = (AwsCredentialsProvider)
                 (providerOverride != null ? providerOverride : DefaultCredentialsProvider.create());
 

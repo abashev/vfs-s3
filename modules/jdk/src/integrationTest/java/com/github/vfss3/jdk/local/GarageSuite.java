@@ -2,7 +2,6 @@ package com.github.vfss3.jdk.local;
 
 import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.net.URI;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.platform.suite.api.*;
@@ -74,10 +73,9 @@ public class GarageSuite {
         exec("/garage", "key", "allow", "--create-bucket", accessKey);
 
         var credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
-        var env = Map.<String, Object>of("aws.region", "us-east-1", "aws.credentialsProvider", credentialsProvider);
 
         var endpoint = URI.create("http://" + container.getHost() + ":" + container.getMappedPort(S3_PORT));
-        JdkIntegrationContext.initialize(endpoint, env);
+        JdkIntegrationContext.initialize(endpoint, credentialsProvider);
     }
 
     @AfterSuite

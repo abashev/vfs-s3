@@ -1,7 +1,6 @@
 package com.github.vfss3.jdk.tests;
 
 import static java.time.ZoneOffset.UTC;
-import static java.util.Comparator.reverseOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -11,7 +10,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Random;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,18 +40,7 @@ class FileMetadataTest {
 
     @AfterEach
     void tearDown() throws IOException {
-        var prefix = fs.getPath(PREFIX);
-        if (Files.exists(prefix)) {
-            try (Stream<java.nio.file.Path> walk = Files.walk(prefix)) {
-                walk.sorted(reverseOrder()).forEach(p -> {
-                    try {
-                        Files.deleteIfExists(p);
-                    } catch (IOException ignored) {
-                        // best-effort
-                    }
-                });
-            }
-        }
+        JdkIntegrationContext.deleteRecursively(fs.getPath(PREFIX));
     }
 
     /** Step 2: content size matches the written payload. */

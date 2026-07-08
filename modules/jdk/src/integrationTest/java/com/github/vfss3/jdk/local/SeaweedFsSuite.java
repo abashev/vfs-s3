@@ -2,7 +2,6 @@ package com.github.vfss3.jdk.local;
 
 import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.net.URI;
-import java.util.Map;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -34,11 +33,8 @@ public class SeaweedFsSuite {
         // SeaweedFS S3 API runs anonymous by default without an identity config file — it
         // rejects signed (SigV4) requests outright, so send unsigned requests instead of fake
         // static credentials.
-        var env = Map.<String, Object>of(
-                "aws.region", "us-east-1", "aws.credentialsProvider", AnonymousCredentialsProvider.create());
-
         var endpoint = URI.create("http://" + container.getHost() + ":" + container.getMappedPort(S3_PORT));
-        JdkIntegrationContext.initialize(endpoint, env);
+        JdkIntegrationContext.initialize(endpoint, AnonymousCredentialsProvider.create());
     }
 
     @AfterSuite

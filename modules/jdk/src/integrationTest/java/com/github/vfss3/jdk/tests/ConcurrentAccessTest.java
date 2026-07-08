@@ -1,6 +1,5 @@
 package com.github.vfss3.jdk.tests;
 
-import static java.util.Comparator.reverseOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,7 +16,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -47,18 +45,7 @@ class ConcurrentAccessTest {
 
     @AfterEach
     void tearDown() throws IOException {
-        var prefix = fs.getPath("/concurrent/");
-        if (Files.exists(prefix)) {
-            try (Stream<Path> walk = Files.walk(prefix)) {
-                walk.sorted(reverseOrder()).forEach(p -> {
-                    try {
-                        Files.deleteIfExists(p);
-                    } catch (IOException ignored) {
-                        // best-effort
-                    }
-                });
-            }
-        }
+        JdkIntegrationContext.deleteRecursively(fs.getPath("/concurrent/"));
     }
 
     /** Step 1: many threads create / verify / delete their own folder. */

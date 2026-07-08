@@ -3,7 +3,6 @@ package com.github.vfss3.jdk.local;
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
 
 import com.github.vfss3.jdk.JdkIntegrationContext;
-import java.util.Map;
 import org.junit.platform.suite.api.*;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -32,9 +31,8 @@ public class LocalStackSuite {
 
         var credentialsProvider = StaticCredentialsProvider.create(
                 AwsBasicCredentials.create(container.getAccessKey(), container.getSecretKey()));
-        var env = Map.<String, Object>of("aws.region", "us-east-1", "aws.credentialsProvider", credentialsProvider);
 
-        JdkIntegrationContext.initialize(container.getEndpointOverride(S3), env);
+        JdkIntegrationContext.initialize(container.getEndpointOverride(S3), credentialsProvider);
     }
 
     @AfterSuite

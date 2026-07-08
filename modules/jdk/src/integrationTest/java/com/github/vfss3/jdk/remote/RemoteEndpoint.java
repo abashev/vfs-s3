@@ -1,7 +1,11 @@
 package com.github.vfss3.jdk.remote;
 
+import com.github.vfss3.jdk.S3FileSystemConfig;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 /**
  * Splits a {@code BASE_URL}-style bucket hostname — the same printf template convention
@@ -17,23 +21,13 @@ import java.util.regex.Pattern;
  * supports more providers because its host-parsing is part of the shipped library, not
  * test-only infrastructure).
  */
-final class RemoteEndpoint {
+record RemoteEndpoint(String bucket, String region, URI endpointOverride) {
 
     private static final Pattern AWS_HOST =
             Pattern.compile("(?<bucket>[a-z0-9-]+)\\.s3\\.((?<region>[a-z0-9-]+)\\.)?amazonaws\\.com");
     private static final Pattern YANDEX_HOST = Pattern.compile("(?<bucket>[a-z0-9-]+)\\.storage\\.yandexcloud\\.net");
     private static final String DEFAULT_AWS_REGION = "us-east-1";
     private static final String YANDEX_REGION = "ru-central1";
-
-    final String bucket;
-    final String region;
-    final URI endpointOverride;
-
-    private RemoteEndpoint(String bucket, String region, URI endpointOverride) {
-        this.bucket = bucket;
-        this.region = region;
-        this.endpointOverride = endpointOverride;
-    }
 
     /**
      * @param urlTemplate a printf-style {@code s3://<host>/} template with a {@code %s}
@@ -61,5 +55,16 @@ final class RemoteEndpoint {
         }
 
         throw new IllegalArgumentException("Unrecognized remote host in BASE_URL (" + urlTemplate + "): " + host);
+    }
+
+    /** The {@code env} map for {@link S3FileSystemConfig#fromEnv} matching this endpoint. */
+    Map<String, Object> toEnv(AwsCredentialsProvider credentialsProvider) {
+        var env = new HashMap<String, Object>();
+        env.put(S3FileSystemConfig.ENV_REGION, region);
+        env.put(S3FileSystemConfig.ENV_CREDENTIALS_PROVIDER, credentialsProvider);
+        if (endpointOverride != null) {
+            env.put(S3FileSystemConfig.ENV_ENDPOINT, endpointOverride.toString());
+        }
+        return env;
     }
 }

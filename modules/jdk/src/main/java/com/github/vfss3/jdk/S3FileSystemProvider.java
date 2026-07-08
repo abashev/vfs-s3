@@ -35,13 +35,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /**
@@ -53,8 +48,6 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
  * <pre>{@code
  * FileSystem fs = FileSystems.newFileSystem(URI.create("s3://my-bucket"), Map.of());
  * }</pre>
- *
- * <p>{@link #copy} is not yet implemented — it lands together with {@code S3Path.relativize()}.
  */
 public class S3FileSystemProvider extends FileSystemProvider {
 
@@ -106,6 +99,7 @@ public class S3FileSystemProvider extends FileSystemProvider {
             throws IOException {
         var s3Path = asS3Path(path);
         var fs = s3Path.getFileSystem();
+        var bucket = fs.getBucket();
         var key = fs.toKey(s3Path);
         var client = fs.client();
 
@@ -115,22 +109,22 @@ public class S3FileSystemProvider extends FileSystemProvider {
                 || options.contains(StandardOpenOption.APPEND);
 
         if (!write) {
-            return new S3ByteChannel(readObject(client, fs.getBucket(), key), client, fs.getBucket(), key, false);
+            return new S3ByteChannel(readObject(client, bucket, key), client, bucket, key, false);
         }
 
+        boolean create = options.contains(StandardOpenOption.CREATE);
         boolean createNew = options.contains(StandardOpenOption.CREATE_NEW);
         boolean append = options.contains(StandardOpenOption.APPEND);
-        boolean existsAsFile = objectExists(client, fs.getBucket(), key);
 
-        if (createNew && pathExists(client, fs.getBucket(), key)) {
+        if (createNew && pathExists(client, bucket, key)) {
             throw new FileAlreadyExistsException(path.toString());
         }
-        if (!existsAsFile && !options.contains(StandardOpenOption.CREATE) && !createNew) {
+        if (!create && !createNew && !objectExists(client, bucket, key)) {
             throw new NoSuchFileException(path.toString());
         }
 
-        var initial = (append && existsAsFile) ? readObject(client, fs.getBucket(), key) : new byte[0];
-        var channel = new S3ByteChannel(initial, client, fs.getBucket(), key, true);
+        var initial = append ? readObjectOrEmpty(client, bucket, key) : new byte[0];
+        var channel = new S3ByteChannel(initial, client, bucket, key, true);
         if (append) {
             channel.position(initial.length);
         }
@@ -143,50 +137,48 @@ public class S3FileSystemProvider extends FileSystemProvider {
         var s3Path = asS3Path(dir);
         var fs = s3Path.getFileSystem();
         var client = fs.client();
+        var bucket = fs.getBucket();
         var prefix = folderPrefix(fs.toKey(s3Path));
 
+        // TreeSets keep the entries ordered and deduplicated even if a backend repeats
+        // them across pages.
         var commonPrefixes = new TreeSet<String>();
         var contentKeys = new TreeSet<String>();
-        String continuationToken = null;
-        do {
-            var listing = client.listObjectsV2(ListObjectsV2Request.builder()
-                    .bucket(fs.getBucket())
-                    .delimiter("/")
-                    .prefix(prefix)
-                    .continuationToken(continuationToken)
-                    .build());
-            listing.commonPrefixes().forEach(p -> commonPrefixes.add(p.prefix()));
-            listing.contents().forEach(o -> contentKeys.add(o.key()));
-            continuationToken = Boolean.TRUE.equals(listing.isTruncated()) ? listing.nextContinuationToken() : null;
-        } while (continuationToken != null);
+        for (var page : client.listObjectsV2Paginator(
+                b -> b.bucket(bucket).delimiter("/").prefix(prefix))) {
+            page.commonPrefixes().forEach(p -> commonPrefixes.add(p.prefix()));
+            page.contents().forEach(o -> contentKeys.add(o.key()));
+        }
 
         var children = new ArrayList<Path>();
         for (var commonPrefix : commonPrefixes) {
             var name = commonPrefix.substring(prefix.length());
             name = name.endsWith("/") ? name.substring(0, name.length() - 1) : name;
-            if (!name.isEmpty()) {
-                children.add(dir.resolve(name));
+            if (name.isEmpty()) {
+                continue;
+            }
+            var child = dir.resolve(name);
+            if (filter.accept(child)) {
+                children.add(child);
             }
         }
         for (var contentKey : contentKeys) {
-            if (!contentKey.equals(prefix)) {
-                var name = contentKey.substring(prefix.length());
-                if (!name.isEmpty()) {
-                    children.add(dir.resolve(name));
-                }
+            if (contentKey.equals(prefix)) {
+                continue;
             }
-        }
-
-        var filtered = new ArrayList<Path>();
-        for (var child : children) {
+            var name = contentKey.substring(prefix.length());
+            if (name.isEmpty()) {
+                continue;
+            }
+            var child = dir.resolve(name);
             if (filter.accept(child)) {
-                filtered.add(child);
+                children.add(child);
             }
         }
         return new DirectoryStream<>() {
             @Override
             public Iterator<Path> iterator() {
-                return filtered.iterator();
+                return children.iterator();
             }
 
             @Override
@@ -198,17 +190,12 @@ public class S3FileSystemProvider extends FileSystemProvider {
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
         var s3Path = asS3Path(dir);
         var fs = s3Path.getFileSystem();
+        var bucket = fs.getBucket();
         var key = fs.toKey(s3Path);
-        if (pathExists(fs.client(), fs.getBucket(), key)) {
+        if (pathExists(fs.client(), bucket, key)) {
             throw new FileAlreadyExistsException(dir.toString());
         }
-        fs.client()
-                .putObject(
-                        PutObjectRequest.builder()
-                                .bucket(fs.getBucket())
-                                .key(folderPrefix(key))
-                                .build(),
-                        RequestBody.empty());
+        fs.client().putObject(b -> b.bucket(bucket).key(folderPrefix(key)), RequestBody.empty());
     }
 
     @Override
@@ -216,24 +203,16 @@ public class S3FileSystemProvider extends FileSystemProvider {
         var s3Path = asS3Path(path);
         var fs = s3Path.getFileSystem();
         var client = fs.client();
+        var bucket = fs.getBucket();
         var key = fs.toKey(s3Path);
 
-        if (objectExists(client, fs.getBucket(), key)) {
-            client.deleteObject(DeleteObjectRequest.builder()
-                    .bucket(fs.getBucket())
-                    .key(key)
-                    .build());
-            return;
+        switch (resolve(client, bucket, key).kind()) {
+            case FILE -> client.deleteObject(b -> b.bucket(bucket).key(key));
+            case MARKER_DIR -> client.deleteObject(b -> b.bucket(bucket).key(folderPrefix(key)));
+            // A virtual folder has no object of its own to delete — same outcome as a
+            // missing path.
+            case VIRTUAL_DIR, ABSENT -> throw new NoSuchFileException(path.toString());
         }
-        var markerKey = folderPrefix(key);
-        if (objectExists(client, fs.getBucket(), markerKey)) {
-            client.deleteObject(DeleteObjectRequest.builder()
-                    .bucket(fs.getBucket())
-                    .key(markerKey)
-                    .build());
-            return;
-        }
-        throw new NoSuchFileException(path.toString());
     }
 
     @Override
@@ -242,36 +221,33 @@ public class S3FileSystemProvider extends FileSystemProvider {
         var dst = asS3Path(target);
         var fs = src.getFileSystem();
         var client = fs.client();
+        var bucket = fs.getBucket();
         var srcKey = fs.toKey(src);
         var dstKey = fs.toKey(dst);
 
-        var attrs = lookupAttributes(client, fs.getBucket(), srcKey)
-                .orElseThrow(() -> new NoSuchFileException(source.toString()));
+        var srcResolution = resolve(client, bucket, srcKey);
+        if (!srcResolution.exists()) {
+            throw new NoSuchFileException(source.toString());
+        }
 
-        if (attrs.isDirectory()) {
+        if (srcResolution.attributes().isDirectory()) {
             // Per Files.copy's contract: copying a directory creates an empty directory at the
             // target — entries are not copied (that's the caller's job, e.g. via Files.walk).
-            if (objectExists(client, fs.getBucket(), folderPrefix(srcKey))) {
-                client.putObject(
-                        PutObjectRequest.builder()
-                                .bucket(fs.getBucket())
-                                .key(folderPrefix(dstKey))
-                                .build(),
-                        RequestBody.empty());
+            // A virtual folder has no marker object of its own, so there is nothing to create.
+            if (srcResolution.kind() == PathKind.MARKER_DIR) {
+                client.putObject(b -> b.bucket(bucket).key(folderPrefix(dstKey)), RequestBody.empty());
             }
             return;
         }
 
         if (!Arrays.asList(options).contains(StandardCopyOption.REPLACE_EXISTING)
-                && pathExists(client, fs.getBucket(), dstKey)) {
+                && pathExists(client, bucket, dstKey)) {
             throw new FileAlreadyExistsException(target.toString());
         }
-        client.copyObject(CopyObjectRequest.builder()
-                .sourceBucket(fs.getBucket())
+        client.copyObject(b -> b.sourceBucket(bucket)
                 .sourceKey(srcKey)
-                .destinationBucket(fs.getBucket())
-                .destinationKey(dstKey)
-                .build());
+                .destinationBucket(bucket)
+                .destinationKey(dstKey));
     }
 
     /**
@@ -283,30 +259,25 @@ public class S3FileSystemProvider extends FileSystemProvider {
         var src = asS3Path(source);
         var dst = asS3Path(target);
         var fs = src.getFileSystem();
+        var client = fs.client();
+        var bucket = fs.getBucket();
         if (src.equals(dst)) {
             throw new FileSystemException(source.toString(), target.toString(), "Source and target are the same path");
         }
         var srcKey = fs.toKey(src);
         var dstKey = fs.toKey(dst);
-        if (!objectExists(fs.client(), fs.getBucket(), srcKey)) {
+        if (!objectExists(client, bucket, srcKey)) {
             throw new NoSuchFileException(source.toString());
         }
         if (!Arrays.asList(options).contains(StandardCopyOption.REPLACE_EXISTING)
-                && pathExists(fs.client(), fs.getBucket(), dstKey)) {
+                && pathExists(client, bucket, dstKey)) {
             throw new FileAlreadyExistsException(target.toString());
         }
-        fs.client()
-                .copyObject(CopyObjectRequest.builder()
-                        .sourceBucket(fs.getBucket())
-                        .sourceKey(srcKey)
-                        .destinationBucket(fs.getBucket())
-                        .destinationKey(dstKey)
-                        .build());
-        fs.client()
-                .deleteObject(DeleteObjectRequest.builder()
-                        .bucket(fs.getBucket())
-                        .key(srcKey)
-                        .build());
+        client.copyObject(b -> b.sourceBucket(bucket)
+                .sourceKey(srcKey)
+                .destinationBucket(bucket)
+                .destinationKey(dstKey));
+        client.deleteObject(b -> b.bucket(bucket).key(srcKey));
     }
 
     @Override
@@ -356,13 +327,17 @@ public class S3FileSystemProvider extends FileSystemProvider {
             return (A) S3FileAttributes.directory();
         }
 
-        var key = fs.toKey(s3Path);
-        return (A) lookupAttributes(fs.client(), fs.getBucket(), key)
-                .orElseThrow(() -> new NoSuchFileException(path.toString()));
+        var resolution = resolve(fs.client(), fs.getBucket(), fs.toKey(s3Path));
+        if (!resolution.exists()) {
+            throw new NoSuchFileException(path.toString());
+        }
+        return (A) resolution.attributes();
     }
 
     @Override
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
+        // The attribute selector is deliberately ignored — the four basic attributes below
+        // are all this provider supports.
         var attrs = readAttributes(path, BasicFileAttributes.class, options);
         return Map.of(
                 "size", attrs.size(),
@@ -391,8 +366,7 @@ public class S3FileSystemProvider extends FileSystemProvider {
     }
 
     private static byte[] readObject(S3Client client, String bucket, String key) throws IOException {
-        try (var response = client.getObject(
-                GetObjectRequest.builder().bucket(bucket).key(key).build())) {
+        try (var response = client.getObject(b -> b.bucket(bucket).key(key))) {
             return response.readAllBytes();
         } catch (NoSuchKeyException e) {
             throw new NoSuchFileException(key);
@@ -404,19 +378,35 @@ public class S3FileSystemProvider extends FileSystemProvider {
         }
     }
 
-    private static boolean objectExists(S3Client client, String bucket, String key) {
+    /** Like {@link #readObject}, but a missing object reads as empty — how APPEND starts a new file. */
+    private static byte[] readObjectOrEmpty(S3Client client, String bucket, String key) throws IOException {
         try {
-            client.headObject(
-                    HeadObjectRequest.builder().bucket(bucket).key(key).build());
-            return true;
+            return readObject(client, bucket, key);
+        } catch (NoSuchFileException e) {
+            return new byte[0];
+        }
+    }
+
+    /** HEAD on the exact {@code key}, empty when S3 reports 404/NoSuchKey. */
+    private static Optional<HeadObjectResponse> tryHead(S3Client client, String bucket, String key) {
+        try {
+            return Optional.of(client.headObject(b -> b.bucket(bucket).key(key)));
         } catch (NoSuchKeyException e) {
-            return false;
+            return Optional.empty();
         } catch (S3Exception e) {
             if (e.statusCode() == 404) {
-                return false;
+                return Optional.empty();
             }
             throw e;
         }
+    }
+
+    /**
+     * Whether a real object exists at exactly {@code key} — no folder-marker or virtual-folder
+     * fallback; contrast {@link #resolve}.
+     */
+    private static boolean objectExists(S3Client client, String bucket, String key) {
+        return tryHead(client, bucket, key).isPresent();
     }
 
     /** {@code key} with a trailing {@code /} — the S3 folder-marker convention for {@code key}. */
@@ -424,43 +414,58 @@ public class S3FileSystemProvider extends FileSystemProvider {
         return key.isEmpty() || key.endsWith("/") ? key : key + "/";
     }
 
+    /** Whether {@code key} resolves to anything at all — a file or a (marker/virtual) folder. */
     private static boolean pathExists(S3Client client, String bucket, String key) {
-        return lookupAttributes(client, bucket, key).isPresent();
+        return resolve(client, bucket, key).exists();
+    }
+
+    /** What an S3 key resolves to — see {@link #resolve}. */
+    private enum PathKind {
+        /** A real object at exactly the key. */
+        FILE,
+        /** A real zero-byte folder-marker object at {@code key + "/"}. */
+        MARKER_DIR,
+        /** No object at the key or its marker, but objects exist under the {@code key/} prefix. */
+        VIRTUAL_DIR,
+        ABSENT
+    }
+
+    /** Result of {@link #resolve}; {@code attributes} is {@code null} iff the path is absent. */
+    private record Resolution(PathKind kind, S3FileAttributes attributes) {
+        boolean exists() {
+            return kind != PathKind.ABSENT;
+        }
     }
 
     /**
-     * Resolves {@code key} to its attributes, trying — in order — a real file object, a real
-     * folder-marker object ({@code key/}), and finally a "virtual" folder (any object found
-     * under the {@code key/} prefix). Mirrors {@code modules/commons-vfs}'s
+     * Resolves what {@code key} points at, trying — in order — a real file object at the key
+     * itself, a real folder-marker object ({@code key/}), and finally a "virtual" folder (any
+     * object found under the {@code key/} prefix). Mirrors {@code modules/commons-vfs}'s
      * {@code S3FileObject.doAttach()} cascade.
+     *
+     * <p>The marker probe must stay a HEAD rather than being folded into the prefix listing:
+     * some backends (SeaweedFS) expose directory entries to HEAD but return an empty listing
+     * for the same prefix.
      */
-    private static Optional<S3FileAttributes> lookupAttributes(S3Client client, String bucket, String key) {
-        try {
-            var head = client.headObject(
-                    HeadObjectRequest.builder().bucket(bucket).key(key).build());
-            return Optional.of(S3FileAttributes.file(head.contentLength(), head.lastModified()));
-        } catch (NoSuchKeyException e) {
-            // fall through to folder lookup
-        } catch (S3Exception e) {
-            if (e.statusCode() != 404) {
-                throw e;
-            }
+    private static Resolution resolve(S3Client client, String bucket, String key) {
+        var head = tryHead(client, bucket, key);
+        if (head.isPresent()) {
+            return new Resolution(
+                    PathKind.FILE,
+                    S3FileAttributes.file(head.get().contentLength(), head.get().lastModified()));
         }
 
         var markerKey = folderPrefix(key);
-        if (objectExists(client, bucket, markerKey)) {
-            return Optional.of(S3FileAttributes.directory());
+        if (tryHead(client, bucket, markerKey).isPresent()) {
+            return new Resolution(PathKind.MARKER_DIR, S3FileAttributes.directory());
         }
 
-        var listing = client.listObjectsV2(ListObjectsV2Request.builder()
-                .bucket(bucket)
-                .prefix(markerKey)
-                .maxKeys(1)
-                .build());
-        if (!listing.contents().isEmpty()) {
-            return Optional.of(S3FileAttributes.directory());
+        var listing =
+                client.listObjectsV2(b -> b.bucket(bucket).prefix(markerKey).maxKeys(1));
+        if (listing.contents().isEmpty()) {
+            return new Resolution(PathKind.ABSENT, null);
         }
-        return Optional.empty();
+        return new Resolution(PathKind.VIRTUAL_DIR, S3FileAttributes.directory());
     }
 
     /**
@@ -560,9 +565,10 @@ public class S3FileSystemProvider extends FileSystemProvider {
             }
             open = false;
             if (writable) {
-                var content = Arrays.copyOf(data, size);
+                // RequestBody copies the buffer's [0, size) window, so the live array never
+                // escapes the channel.
                 client.putObject(
-                        PutObjectRequest.builder().bucket(bucket).key(key).build(), RequestBody.fromBytes(content));
+                        b -> b.bucket(bucket).key(key), RequestBody.fromByteBuffer(ByteBuffer.wrap(data, 0, size)));
             }
         }
 

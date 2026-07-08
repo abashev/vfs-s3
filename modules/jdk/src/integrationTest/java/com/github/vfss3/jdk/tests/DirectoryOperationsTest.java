@@ -42,7 +42,7 @@ class DirectoryOperationsTest {
 
     @AfterEach
     void tearDown() throws IOException {
-        deleteRecursively(fs.getPath(PREFIX));
+        JdkIntegrationContext.deleteRecursively(fs.getPath(PREFIX));
     }
 
     /** Step 1: create a folder and assert it exists as a directory. */
@@ -147,7 +147,7 @@ class DirectoryOperationsTest {
         Files.write(base.resolve("child-dir/descendant.tmp"), bytes("c"));
 
         try (Stream<Path> walk = Files.walk(base)) {
-            walk.filter(p -> !p.equals(base)).sorted(reverseOrder()).forEach(DirectoryOperationsTest::deleteQuietly);
+            walk.filter(p -> !p.equals(base)).sorted(reverseOrder()).forEach(JdkIntegrationContext::deleteQuietly);
         }
 
         try (Stream<Path> walk = Files.walk(base)) {
@@ -165,22 +165,5 @@ class DirectoryOperationsTest {
 
     private static byte[] bytes(String s) {
         return s.getBytes(UTF_8);
-    }
-
-    private static void deleteQuietly(Path p) {
-        try {
-            Files.deleteIfExists(p);
-        } catch (IOException ignored) {
-            // best-effort
-        }
-    }
-
-    private static void deleteRecursively(Path root) throws IOException {
-        if (!Files.exists(root)) {
-            return;
-        }
-        try (Stream<Path> walk = Files.walk(root)) {
-            walk.sorted(reverseOrder()).forEach(DirectoryOperationsTest::deleteQuietly);
-        }
     }
 }
