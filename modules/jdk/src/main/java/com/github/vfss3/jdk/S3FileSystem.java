@@ -1,12 +1,8 @@
 package com.github.vfss3.jdk;
 
-import static java.util.Comparator.reverseOrder;
-
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.WatchService;
@@ -15,29 +11,35 @@ import java.nio.file.spi.FileSystemProvider;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import software.amazon.awssdk.services.s3.S3Client;
 
 /**
- * {@link FileSystem} implementation for an S3 bucket.
+ * {@link FileSystem} implementation for an S3 bucket, backed by a real {@link S3Client}.
  *
  * <p>Obtained via:
+ *
  * <pre>{@code
- * FileSystem fs = FileSystems.newFileSystem(URI.create("s3://my-bucket"), Map.of());
+ * FileSystem fs = FileSystems.newFileSystem(URI.create("s3://my-bucket"), env);
  * }</pre>
  *
- * <p>Initially backed by a local-tmp mock — all S3 paths are stored under a temporary
- * directory as {@code {tmpDir}/{key}}. Real S3 backend will be added in a follow-up.
+ * See {@link S3FileSystemConfig} for what {@code env} accepts.
  */
 public class S3FileSystem extends FileSystem {
 
     private final S3FileSystemProvider provider;
     private final String bucket;
-    private final Path tmpDir;
+    private final S3Client client;
     private volatile boolean open = true;
 
-    S3FileSystem(S3FileSystemProvider provider, URI uri, Map<String, ?> env) throws IOException {
+    S3FileSystem(S3FileSystemProvider provider, URI uri, Map<String, ?> env) {
+        this(provider, uri.getHost(), S3FileSystemConfig.fromEnv(env).buildS3Client());
+    }
+
+    /** Direct wiring, used by unit tests to substitute an in-memory {@link S3Client}. */
+    S3FileSystem(S3FileSystemProvider provider, String bucket, S3Client client) {
         this.provider = provider;
-        this.bucket = uri.getHost();
-        this.tmpDir = Files.createTempDirectory("vfs-s3-mock-" + bucket + "-");
+        this.bucket = bucket;
+        this.client = client;
     }
 
     /** Returns the bucket name this file system is bound to. */
@@ -45,18 +47,24 @@ public class S3FileSystem extends FileSystem {
         return bucket;
     }
 
-    /**
-     * Maps an {@link S3Path} to a local {@link Path} under the mock temp directory.
-     *
-     * <p>{@code s3://my-bucket/path/to/file.txt} → {@code {tmpDir}/path/to/file.txt}
-     */
-    Path toLocalPath(S3Path s3Path) {
+    /** The {@link S3Client} backing this file system. */
+    S3Client client() {
+        return client;
+    }
+
+    /** Maps an {@link S3Path} to its S3 object key (no leading slash). */
+    String toKey(S3Path s3Path) {
         var key = s3Path.toString();
-        // Strip leading slash so Path.resolve works correctly
         if (key.startsWith("/")) {
             key = key.substring(1);
         }
-        return key.isEmpty() ? tmpDir : tmpDir.resolve(key);
+        // Always normalized without a trailing slash, even if the path string has one (e.g.
+        // fs.getPath("/copy/")) — otherwise the plain-file key and the folder-marker key
+        // (S3FileSystemProvider.folderPrefix) would collide for such paths.
+        while (key.endsWith("/")) {
+            key = key.substring(0, key.length() - 1);
+        }
+        return key;
     }
 
     @Override
@@ -65,28 +73,10 @@ public class S3FileSystem extends FileSystem {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         open = false;
-        deleteRecursively(tmpDir);
-    }
-
-    private static void deleteRecursively(Path root) {
-        try {
-            if (!Files.exists(root)) {
-                return;
-            }
-            try (var walk = Files.walk(root)) {
-                walk.sorted(reverseOrder()).forEach(p -> {
-                    try {
-                        Files.deleteIfExists(p);
-                    } catch (IOException ignored) {
-                        // best-effort cleanup
-                    }
-                });
-            }
-        } catch (IOException ignored) {
-            // best-effort cleanup
-        }
+        client.close();
+        provider.unregister(bucket);
     }
 
     @Override
@@ -111,7 +101,7 @@ public class S3FileSystem extends FileSystem {
 
     @Override
     public Iterable<FileStore> getFileStores() {
-        return Set.of();
+        return Set.of(new S3FileStore(bucket));
     }
 
     @Override
@@ -135,20 +125,20 @@ public class S3FileSystem extends FileSystem {
     }
 
     @Override
-    public WatchService newWatchService() throws IOException {
-        throw new UnsupportedOperationException("Not yet implemented");
+    public WatchService newWatchService() {
+        throw new UnsupportedOperationException("S3 paths do not support WatchService");
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof S3FileSystem other)) return false;
-        return Objects.equals(bucket, other.bucket) && Objects.equals(tmpDir, other.tmpDir);
+        return Objects.equals(bucket, other.bucket);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(bucket, tmpDir);
+        return Objects.hash(bucket);
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.github.vfss3.jdk;
+package com.github.vfss3.jdk.tests;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.reverseOrder;
@@ -6,14 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
+import java.util.List;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -26,33 +25,27 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 
 /**
- * Suite E: Copy Operations for the JDK NIO.2 mock backend — see
- * {@code docs/test-cases/e-copy-operations.md}. A recursive copy is implemented with
- * {@link Files#walk} since {@link Files#copy} does not recurse into directories.
+ * Suite E: Copy Operations — see {@code docs/test-cases/e-copy-operations.md}. A recursive copy
+ * is implemented with {@link Files#walk} since {@link Files#copy} does not recurse into
+ * directories. Runs against whatever real S3-compatible backend the enclosing {@code @Suite}
+ * wired up via {@link JdkIntegrationContext}.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class CopyOperationsTest {
 
-    private static final String BUCKET = "test-bucket";
     private static final String PREFIX = "/copy/";
 
     private FileSystem fs;
 
     @BeforeEach
-    void setUp() throws IOException {
-        fs = FileSystems.newFileSystem(URI.create("s3://" + BUCKET), Map.of());
+    void setUp() {
+        fs = JdkIntegrationContext.fileSystem();
     }
 
     @AfterEach
     void tearDown() throws IOException {
-        var prefix = fs.getPath(PREFIX);
-        if (Files.exists(prefix)) {
-            try (Stream<Path> walk = Files.walk(prefix)) {
-                walk.sorted(reverseOrder()).forEach(CopyOperationsTest::deleteQuietly);
-            }
-        }
-        fs.close();
+        JdkIntegrationContext.deleteRecursively(fs.getPath(PREFIX));
     }
 
     @Test
@@ -89,27 +82,20 @@ class CopyOperationsTest {
                 names.add(child.getFileName().toString());
             }
         }
-        assertEquals(
-                new TreeSet<>(java.util.List.of("child-file.tmp", "child-file2.tmp", "child-dir", "child-dir-copy")),
-                names);
+        assertEquals(new TreeSet<>(List.of("child-file.tmp", "child-file2.tmp", "child-dir", "child-dir-copy")), names);
 
         // Step 4: delete every child of the prefix.
         try (Stream<Path> walk = Files.walk(base)) {
-            walk.filter(p -> !p.equals(base)).sorted(reverseOrder()).forEach(CopyOperationsTest::deleteQuietly);
+            walk.filter(p -> !p.equals(base)).sorted(reverseOrder()).forEach(JdkIntegrationContext::deleteQuietly);
         }
         assertFalse(Files.exists(base.resolve("child-dir")), "child-dir should be gone");
     }
 
     private static void copyRecursively(Path source, Path target) throws IOException {
-        // S3Path.relativize is not implemented, so derive the relative key from the string form.
-        var sourcePrefix = source.toString();
         try (Stream<Path> walk = Files.walk(source)) {
             for (Path path : (Iterable<Path>) walk::iterator) {
-                var full = path.toString();
-                var relative = full.length() <= sourcePrefix.length()
-                        ? ""
-                        : full.substring(sourcePrefix.length()).replaceFirst("^/", "");
-                var dest = relative.isEmpty() ? target : target.resolve(relative);
+                var relative = source.relativize(path);
+                var dest = relative.toString().isEmpty() ? target : target.resolve(relative.toString());
                 if (Files.isDirectory(path)) {
                     Files.createDirectories(dest);
                 } else {
@@ -131,13 +117,5 @@ class CopyOperationsTest {
 
     private static byte[] bytes(String s) {
         return s.getBytes(UTF_8);
-    }
-
-    private static void deleteQuietly(Path p) {
-        try {
-            Files.deleteIfExists(p);
-        } catch (IOException ignored) {
-            // best-effort
-        }
     }
 }

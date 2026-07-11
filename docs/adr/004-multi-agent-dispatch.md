@@ -1,6 +1,6 @@
 # ADR-004: Multi-Agent Dispatch via Codex Automation and Claude Code Routines
 
-**Status:** Accepted
+**Status:** Accepted, amended by [ADR-005](005-single-session-agent-lifecycle.md)
 **Date:** 2026-05-17
 **Author:** @abashev
 

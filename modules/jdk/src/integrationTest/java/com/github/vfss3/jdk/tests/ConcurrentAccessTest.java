@@ -1,38 +1,34 @@
-package com.github.vfss3.jdk;
+package com.github.vfss3.jdk.tests;
 
-import static java.util.Comparator.reverseOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Suite G: Concurrent Access for the JDK NIO.2 mock backend — see
- * {@code docs/test-cases/g-concurrent-access.md}. Exercises the provider from many threads and
- * watches for deadlocks via {@link java.lang.management.ThreadMXBean}.
+ * Suite G: Concurrent Access — see {@code docs/test-cases/g-concurrent-access.md}. Exercises the
+ * provider from many threads and watches for deadlocks via
+ * {@link java.lang.management.ThreadMXBean}. Runs against whatever real S3-compatible backend
+ * the enclosing {@code @Suite} wired up via {@link JdkIntegrationContext}.
  */
 class ConcurrentAccessTest {
 
-    private static final String BUCKET = "test-bucket";
     private static final String FOLDERS = "/concurrent/folders/";
     private static final String READ_TEST = "/concurrent/read-test/";
 
@@ -40,7 +36,7 @@ class ConcurrentAccessTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        fs = FileSystems.newFileSystem(URI.create("s3://" + BUCKET), Map.of());
+        fs = JdkIntegrationContext.fileSystem();
         Files.createDirectories(fs.getPath(FOLDERS));
         Files.createDirectories(fs.getPath(READ_TEST));
         Files.write(fs.getPath(READ_TEST + "file1"), new byte[0]);
@@ -49,19 +45,7 @@ class ConcurrentAccessTest {
 
     @AfterEach
     void tearDown() throws IOException {
-        var prefix = fs.getPath("/concurrent/");
-        if (Files.exists(prefix)) {
-            try (Stream<Path> walk = Files.walk(prefix)) {
-                walk.sorted(reverseOrder()).forEach(p -> {
-                    try {
-                        Files.deleteIfExists(p);
-                    } catch (IOException ignored) {
-                        // best-effort
-                    }
-                });
-            }
-        }
-        fs.close();
+        JdkIntegrationContext.deleteRecursively(fs.getPath("/concurrent/"));
     }
 
     /** Step 1: many threads create / verify / delete their own folder. */
@@ -167,7 +151,7 @@ class ConcurrentAccessTest {
         try {
             for (int i = 0; i < iterations; i++) {
                 final int index = i;
-                pool.submit(() -> {
+                var unused = pool.submit(() -> {
                     try {
                         task.run(index);
                     } catch (Throwable t) {

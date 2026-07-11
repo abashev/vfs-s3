@@ -120,7 +120,17 @@ public class S3Path implements Path {
 
     @Override
     public Path relativize(Path other) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (!(other instanceof S3Path s3Other) || !fileSystem.equals(s3Other.fileSystem)) {
+            throw new IllegalArgumentException("Cannot relativize a path from a different file system: " + other);
+        }
+        if (path.equals(s3Other.path)) {
+            return new S3Path(fileSystem, "");
+        }
+        var prefix = path.endsWith("/") ? path : path + "/";
+        if (!s3Other.path.startsWith(prefix)) {
+            throw new IllegalArgumentException("'" + other + "' is not relative to '" + this + "'");
+        }
+        return new S3Path(fileSystem, s3Other.path.substring(prefix.length()));
     }
 
     @Override

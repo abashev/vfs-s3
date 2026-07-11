@@ -1,4 +1,4 @@
-package com.github.vfss3.jdk;
+package com.github.vfss3.jdk.tests;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.reverseOrder;
@@ -6,15 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,27 +23,26 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 /**
- * Suite B: Directory Operations for the JDK NIO.2 mock backend — see
- * {@code docs/test-cases/b-directory-operations.md}. Folder listing and the find selectors
- * are expressed with {@link DirectoryStream} and {@link Files#walk}.
+ * Suite B: Directory Operations — see {@code docs/test-cases/b-directory-operations.md}. Folder
+ * listing and the find selectors are expressed with {@link DirectoryStream} and
+ * {@link Files#walk}. Runs against whatever real S3-compatible backend the enclosing
+ * {@code @Suite} wired up via {@link JdkIntegrationContext}.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class DirectoryOperationsTest {
 
-    private static final String BUCKET = "test-bucket";
     private static final String PREFIX = "/dir-ops/";
 
     private FileSystem fs;
 
     @BeforeEach
-    void setUp() throws IOException {
-        fs = FileSystems.newFileSystem(URI.create("s3://" + BUCKET), Map.of());
+    void setUp() {
+        fs = JdkIntegrationContext.fileSystem();
     }
 
     @AfterEach
     void tearDown() throws IOException {
-        deleteRecursively(fs.getPath(PREFIX));
-        fs.close();
+        JdkIntegrationContext.deleteRecursively(fs.getPath(PREFIX));
     }
 
     /** Step 1: create a folder and assert it exists as a directory. */
@@ -150,7 +147,7 @@ class DirectoryOperationsTest {
         Files.write(base.resolve("child-dir/descendant.tmp"), bytes("c"));
 
         try (Stream<Path> walk = Files.walk(base)) {
-            walk.filter(p -> !p.equals(base)).sorted(reverseOrder()).forEach(DirectoryOperationsTest::deleteQuietly);
+            walk.filter(p -> !p.equals(base)).sorted(reverseOrder()).forEach(JdkIntegrationContext::deleteQuietly);
         }
 
         try (Stream<Path> walk = Files.walk(base)) {
@@ -168,22 +165,5 @@ class DirectoryOperationsTest {
 
     private static byte[] bytes(String s) {
         return s.getBytes(UTF_8);
-    }
-
-    private static void deleteQuietly(Path p) {
-        try {
-            Files.deleteIfExists(p);
-        } catch (IOException ignored) {
-            // best-effort
-        }
-    }
-
-    private static void deleteRecursively(Path root) throws IOException {
-        if (!Files.exists(root)) {
-            return;
-        }
-        try (Stream<Path> walk = Files.walk(root)) {
-            walk.sorted(reverseOrder()).forEach(DirectoryOperationsTest::deleteQuietly);
-        }
     }
 }

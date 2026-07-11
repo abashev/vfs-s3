@@ -1,35 +1,30 @@
-package com.github.vfss3.jdk;
+package com.github.vfss3.jdk.tests;
 
 import static java.time.ZoneOffset.UTC;
-import static java.util.Comparator.reverseOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.vfss3.jdk.JdkIntegrationContext;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Map;
 import java.util.Random;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Suite D: File Metadata for the JDK NIO.2 mock backend — see
- * {@code docs/test-cases/d-file-metadata.md}.
+ * Suite D: File Metadata — see {@code docs/test-cases/d-file-metadata.md}.
  *
  * <p>Only the metadata the NIO.2 API exposes is checked: size and last-modified time. The
  * S3-specific items from the original suite (content type, signed URL, MD5 hash) have no NIO.2
- * analog and are intentionally omitted.
+ * analog and are intentionally omitted. Runs against whatever real S3-compatible backend the
+ * enclosing {@code @Suite} wired up via {@link JdkIntegrationContext}.
  */
 class FileMetadataTest {
 
-    private static final String BUCKET = "test-bucket";
     private static final String PREFIX = "/metadata/";
 
     private FileSystem fs;
@@ -37,7 +32,7 @@ class FileMetadataTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        fs = FileSystems.newFileSystem(URI.create("s3://" + BUCKET), Map.of());
+        fs = JdkIntegrationContext.fileSystem();
         payload = new byte[12_345];
         new Random(7).nextBytes(payload);
         Files.write(fs.getPath(PREFIX + "backup.bin"), payload);
@@ -45,19 +40,7 @@ class FileMetadataTest {
 
     @AfterEach
     void tearDown() throws IOException {
-        var prefix = fs.getPath(PREFIX);
-        if (Files.exists(prefix)) {
-            try (Stream<java.nio.file.Path> walk = Files.walk(prefix)) {
-                walk.sorted(reverseOrder()).forEach(p -> {
-                    try {
-                        Files.deleteIfExists(p);
-                    } catch (IOException ignored) {
-                        // best-effort
-                    }
-                });
-            }
-        }
-        fs.close();
+        JdkIntegrationContext.deleteRecursively(fs.getPath(PREFIX));
     }
 
     /** Step 2: content size matches the written payload. */

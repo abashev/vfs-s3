@@ -2,12 +2,14 @@
 
 ## Overview
 
-This document describes how AI assistants are used on the `vfs-s3` project. The workflow is
-tool-agnostic: Codex and standard Claude Code sessions should follow the same repository rules,
-quality bar, and GitHub process.
+This document describes how AI assistants are used on the `vfs-s3` project. Claude Code is the
+sole engine for this workflow.
 
-This workflow is formalized by [ADR-004](adr/004-multi-agent-dispatch.md), which
-updates ADR-001 for Codex automation and Claude Code routines.
+The current lifecycle is formalized by
+[ADR-005](adr/005-single-session-agent-lifecycle.md), which replaces the earlier
+label/routine-triggered, Codex-dispatched model from
+[ADR-004](adr/004-multi-agent-dispatch.md) (itself an update to
+[ADR-001](adr/001-multi-agent-development.md)) with **one continuous session per issue**.
 
 > **Language policy:** All postings to GitHub (issue comments, PR descriptions, review comments)
 > must be written in **US English**.
@@ -15,15 +17,29 @@ updates ADR-001 for Codex automation and Claude Code routines.
 > **Authorization:** Only @abashev decides when AI-generated work is accepted, pushed, reviewed,
 > or merged.
 
+## Lifecycle
+
+A human starts one Claude Code session per issue ("let's work on issue #N") and stays in that
+same conversation through the first three phases:
+
+1. **Spec** — `/spec` (spec-driven-development skill). Clarifying questions, then a spec the
+   human approves in-session.
+2. **Plan** — `/plan` (planning-and-task-breakdown skill). Task breakdown with a single human
+   approval checkpoint.
+3. **Build** — `/build auto` (incremental-implementation + test-driven-development skills, via
+   the vfs-developer persona). Runs every task's RED → GREEN → regression → build → commit loop
+   without stopping between tasks. Stops only for an unfixable failure
+   (debugging-and-error-recovery), spec ambiguity, or a high-risk/irreversible change
+   (doubt-driven-development, explicit sign-off required).
+4. **Review** — a deliberately **separate, fresh-context session** (the vfs-reviewer persona) —
+   the one place a new session is correct, not a compromise: an unbiased second look is the point.
+5. **Merge** — human, unchanged: @abashev only.
+
 ## Roles
 
-AI sessions can be used in three practical roles. The role instructions live in `.skills/` and can
-be dispatched by Codex automation, Claude routines, or invoked manually in an interactive session.
-
-For this repository, Codex on GPT-5.5 is the preferred default assistant. In current project use, it
-works materially better than Opus for implementation and review work because it follows local
-instructions closely, handles multi-file Java/Gradle changes reliably, and keeps verification tied
-to concrete commands.
+AI sessions can be used in three practical roles. The persona prompts live in `.skills/` and are
+invoked within an interactive Claude Code session (see Lifecycle above) — not dispatched by
+external automation.
 
 ### Architect
 
@@ -54,7 +70,8 @@ Responsibilities:
 
 **Skill:** `.skills/vfs-reviewer/`
 
-Use this mode for PR review.
+Use this mode for PR review, always as a separate, fresh-context session from the one that
+built the change — see Lifecycle above.
 
 Responsibilities:
 - Prioritize correctness, regressions, security, and missing tests
@@ -102,20 +119,13 @@ Remote integration tests may require AWS credentials and external S3-compatible 
 ## GitHub Workflow
 
 1. Open or select an issue.
-2. Trigger the relevant role through Codex automation, a Claude routine, or an interactive assistant session.
+2. Start a Claude Code session and say something like "let's work on issue #N" — this replaces
+   per-phase trigger phrases; starting the session is the one gesture needed to kick off Spec →
+   Plan → Build (see Lifecycle above).
 3. Create a focused branch from `17.0`.
 4. Run relevant tests.
 5. Push the branch and open a PR.
-6. Wait for review and approval.
-
-Suggested GitHub trigger phrases:
-
-```text
-@vfs-s3-bot please prepare design doc
-@vfs-s3-bot please proceed with development
-@vfs-s3-bot please review
-@vfs-s3-bot please fix review comments
-```
+6. Start a **new**, separate session for review; wait for review and approval before merge.
 
 Suggested branch names:
 
@@ -123,6 +133,18 @@ Suggested branch names:
 feature/issue-N-short-description
 feature/short-description
 ```
+
+## Human Gates
+
+Per ADR-005, there are three checkpoints:
+
+1. **Spec approval** — in-session, before planning starts.
+2. **Plan approval** — the single checkpoint before the build phase runs unattended through
+   every task.
+3. **Merge** — unchanged, @abashev-only.
+
+Stops during the build phase for risk, ambiguity, or failure are the build loop's own safety
+valve, not a phase transition a human has to dispatch.
 
 ## PR Description Template
 
