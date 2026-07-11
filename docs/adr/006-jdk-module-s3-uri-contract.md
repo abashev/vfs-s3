@@ -1,6 +1,6 @@
 # ADR-006: S3 URI Contract for the `jdk` Module
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-07-09
 **Author:** @abashev
 
