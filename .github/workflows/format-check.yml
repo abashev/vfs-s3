@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - uses: abashev/palantir-java-format-action@f33b0208c70db5f8ab33dff446d9e107115098f2 # v1
+      - uses: abashev/palantir-java-format-action@c0f94ea367a83fbcf4838f4e68a0807d0e89971c # v1
         with:
           version: '2.89.0'
           mode: 'all'
