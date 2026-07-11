@@ -37,6 +37,28 @@ class S3FileSystemProviderTest {
     }
 
     @Test
+    void newFileSystemAcceptsRecognizedQueryParameters() throws Exception {
+        // ADR-006: region/endpoint may ride in the URI query. Opening must succeed (client
+        // construction is lazy, so no network here).
+        var uri = URI.create("s3://test-bucket?aws.region=eu-central-1&aws.endpoint=http://localhost:9000");
+        try (var fs = (S3FileSystem) provider.newFileSystem(uri, Map.of())) {
+            assertEquals("test-bucket", fs.getBucket());
+        }
+    }
+
+    @Test
+    void newFileSystemRejectsCredentialsInTheUri() {
+        var uri = URI.create("s3://key:secret@test-bucket");
+        assertThrows(IllegalArgumentException.class, () -> provider.newFileSystem(uri, Map.of()));
+    }
+
+    @Test
+    void newFileSystemRejectsUnknownQueryParameters() {
+        var uri = URI.create("s3://test-bucket?reigon=eu-central-1");
+        assertThrows(IllegalArgumentException.class, () -> provider.newFileSystem(uri, Map.of()));
+    }
+
+    @Test
     void newFileSystemThrowsWhenAlreadyOpenForBucket() throws Exception {
         var uri = URI.create("s3://test-bucket");
         try (var fs = provider.newFileSystem(uri, Map.of())) {

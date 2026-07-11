@@ -32,7 +32,7 @@ public class S3FileSystem extends FileSystem {
     private volatile boolean open = true;
 
     S3FileSystem(S3FileSystemProvider provider, URI uri, Map<String, ?> env) {
-        this(provider, uri.getHost(), S3FileSystemConfig.fromEnv(env).buildS3Client());
+        this(provider, uri.getHost(), S3FileSystemConfig.from(uri, env).buildS3Client());
     }
 
     /** Direct wiring, used by unit tests to substitute an in-memory {@link S3Client}. */
