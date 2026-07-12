@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Random;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -108,7 +109,7 @@ class UploadDownloadTest {
         var temp = Files.createTempFile("vfs-jdk.", ".s3-test");
         try {
             try (InputStream in = Files.newInputStream(dest)) {
-                Files.copy(in, temp, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(in, temp, StandardCopyOption.REPLACE_EXISTING);
             }
             assertEquals(Files.size(dest), Files.size(temp), "Downloaded size should match");
         } finally {
@@ -133,7 +134,7 @@ class UploadDownloadTest {
             assertEquals(payload.length, Files.size(remote));
 
             // Download: S3 path -> local (default FS) path. localTarget already exists (temp file).
-            Files.copy(remote, localTarget, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(remote, localTarget, StandardCopyOption.REPLACE_EXISTING);
             assertArrayEquals(payload, Files.readAllBytes(localTarget), "Downloaded content should match the source");
         } finally {
             Files.deleteIfExists(localSource);

@@ -8,7 +8,6 @@ import com.github.vfss3.commonsvfs.S3IntegrationContext;
 import java.util.Arrays;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
-import org.apache.commons.vfs2.Selectors;
 import org.apache.commons.vfs2.VFS;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -47,11 +46,11 @@ class CopyFilesTest {
         FileObject[] files;
         files = root.findFiles(SELECT_CHILDREN);
         assertEquals(3, files.length);
-        files = root.findFiles(Selectors.SELECT_FOLDERS);
+        files = root.findFiles(SELECT_FOLDERS);
         assertEquals(3, files.length);
-        files = root.findFiles(Selectors.SELECT_FILES);
+        files = root.findFiles(SELECT_FILES);
         assertEquals(4, files.length);
-        files = root.findFiles(Selectors.EXCLUDE_SELF);
+        files = root.findFiles(EXCLUDE_SELF);
         assertEquals(6, files.length);
     }
 

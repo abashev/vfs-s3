@@ -301,7 +301,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
 
     @Override
     protected FileType doGetType() {
-        return FileType.IMAGINARY;
+        return IMAGINARY;
     }
 
     @Override

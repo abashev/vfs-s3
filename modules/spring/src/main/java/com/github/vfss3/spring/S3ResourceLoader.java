@@ -5,6 +5,7 @@ import static java.util.Comparator.reverseOrder;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.springframework.core.io.DefaultResourceLoader;
@@ -94,7 +95,7 @@ public class S3ResourceLoader extends DefaultResourceLoader implements Closeable
         try {
             // Multi-arg constructor encodes the path, preserving spaces in getPath()
             return new URI(S3Resource.S3_SCHEME, bucket, path, null);
-        } catch (java.net.URISyntaxException e) {
+        } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Invalid S3 URI: " + location, e);
         }
     }

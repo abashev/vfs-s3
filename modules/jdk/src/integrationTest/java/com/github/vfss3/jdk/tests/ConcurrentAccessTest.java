@@ -11,6 +11,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -87,7 +89,7 @@ class ConcurrentAccessTest {
 
         var wrongResults = new AtomicInteger(0);
         var stop = new AtomicBoolean(false);
-        var threads = new java.util.ArrayList<Thread>();
+        var threads = new ArrayList<Thread>();
 
         Thread getParent = new Thread(
                 () -> {
@@ -147,7 +149,7 @@ class ConcurrentAccessTest {
 
     private void runConcurrently(int threads, int iterations, IndexedTask task) throws Exception {
         ExecutorService pool = Executors.newFixedThreadPool(threads);
-        var failures = new java.util.concurrent.ConcurrentLinkedQueue<Throwable>();
+        var failures = new ConcurrentLinkedQueue<Throwable>();
         try {
             for (int i = 0; i < iterations; i++) {
                 final int index = i;
