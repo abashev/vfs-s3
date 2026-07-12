@@ -12,3 +12,58 @@ run = "./gradlew spotlessCheck"
 [tasks.release]
 description = "Stage, sign, and publish the release to Maven Central with JReleaser"
 run = "./gradlew clean jreleaserDeploy"
+
+# ---- GitHub Actions environment config for the remote integration suites ----
+# Non-secret variables live here in git; secrets are read from 1Password at apply time and are
+# never stored in the repo. Both tasks are idempotent and skip any entry still set to a TODO
+# placeholder, so they are safe to run before every value is filled in.
+# Requires: gh (authenticated with repo admin); gh:env-secrets also needs the 1Password CLI
+# (`op signin`). BASE_URL format: see docs/adr/006-jdk-module-s3-uri-contract.md.
+
+[tasks."gh:env-vars"]
+description = "Set the remote GitHub environments' non-secret BASE_URL variables"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+
+# BASE_URL per environment (the %s is the per-run bucket-name token, shared by both modules'
+# remote suites). Current commons-vfs-format values — only AWS-1 is known here; paste the two
+# Yandex values from Settings → Environments.
+apply() {
+  local env="$1" base_url="$2"
+  if [[ "$base_url" == TODO* ]]; then
+    echo "– $env: BASE_URL still a TODO placeholder, skipping"; return
+  fi
+  gh api --method PUT "repos/{owner}/{repo}/environments/$env" >/dev/null  # idempotent
+  gh variable set BASE_URL --env "$env" --body "$base_url"
+  echo "✓ $env: BASE_URL set"
+}
+
+apply AWS-1    's3://s3.eu-central-1.amazonaws.com/s3-tests-%s'
+apply YANDEX-1 'TODO — paste the current YANDEX-1 BASE_URL'
+apply YANDEX-2 'TODO — paste the current YANDEX-2 BASE_URL'
+'''
+
+[tasks."gh:env-secrets"]
+description = "Set the remote GitHub environments' AWS/S3 key secrets from 1Password (op)"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+
+# Reads each key from 1Password at apply time — nothing secret is stored in the repo. Replace the
+# op:// references with your vault/item/field paths; the GitHub secret names (AWS_ACCESS_KEY_ID /
+# AWS_SECRET_KEY) match what .github/workflows/*.yml consume. Requires `op signin` first.
+apply() {
+  local env="$1" access_ref="$2" secret_ref="$3"
+  if [[ "$access_ref" == *TODO* || "$secret_ref" == *TODO* ]]; then
+    echo "– $env: op references still contain TODO, skipping"; return
+  fi
+  gh secret set AWS_ACCESS_KEY_ID --env "$env" --body "$(op read "$access_ref")"
+  gh secret set AWS_SECRET_KEY    --env "$env" --body "$(op read "$secret_ref")"
+  echo "✓ $env: secrets set"
+}
+
+apply AWS-1    'op://TODO-vault/TODO-aws-1/access-key-id'    'op://TODO-vault/TODO-aws-1/secret-key'
+apply YANDEX-1 'op://TODO-vault/TODO-yandex-1/access-key-id' 'op://TODO-vault/TODO-yandex-1/secret-key'
+apply YANDEX-2 'op://TODO-vault/TODO-yandex-2/access-key-id' 'op://TODO-vault/TODO-yandex-2/secret-key'
+'''
