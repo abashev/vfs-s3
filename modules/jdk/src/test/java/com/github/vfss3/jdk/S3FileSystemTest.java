@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class S3FileSystemTest {
@@ -56,7 +57,7 @@ class S3FileSystemTest {
 
     @Test
     void onlyBasicAttributeViewIsSupported() {
-        assertEquals(java.util.Set.of("basic"), fs.supportedFileAttributeViews());
+        assertEquals(Set.of("basic"), fs.supportedFileAttributeViews());
     }
 
     @Test

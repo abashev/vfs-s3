@@ -43,8 +43,7 @@ On CI runners, Java is installed via `actions/setup-java`. The Gradle wrapper is
 
 - `commons-vfs/` - Apache Commons VFS2 adapter for S3 (package `com.github.vfss3.commonsvfs`)
 - `jdk/` - JDK NIO.2 `FileSystemProvider` for S3 (package `com.github.vfss3.jdk`)
-- `spring-6/` - Spring 6 `Resource` / `ResourceLoader` for S3 (package `com.github.vfss3.spring6`)
-- `spring-7/` - Spring 7 `Resource` / `ResourceLoader` for S3 (package `com.github.vfss3.spring7`)
+- `spring/` - Spring `Resource` / `ResourceLoader` for S3 (package `com.github.vfss3.spring`)
 - `buildSrc/` - Shared Gradle convention plugin (`vfs-s3.java-conventions`)
 - `docs/` - Documentation, including ADRs in `docs/adr/`
 - `samples/` - Usage examples

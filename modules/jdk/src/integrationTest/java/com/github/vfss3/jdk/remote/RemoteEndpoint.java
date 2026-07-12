@@ -4,63 +4,46 @@ import com.github.vfss3.jdk.S3FileSystemConfig;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 /**
- * Splits a {@code BASE_URL}-style bucket hostname — the same printf template convention
- * {@code modules/commons-vfs}'s {@code EnvironmentBasedSuite} uses, e.g. {@code
- * s3-tests-<token>.s3.eu-west-1.amazonaws.com} or {@code s3-tests-<token>.storage.yandexcloud.net}
- * — into a bucket name, an AWS region, and an optional endpoint override.
+ * Splits the remote {@code BASE_URL} into the bucket name plus the region/endpoint overrides this
+ * module's env-map-configured provider needs.
  *
- * <p>Reusing the exact same {@code BASE_URL} CI environment variable lets this module's remote
- * suite ride on the GitHub environments (AWS-1, YANDEX-1, YANDEX-2) already configured for
- * commons-vfs, without introducing a second, module-specific set of environment variables. Only
- * the two providers actually wired into those environments are recognized; add a pattern here if
- * a new provider is ever configured (mirrors {@code S3FileNameParser} in commons-vfs, which
- * supports more providers because its host-parsing is part of the shipped library, not
- * test-only infrastructure).
+ * <p>Since ADR-006 made the jdk URI the canonical CI {@code BASE_URL}
+ * ({@code s3://<bucket>?region=…&endpoint=…} — see
+ * {@code docs/adr/006-jdk-module-s3-uri-contract.md}), this is a thin pass-through rather than a
+ * translator: the bucket is the URI host, and region/endpoint are read straight through the
+ * production {@link S3FileSystemConfig#from(URI, Map)} contract (which also rejects userinfo
+ * credentials and unknown query parameters). The translating adapter now lives on the other side —
+ * {@code modules/commons-vfs}'s remote suite rebuilds a commons-vfs URL from this same
+ * {@code BASE_URL}.
  */
 record RemoteEndpoint(String bucket, String region, URI endpointOverride) {
 
-    private static final Pattern AWS_HOST =
-            Pattern.compile("(?<bucket>[a-z0-9-]+)\\.s3\\.((?<region>[a-z0-9-]+)\\.)?amazonaws\\.com");
-    private static final Pattern YANDEX_HOST = Pattern.compile("(?<bucket>[a-z0-9-]+)\\.storage\\.yandexcloud\\.net");
-    private static final String DEFAULT_AWS_REGION = "us-east-1";
-    private static final String YANDEX_REGION = "ru-central1";
-
     /**
-     * @param urlTemplate a printf-style {@code s3://<host>/} template with a {@code %s}
-     *     placeholder for the bucket-name token
+     * @param urlTemplate a jdk-dialect {@code s3://<bucket>?region=…&endpoint=…} template with a
+     *     {@code %s} placeholder in the bucket for the per-run bucket-name token
      * @param token substituted for the {@code %s} placeholder
      */
     static RemoteEndpoint resolve(String urlTemplate, String token) {
-        var host = URI.create(String.format(urlTemplate, token)).getHost();
-        if (host == null) {
-            throw new IllegalArgumentException("BASE_URL has no host: " + urlTemplate);
+        var uri = URI.create(String.format(urlTemplate, token));
+        var bucket = uri.getHost();
+        if (bucket == null || bucket.isBlank()) {
+            throw new IllegalArgumentException(
+                    "BASE_URL has no bucket in the host position (expected s3://<bucket>?…): " + urlTemplate);
         }
-
-        var aws = AWS_HOST.matcher(host);
-        if (aws.matches()) {
-            var region = aws.group("region");
-            // No endpoint override for AWS — S3FileSystemConfig.buildS3Client() already
-            // defaults to AWS's own virtual-hosted-style addressing when endpoint is null.
-            return new RemoteEndpoint(aws.group("bucket"), region != null ? region : DEFAULT_AWS_REGION, null);
-        }
-
-        var yandex = YANDEX_HOST.matcher(host);
-        if (yandex.matches()) {
-            return new RemoteEndpoint(
-                    yandex.group("bucket"), YANDEX_REGION, URI.create("https://storage.yandexcloud.net"));
-        }
-
-        throw new IllegalArgumentException("Unrecognized remote host in BASE_URL (" + urlTemplate + "): " + host);
+        // Reuse the production URI-query contract to read region/endpoint (and validate the URI).
+        var config = S3FileSystemConfig.from(uri, Map.of());
+        return new RemoteEndpoint(bucket, config.region(), config.endpoint());
     }
 
     /** The {@code env} map for {@link S3FileSystemConfig#fromEnv} matching this endpoint. */
     Map<String, Object> toEnv(AwsCredentialsProvider credentialsProvider) {
         var env = new HashMap<String, Object>();
-        env.put(S3FileSystemConfig.ENV_REGION, region);
+        if (region != null) {
+            env.put(S3FileSystemConfig.ENV_REGION, region);
+        }
         env.put(S3FileSystemConfig.ENV_CREDENTIALS_PROVIDER, credentialsProvider);
         if (endpointOverride != null) {
             env.put(S3FileSystemConfig.ENV_ENDPOINT, endpointOverride.toString());

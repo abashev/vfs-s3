@@ -42,7 +42,7 @@ the 6 already-existing mock-backed scenario test classes (`FileLifecycleTest`,
   - Description: Add `S3FileSystemConfig` record (`region`, `endpoint`, `credentialsProvider`)
     with `fromEnv(Map<String,?>)` and `buildS3Client()`, per the Code Style section of `SPEC.md`.
     SDK default provider chain is the fallback when `env` supplies nothing.
-  - Acceptance: `fromEnv()` reads `aws.region`/`aws.endpoint`/`aws.credentialsProvider` when
+  - Acceptance: `fromEnv()` reads `region`/`endpoint`/`credentialsProvider` when
     present; falls back to `DefaultCredentialsProvider` otherwise; `buildS3Client()` applies
     region/endpoint overrides only when set.
   - Verify: `mise exec -- ./gradlew :modules:jdk:test` (new `S3FileSystemConfigTest`)

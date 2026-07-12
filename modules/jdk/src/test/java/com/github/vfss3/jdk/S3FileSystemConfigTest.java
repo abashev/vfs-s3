@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
 import java.util.Map;
@@ -27,14 +28,14 @@ class S3FileSystemConfigTest {
 
     @Test
     void fromEnvReadsRegionOverride() {
-        var config = S3FileSystemConfig.fromEnv(Map.of("aws.region", "eu-central-1"));
+        var config = S3FileSystemConfig.fromEnv(Map.of("region", "eu-central-1"));
 
         assertEquals("eu-central-1", config.region());
     }
 
     @Test
     void fromEnvReadsEndpointOverride() {
-        var config = S3FileSystemConfig.fromEnv(Map.of("aws.endpoint", "http://localhost:9000"));
+        var config = S3FileSystemConfig.fromEnv(Map.of("endpoint", "http://localhost:9000"));
 
         assertEquals(URI.create("http://localhost:9000"), config.endpoint());
     }
@@ -43,7 +44,7 @@ class S3FileSystemConfigTest {
     void fromEnvReadsCredentialsProviderOverride() {
         AwsCredentialsProvider provider = StaticCredentialsProvider.create(AwsBasicCredentials.create("k", "s"));
 
-        var config = S3FileSystemConfig.fromEnv(Map.of("aws.credentialsProvider", provider));
+        var config = S3FileSystemConfig.fromEnv(Map.of("credentialsProvider", provider));
 
         assertSame(provider, config.credentialsProvider());
     }
@@ -65,5 +66,59 @@ class S3FileSystemConfigTest {
         try (var client = config.buildS3Client()) {
             assertNotNull(client);
         }
+    }
+
+    // ---- from(URI, env): ADR-006 URI query channel ----
+
+    @Test
+    void fromReadsRegionAndEndpointFromUriQuery() {
+        var uri = URI.create("s3://bucket?region=eu-central-1&endpoint=http://localhost:9000");
+
+        var config = S3FileSystemConfig.from(uri, Map.of());
+
+        assertEquals("eu-central-1", config.region());
+        assertEquals(URI.create("http://localhost:9000"), config.endpoint());
+    }
+
+    @Test
+    void fromLetsEnvWinOverTheUriQuery() {
+        var uri = URI.create("s3://bucket?region=eu-central-1");
+
+        var config = S3FileSystemConfig.from(uri, Map.of("region", "eu-west-1"));
+
+        assertEquals("eu-west-1", config.region());
+    }
+
+    @Test
+    void fromFallsBackToDefaultsWhenNeitherChannelSetsAValue() {
+        var config = S3FileSystemConfig.from(URI.create("s3://bucket"), Map.of());
+
+        assertNull(config.region());
+        assertNull(config.endpoint());
+        assertInstanceOf(DefaultCredentialsProvider.class, config.credentialsProvider());
+    }
+
+    @Test
+    void fromNeverReadsCredentialsFromTheUri() {
+        // Credentials are env-only; a "credentials" query key is just an unrecognized parameter.
+        var uri = URI.create("s3://bucket?credentialsProvider=whatever");
+
+        assertThrows(IllegalArgumentException.class, () -> S3FileSystemConfig.from(uri, Map.of()));
+    }
+
+    @Test
+    void fromRejectsUserInfoInTheUri() {
+        var uri = URI.create("s3://key:secret@bucket");
+
+        var e = assertThrows(IllegalArgumentException.class, () -> S3FileSystemConfig.from(uri, Map.of()));
+        assertEquals(true, e.getMessage().contains("Credentials must not be encoded"));
+    }
+
+    @Test
+    void fromRejectsUnknownQueryParameters() {
+        var uri = URI.create("s3://bucket?reigon=eu-central-1");
+
+        var e = assertThrows(IllegalArgumentException.class, () -> S3FileSystemConfig.from(uri, Map.of()));
+        assertEquals(true, e.getMessage().contains("Unrecognized"));
     }
 }

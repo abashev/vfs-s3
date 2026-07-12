@@ -5,6 +5,7 @@ plugins {
     id 'net.ltgt.errorprone'
     id 'net.ltgt.nullaway'
     id 'io.freefair.lombok'
+    id 'pmd'
 }
 
 group = 'com.github.abashev'
@@ -77,13 +78,6 @@ spotless {
 dependencies {
     errorprone libs.errorprone.core
     errorprone libs.nullaway
-    // Picnic's error-prone-support: extra bug checkers on top of stock Error Prone. We only use
-    // it for StaticImport today (promoted to an error below) — it flags qualified calls to
-    // commonly-static-imported JDK/JUnit members (Objects.requireNonNull, Comparator.reverseOrder,
-    // StandardCharsets.UTF_8, …) more precisely and more broadly than a hand-rolled Checkstyle
-    // regex ever could, since it works on the AST. The version pinned in the catalog must stay
-    // compatible with our errorprone version (2.42.0) per
-    // https://error-prone.picnic.tech/compatibility/ — bump both together.
     errorprone libs.error.prone.support.contrib
 }
 
@@ -91,8 +85,29 @@ nullaway {
     annotatedPackages.add('com.github.vfss3')
 }
 
+// Promote two "prefer imports over qualified names" checks to build-breaking errors:
+//   - StaticImport (Picnic)       — qualified calls to commonly static-imported members
+//                                   (Objects.requireNonNull, StandardCharsets.UTF_8, …).
+//   - UnnecessarilyFullyQualified — a fully-qualified type that could simply be imported without
+//                                   conflict (e.g. java.nio.file.StandardCopyOption → import it).
+// PMD's UnnecessaryFullyQualifiedName (below) is the complement, not a duplicate.
 tasks.withType(JavaCompile).configureEach {
     options.errorprone {
         error('StaticImport')
+        error('UnnecessarilyFullyQualified')
     }
+}
+
+// PMD — one rule only: UnnecessaryFullyQualifiedName. Complements the Error Prone checks above by
+// flagging a qualifier that is redundant because the simple name is ALREADY imported — including a
+// static wildcard import, which Error Prone does not flag (e.g. `FileType.IMAGINARY` reduced to
+// `IMAGINARY` given `import static …FileType.*`). The single rule is referenced inline (PMD resolves
+// `<ruleset-path>/<RuleName>`), so no external ruleset file is needed; this also overrides PMD's
+// default rulesets, leaving only this rule active. Creates a pmd<SourceSet> task per source set
+// (pmdMain / pmdTest / pmdIntegrationTest), all wired into `check`; fails the build on any violation.
+pmd {
+    toolVersion = libs.versions.pmd.get()
+    ruleSets = [
+            'category/java/codestyle.xml/UnnecessaryFullyQualifiedName'
+    ]
 }

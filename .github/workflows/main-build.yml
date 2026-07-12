@@ -40,7 +40,7 @@ jobs:
           paths: >-
             ${{ github.workspace }}/modules/commons-vfs/build/reports/jacoco/test/jacocoTestReport.xml,
             ${{ github.workspace }}/modules/jdk/build/reports/jacoco/test/jacocoTestReport.xml,
-            ${{ github.workspace }}/modules/spring-6/build/reports/jacoco/test/jacocoTestReport.xml
+            ${{ github.workspace }}/modules/spring/build/reports/jacoco/test/jacocoTestReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 40
           min-coverage-changed-files: 60
@@ -131,7 +131,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: [ AWS-1, YANDEX-1, YANDEX-2 ]
+        environment: [ AWS-1, YANDEX-1 ]
     environment: ${{ matrix.environment }}
     env:
       BASE_URL: ${{ vars.BASE_URL }}
@@ -182,7 +182,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: [ AWS-1, YANDEX-1, YANDEX-2 ]
+        environment: [ AWS-1, YANDEX-1 ]
     environment: ${{ matrix.environment }}
     env:
       BASE_URL: ${{ vars.BASE_URL }}

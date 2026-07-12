@@ -17,13 +17,14 @@ import software.amazon.awssdk.services.s3.S3Client;
  * {@code ./gradlew :modules:jdk:integrationTest --tests
  * "com.github.vfss3.jdk.remote.EnvironmentBasedSuite"}.
  *
- * <p>Reuses the exact same {@code BASE_URL} / {@code BUCKET_TOKEN} / {@code AWS_ACCESS_KEY_ID} /
- * {@code AWS_SECRET_KEY} environment variables as {@code
+ * <p>Shares the {@code BASE_URL} / {@code BUCKET_TOKEN} / {@code AWS_ACCESS_KEY_ID} /
+ * {@code AWS_SECRET_KEY} environment variables with {@code
  * com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite} — see that class's javadoc for the
- * variable reference. {@link RemoteEndpoint} parses {@code BASE_URL}'s host into a bucket name,
- * region, and (if the host isn't AWS's) an endpoint override, since — unlike commons-vfs — this
- * module's {@code S3FileSystemProvider} addresses a bucket purely by name (the {@code s3://}
- * FileSystem URI's host), not by a full virtual-hosted-style domain.
+ * variable reference. {@code BASE_URL} is written in this module's own {@code
+ * s3://<bucket>?region=…&endpoint=…} dialect (ADR-006, the canonical CI variable), so {@link
+ * RemoteEndpoint} only splits off the bucket (the URI host) and reads region/endpoint straight
+ * through the production {@code S3FileSystemConfig.from} contract; the commons-vfs suite carries
+ * the adapter that translates this dialect into its own.
  *
  * <p>The suite creates the bucket on startup and deletes it together with all its contents in
  * {@code @AfterSuite}, via a raw {@code S3Client} (not through the provider under test).

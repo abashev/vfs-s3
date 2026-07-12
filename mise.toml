@@ -12,3 +12,92 @@ run = "./gradlew spotlessCheck"
 [tasks.release]
 description = "Stage, sign, and publish the release to Maven Central with JReleaser"
 run = "./gradlew clean jreleaserDeploy"
+
+# Local reproduction of the remote CI jobs: runs both modules' EnvironmentBasedSuite against real
+# AWS, with credentials read from 1Password at run time (same op:// refs as gh:env-secrets — run
+# `op signin` first). BASE_URL is the same jdk-dialect value as the AWS-1 GitHub environment; the
+# per-run bucket token is left unset, so each suite provisions a random bucket and drops it in its
+# @AfterSuite (a hard Ctrl-C mid-run can still leak one).
+[tasks."test:remote"]
+description = "Run the remote integration suites (commons-vfs + jdk) against AWS; creds from 1Password (op)"
+shell = "bash -c"
+quiet = true
+run = '''
+set -euo pipefail
+
+AWS_ACCESS_KEY_ID="$(op read "op://Private/vfs-s3/AWS/access")"
+AWS_SECRET_ACCESS_KEY="$(op read "op://Private/vfs-s3/AWS/secret")"
+export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+export BASE_URL='s3://s3-tests-%s?region=eu-central-1'
+
+# Run both suites even if the first fails, so one invocation shows both modules' results.
+set +e
+rc=0
+echo "▶ commons-vfs remote suite (AWS)"
+./gradlew :modules:commons-vfs:integrationTest -i --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite" --console=plain || rc=1
+echo "▶ jdk remote suite (AWS)"
+./gradlew :modules:jdk:integrationTest -i --tests "com.github.vfss3.jdk.remote.EnvironmentBasedSuite" --console=plain || rc=1
+
+[ "$rc" -eq 0 ] && echo "✓ both remote suites passed" || echo "✗ a remote suite failed — see the gradle output above / build/reports"
+exit $rc
+'''
+
+# ---- GitHub Actions environment config for the remote integration suites ----
+# Non-secret variables live here in git; secrets are read from 1Password at apply time and are
+# never stored in the repo. Both tasks are idempotent and skip any entry still set to a TODO
+# placeholder, so they are safe to run before every value is filled in.
+# Requires: gh (authenticated with repo admin); gh:env-secrets also needs the 1Password CLI
+# (`op signin`). BASE_URL format: see docs/adr/006-jdk-module-s3-uri-contract.md.
+
+[tasks."gh:env-vars"]
+description = "Set the remote GitHub environments' non-secret BASE_URL variables"
+shell = "bash -c"
+quiet = true                # suppress mise's `[task] $ <first line>` command echo (the `set -euo pipefail` line)
+env = { NO_COLOR = "1" }     # suppress gh's OSC-11 terminal-background probe (the stray `]11;?\`)
+run = '''
+set -euo pipefail
+
+# BASE_URL per environment, in the jdk s3://<bucket>?region=…&endpoint=… dialect (ADR-006, the
+# canonical CI variable — commons-vfs translates it to its own dialect in a test-only adapter).
+# The %s in the bucket is the per-run bucket-name token, shared by both modules' remote suites.
+# Only AWS-1 and YANDEX-1 are in the remote matrix; DIGITALOCEAN-1 is set but not wired into a suite.
+apply() {
+  local env="$1" base_url="$2"
+  if [[ "$base_url" == TODO* ]]; then
+    echo "– $env: BASE_URL still a TODO placeholder, skipping"; return
+  fi
+  gh api --method PUT "repos/{owner}/{repo}/environments/$env" >/dev/null  # idempotent
+  gh variable set BASE_URL --env "$env" --body "$base_url"
+  echo "✓ $env: BASE_URL set"
+}
+
+apply AWS-1          's3://s3-tests-%s?region=eu-central-1'
+apply YANDEX-1       's3://s3-tests-%s?region=ru-central1&endpoint=https://storage.yandexcloud.net'
+apply DIGITALOCEAN-1 's3://s3-tests-%s?region=ams3&endpoint=https://ams3.digitaloceanspaces.com'
+'''
+
+[tasks."gh:env-secrets"]
+description = "Set the remote GitHub environments' AWS/S3 key secrets from 1Password (op)"
+shell = "bash -c"
+quiet = true
+env = { NO_COLOR = "1" }
+run = '''
+set -euo pipefail
+
+# Reads each key from 1Password at apply time — nothing secret is stored in the repo. Replace the
+# op:// references with your vault/item/field paths; the GitHub secret names (AWS_ACCESS_KEY_ID /
+# AWS_SECRET_KEY) match what .github/workflows/*.yml consume. Requires `op signin` first.
+apply() {
+  local env="$1" access_ref="$2" secret_ref="$3"
+  if [[ "$access_ref" == *TODO* || "$secret_ref" == *TODO* ]]; then
+    echo "– $env: op references still contain TODO, skipping"; return
+  fi
+  gh secret set AWS_ACCESS_KEY_ID --env "$env" --body "$(op read "$access_ref")"
+  gh secret set AWS_SECRET_KEY    --env "$env" --body "$(op read "$secret_ref")"
+  echo "✓ $env: secrets set"
+}
+
+apply AWS-1          'op://Private/vfs-s3/AWS/access' 'op://Private/vfs-s3/AWS/secret'
+apply YANDEX-1       'op://Private/vfs-s3/Yandex/access' 'op://Private/vfs-s3/Yandex/secret'
+apply DIGITALOCEAN-1 'op://Private/vfs-s3/DigitalOcean/access' 'op://Private/vfs-s3/DigitalOcean/secret'
+'''

@@ -1,0 +1,26 @@
+plugins {
+    id 'vfs-s3.java-conventions'
+    id 'vfs-s3.publishing-conventions'
+}
+
+description = 'Amazon S3 Spring Resource / ResourceLoader implementation'
+
+dependencies {
+    // Spring is provided by the user's application — compileOnly scope
+    compileOnly libs.spring.core
+    compileOnly libs.spring.context
+
+    testImplementation libs.junit.jupiter
+    testImplementation libs.spring.core
+    testImplementation libs.spring.context
+}
+
+// Published under a distinct, namespaced Maven coordinate (`vfs-spring`) while the Gradle module /
+// folder / package stay `:modules:spring` / `com.github.vfss3.spring`. Only the artifactId changes.
+base {
+    archivesName = 'vfs-spring'
+}
+publishing.publications.mavenJava {
+    artifactId = 'vfs-spring'
+    pom.name.set("${project.group}:vfs-spring")
+}

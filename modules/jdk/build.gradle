@@ -5,6 +5,16 @@ plugins {
 
 description = 'Amazon S3 FileSystemProvider for JDK NIO.2 (java.nio.file.spi.FileSystemProvider)'
 
+// Published as `vfs-jdk` while the Gradle module / folder / package stay `:modules:jdk` /
+// `com.github.vfss3.jdk`. Only the Maven artifactId changes.
+base {
+    archivesName = 'vfs-jdk'
+}
+publishing.publications.mavenJava {
+    artifactId = 'vfs-jdk'
+    pom.name.set("${project.group}:vfs-jdk")
+}
+
 dependencies {
     api libs.aws.sdk.s3
 
