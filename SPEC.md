@@ -115,12 +115,12 @@ work; the record only carries the few overrides local/test wiring needs:
 public record S3FileSystemConfig(String region, URI endpoint, AwsCredentialsProvider credentialsProvider) {
 
     public static S3FileSystemConfig fromEnv(Map<String, ?> env) {
-        var region = (String) env.get("aws.region");
-        var endpoint = Optional.ofNullable((String) env.get("aws.endpoint"))
+        var region = (String) env.get("region");
+        var endpoint = Optional.ofNullable((String) env.get("endpoint"))
                 .map(URI::create)
                 .orElse(null);
         var credentialsProvider = (AwsCredentialsProvider)
-                env.getOrDefault("aws.credentialsProvider", DefaultCredentialsProvider.create());
+                env.getOrDefault("credentialsProvider", DefaultCredentialsProvider.create());
 
         return new S3FileSystemConfig(region, endpoint, credentialsProvider);
     }
@@ -170,8 +170,8 @@ Conventions: records for immutable config/DTOs, `var` for obvious local types, e
 
 - **Always do:** run `mise exec -- ./gradlew :modules:jdk:test` and at least one integration suite before
   committing; keep `S3FileSystemConfig` immutable (a record); rely on the AWS SDK default
-  provider chain as the primary configuration path, using `env` keys (`aws.region`,
-  `aws.endpoint`, `aws.credentialsProvider`) only as explicit overrides.
+  provider chain as the primary configuration path, using `env` keys (`region`,
+  `endpoint`, `credentialsProvider`) only as explicit overrides.
 - **Ask first:** adding an AWS SDK dependency version different from `aws-sdk-v2` in
   `gradle/libs.versions.toml`; expanding `S3FileSystemConfig` toward issue #220's fuller proposal
   (`s3.createBucket`, `s3.serverSideEncryption`, `aws.accessKeyId`/`aws.secretAccessKey` as raw
@@ -187,7 +187,7 @@ Conventions: records for immutable config/DTOs, `var` for obvious local types, e
 
 - `FileSystems.newFileSystem(URI.create("s3://bucket"), env)` returns a `FileSystem` backed by a
   real `S3Client`, built primarily from the AWS SDK v2 default provider chain; explicit `env`
-  keys (`aws.region`, `aws.endpoint`, `aws.credentialsProvider`) override individual fields when
+  keys (`region`, `endpoint`, `credentialsProvider`) override individual fields when
   present. Issue #220's fuller config surface is intentionally not implemented in this pass.
 - `S3FileSystemProvider.getPath(URI)`, `getFileStore()` (on both the provider and the file
   system), and `S3Path.relativize()` are implemented — none of them throw

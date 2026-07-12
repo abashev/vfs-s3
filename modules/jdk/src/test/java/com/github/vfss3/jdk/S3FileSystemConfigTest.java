@@ -28,14 +28,14 @@ class S3FileSystemConfigTest {
 
     @Test
     void fromEnvReadsRegionOverride() {
-        var config = S3FileSystemConfig.fromEnv(Map.of("aws.region", "eu-central-1"));
+        var config = S3FileSystemConfig.fromEnv(Map.of("region", "eu-central-1"));
 
         assertEquals("eu-central-1", config.region());
     }
 
     @Test
     void fromEnvReadsEndpointOverride() {
-        var config = S3FileSystemConfig.fromEnv(Map.of("aws.endpoint", "http://localhost:9000"));
+        var config = S3FileSystemConfig.fromEnv(Map.of("endpoint", "http://localhost:9000"));
 
         assertEquals(URI.create("http://localhost:9000"), config.endpoint());
     }
@@ -44,7 +44,7 @@ class S3FileSystemConfigTest {
     void fromEnvReadsCredentialsProviderOverride() {
         AwsCredentialsProvider provider = StaticCredentialsProvider.create(AwsBasicCredentials.create("k", "s"));
 
-        var config = S3FileSystemConfig.fromEnv(Map.of("aws.credentialsProvider", provider));
+        var config = S3FileSystemConfig.fromEnv(Map.of("credentialsProvider", provider));
 
         assertSame(provider, config.credentialsProvider());
     }
@@ -72,7 +72,7 @@ class S3FileSystemConfigTest {
 
     @Test
     void fromReadsRegionAndEndpointFromUriQuery() {
-        var uri = URI.create("s3://bucket?aws.region=eu-central-1&aws.endpoint=http://localhost:9000");
+        var uri = URI.create("s3://bucket?region=eu-central-1&endpoint=http://localhost:9000");
 
         var config = S3FileSystemConfig.from(uri, Map.of());
 
@@ -82,9 +82,9 @@ class S3FileSystemConfigTest {
 
     @Test
     void fromLetsEnvWinOverTheUriQuery() {
-        var uri = URI.create("s3://bucket?aws.region=eu-central-1");
+        var uri = URI.create("s3://bucket?region=eu-central-1");
 
-        var config = S3FileSystemConfig.from(uri, Map.of("aws.region", "eu-west-1"));
+        var config = S3FileSystemConfig.from(uri, Map.of("region", "eu-west-1"));
 
         assertEquals("eu-west-1", config.region());
     }
@@ -101,7 +101,7 @@ class S3FileSystemConfigTest {
     @Test
     void fromNeverReadsCredentialsFromTheUri() {
         // Credentials are env-only; a "credentials" query key is just an unrecognized parameter.
-        var uri = URI.create("s3://bucket?aws.credentialsProvider=whatever");
+        var uri = URI.create("s3://bucket?credentialsProvider=whatever");
 
         assertThrows(IllegalArgumentException.class, () -> S3FileSystemConfig.from(uri, Map.of()));
     }

@@ -40,7 +40,7 @@ class S3FileSystemProviderTest {
     void newFileSystemAcceptsRecognizedQueryParameters() throws Exception {
         // ADR-006: region/endpoint may ride in the URI query. Opening must succeed (client
         // construction is lazy, so no network here).
-        var uri = URI.create("s3://test-bucket?aws.region=eu-central-1&aws.endpoint=http://localhost:9000");
+        var uri = URI.create("s3://test-bucket?region=eu-central-1&endpoint=http://localhost:9000");
         try (var fs = (S3FileSystem) provider.newFileSystem(uri, Map.of())) {
             assertEquals("test-bucket", fs.getBucket());
         }

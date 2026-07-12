@@ -16,7 +16,7 @@ import software.amazon.awssdk.services.s3.S3Configuration;
  *
  * <p>Configuration comes from two channels — see {@code docs/adr/006-jdk-module-s3-uri-contract.md}.
  * The {@code env} map (highest priority) carries these keys; the same {@link #ENV_REGION} /
- * {@link #ENV_ENDPOINT} names are also accepted as {@code s3://bucket?aws.region=…&aws.endpoint=…}
+ * {@link #ENV_ENDPOINT} names are also accepted as {@code s3://bucket?region=…&endpoint=…}
  * URI query parameters (lower priority). When neither supplies a value, the AWS SDK v2 default
  * region provider chain (and finally {@code us-east-1}) applies.
  *
@@ -31,13 +31,13 @@ import software.amazon.awssdk.services.s3.S3Configuration;
 public record S3FileSystemConfig(String region, URI endpoint, AwsCredentialsProvider credentialsProvider) {
 
     /** Env/query key for the region id, e.g. {@code "eu-central-1"}. */
-    public static final String ENV_REGION = "aws.region";
+    public static final String ENV_REGION = "region";
 
     /** Env/query key for the endpoint override URI, e.g. {@code "http://localhost:9000"}. */
-    public static final String ENV_ENDPOINT = "aws.endpoint";
+    public static final String ENV_ENDPOINT = "endpoint";
 
     /** Env key for a pre-built {@link AwsCredentialsProvider}. Never read from a URI. */
-    public static final String ENV_CREDENTIALS_PROVIDER = "aws.credentialsProvider";
+    public static final String ENV_CREDENTIALS_PROVIDER = "credentialsProvider";
 
     /** Config from the {@code env} map alone — no URI query channel. */
     public static S3FileSystemConfig fromEnv(Map<String, ?> env) {
