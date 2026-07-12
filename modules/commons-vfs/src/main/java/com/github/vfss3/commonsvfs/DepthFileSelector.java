@@ -49,8 +49,9 @@ public class DepthFileSelector implements FileSelector {
 
     /**
      * Create a file selector  that will select all files between min and max directory depth
-     * @param min
-     * @param max
+     *
+     * @param min the minimum directory depth to select
+     * @param max the maximum directory depth to select
      */
     public DepthFileSelector(int min, int max) {
         minDepth = min;

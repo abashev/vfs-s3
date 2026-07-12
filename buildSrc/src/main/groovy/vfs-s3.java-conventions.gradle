@@ -95,6 +95,11 @@ tasks.withType(JavaCompile).configureEach {
     options.errorprone {
         error('StaticImport')
         error('UnnecessarilyFullyQualified')
+        error('EmptyBlockTag')
+        error('OperatorPrecedence')
+        error('RedundantStringConversion')
+        error('PatternMatchingInstanceof')
+        error('UnnecessaryParentheses')
     }
 }
 

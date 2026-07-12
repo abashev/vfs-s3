@@ -12,7 +12,8 @@ public interface IAclSetter extends FileOperation {
 
     /**
      * Sets file Access Control List.
-     * @param acl
+     *
+     * @param acl the access control list to stage for the file
      */
     void setAcl(Acl acl);
 

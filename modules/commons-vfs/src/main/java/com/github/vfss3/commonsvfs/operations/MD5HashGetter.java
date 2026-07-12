@@ -10,7 +10,7 @@ public class MD5HashGetter implements IMD5HashGetter {
     private final S3FileObject file;
 
     /**
-     * @param file
+     * @param file the S3 file object to compute the MD5 hash for
      */
     public MD5HashGetter(S3FileObject file) {
         this.file = file;

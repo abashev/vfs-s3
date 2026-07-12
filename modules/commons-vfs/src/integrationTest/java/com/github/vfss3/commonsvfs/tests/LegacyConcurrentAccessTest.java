@@ -46,7 +46,7 @@ class LegacyConcurrentAccessTest {
     @RepeatedTest(200)
     @Execution(ExecutionMode.CONCURRENT)
     void createFileOk() throws FileSystemException {
-        String fileName = "folder-" + Thread.currentThread().getId() + "-" + (new Random()).nextInt(1000) + "/";
+        String fileName = "folder-" + Thread.currentThread().getId() + "-" + new Random().nextInt(1000) + "/";
 
         FileObject parent = root.resolveFile("/concurrent/");
         FileObject file = parent.resolveFile(fileName);
@@ -173,11 +173,10 @@ class LegacyConcurrentAccessTest {
                     for (ThreadInfo threadInfo : threadMXBean.getThreadInfo(deadlockedThreads, true, true)) {
                         System.err.printf(
                                 "'%s\n   java.lang.Thread.State: %s\n",
-                                threadInfo.getThreadName(),
-                                threadInfo.getThreadState().toString());
+                                threadInfo.getThreadName(), threadInfo.getThreadState());
                         final StackTraceElement[] stackTraceElements = threadInfo.getStackTrace();
                         for (StackTraceElement stackTraceElement : stackTraceElements) {
-                            System.err.printf("        at %s\n", stackTraceElement.toString());
+                            System.err.printf("        at %s\n", stackTraceElement);
                         }
                         System.err.printf("\n\n");
                     }

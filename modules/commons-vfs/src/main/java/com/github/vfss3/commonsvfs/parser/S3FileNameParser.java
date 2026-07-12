@@ -360,7 +360,7 @@ public class S3FileNameParser extends AbstractFileNameParser {
             // Custom endpoint like localstack
             StringBuilder host = new StringBuilder(uri.getHost());
 
-            if (uri.getPort() != (-1)) {
+            if (uri.getPort() != -1) {
                 host.append(':').append(uri.getPort());
             }
 
@@ -434,9 +434,9 @@ public class S3FileNameParser extends AbstractFileNameParser {
             key = sb.toString();
         }
 
-        FileType type = (ROOT_PATH.equals(key)) ? FOLDER : IMAGINARY;
+        FileType type = ROOT_PATH.equals(key) ? FOLDER : IMAGINARY;
 
-        return (new S3FileName(
-                endpoint, urlPrefix, pathPrefix, bucket, signingRegion, key, type, accessKey, secretKey, features));
+        return new S3FileName(
+                endpoint, urlPrefix, pathPrefix, bucket, signingRegion, key, type, accessKey, secretKey, features);
     }
 }

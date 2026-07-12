@@ -180,8 +180,7 @@ abstract class CachingFileProvider extends AbstractFileProvider {
 
         removeComponent(fileSystem);
 
-        if (fileSystem instanceof VfsComponent) {
-            VfsComponent component = (VfsComponent) fileSystem;
+        if (fileSystem instanceof VfsComponent component) {
 
             component.close();
         }

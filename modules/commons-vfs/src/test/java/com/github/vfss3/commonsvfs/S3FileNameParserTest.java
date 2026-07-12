@@ -204,7 +204,7 @@ class S3FileNameParserTest {
     }
 
     private S3FileNameAssert parse(String url) throws FileSystemException {
-        return (new S3FileNameAssert((new S3FileNameParser()).parseUri(null, null, url)));
+        return new S3FileNameAssert(new S3FileNameParser().parseUri(null, null, url));
     }
 
     private static class S3FileNameAssert implements AssertDelegateTarget {

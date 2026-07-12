@@ -53,8 +53,9 @@ class ObjectContentHolder implements Closeable {
     /**
      * Save data from the stream into temporary file.
      *
-     * @param data
-     * @param md5
+     * @param data the stream to buffer into the temporary file
+     * @param contentLength the expected number of bytes to read
+     * @param md5 the expected MD5 hash of the data
      */
     public void populateData(InputStream data, long contentLength, String md5) throws IOException {
         if (file == null) {
@@ -81,7 +82,8 @@ class ObjectContentHolder implements Closeable {
     /**
      * Check content length and md5 for current data
      *
-     * @return
+     * @param metadata the object metadata to compare the buffered content against
+     * @return {@code true} if the buffered content matches the metadata's length and MD5
      */
     public boolean sameData(ObjectMetadataHolder metadata) throws IOException {
         if (file == null) {
@@ -90,7 +92,7 @@ class ObjectContentHolder implements Closeable {
 
         return (metadata.getContentLength() == contentLength)
                 && (md5 != null)
-                && (md5.equalsIgnoreCase(metadata.getMD5Hash().orElse(null)));
+                && md5.equalsIgnoreCase(metadata.getMD5Hash().orElse(null));
     }
 
     public InputStream getInputStream() throws FileSystemException {
@@ -121,7 +123,7 @@ class ObjectContentHolder implements Closeable {
         }
 
         try {
-            return (new UploadOnCloseOutputStream(requireNonNull(object)));
+            return new UploadOnCloseOutputStream(requireNonNull(object));
         } catch (IOException e) {
             log.error("Not able to get output stream for temporary file", e);
 
@@ -148,8 +150,9 @@ class ObjectContentHolder implements Closeable {
 
     /**
      * Get absolute path for cache file
-     * @return
-     * @throws FileSystemException
+     *
+     * @return the absolute path of the cache file
+     * @throws FileSystemException if the content holder has been closed
      */
     public String getFile() throws FileSystemException {
         if (file == null) {

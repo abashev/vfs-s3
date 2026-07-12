@@ -12,21 +12,24 @@ public interface IAclGetter extends FileOperation {
 
     /**
      * Returns true when file is readable
-     * @param group
-     * @return
+     *
+     * @param group the group to check read access for
+     * @return {@code true} if the group may read the file
      */
     boolean canRead(Acl.Group group);
 
     /**
      * Returns true when file is writeable
-     * @param group
-     * @return
+     *
+     * @param group the group to check write access for
+     * @return {@code true} if the group may write the file
      */
     boolean canWrite(Acl.Group group);
 
     /**
      * Returns file ACL
-     * @return
+     *
+     * @return the file's access control list
      */
     Acl getAcl();
 

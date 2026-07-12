@@ -398,7 +398,7 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
         findFiles(selector, true, files);
 
         if (log.isDebugEnabled()) {
-            log.debug("Found files to delete " + files.toString());
+            log.debug("Found files to delete " + files);
         }
 
         for (FileObject fileObject : files) {
@@ -760,7 +760,7 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
      * Check do we have children for specified file or not - useful for delete method to not drop non-empty folders.
      * @param file check for specified file
      * @return has children or not
-     * @throws FileSystemException
+     * @throws FileSystemException if the file's children cannot be listed
      */
     protected boolean checkBeforeDelete(FileObject file) throws FileSystemException {
         return file.getType().hasChildren() && (file.getChildren().length != 0);
@@ -1466,7 +1466,8 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
 
     /**
      * Change state of 'attached'.
-     * @param attached
+     *
+     * @param attached the new attached state
      */
     protected void setAttached(boolean attached) {
         this.attached = attached;
@@ -1688,10 +1689,10 @@ abstract class AbstractFileObject<AFS extends AbstractFileSystem> implements Fil
 
             destFile.copyFrom(this, Selectors.SELECT_SELF);
 
-            if ((destFile.getType().hasContent()
-                                    && destFile.getFileSystem().hasCapability(Capability.SET_LAST_MODIFIED_FILE)
-                            || destFile.getType().hasChildren()
-                                    && destFile.getFileSystem().hasCapability(Capability.SET_LAST_MODIFIED_FOLDER))
+            if (((destFile.getType().hasContent()
+                                    && destFile.getFileSystem().hasCapability(Capability.SET_LAST_MODIFIED_FILE))
+                            || (destFile.getType().hasChildren()
+                                    && destFile.getFileSystem().hasCapability(Capability.SET_LAST_MODIFIED_FOLDER)))
                     && fileSystem.hasCapability(Capability.GET_LAST_MODIFIED)) {
                 destFile.getContent().setLastModifiedTime(this.getContent().getLastModifiedTime());
             }

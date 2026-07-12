@@ -92,12 +92,12 @@ abstract class AbstractFileName implements FileName {
 
         if (scope == NameScope.CHILD) {
             if (path.length() == baseLen
-                    || baseLen > 1 && path.charAt(baseLen) != SEPARATOR_CHAR
+                    || (baseLen > 1 && path.charAt(baseLen) != SEPARATOR_CHAR)
                     || path.indexOf(SEPARATOR_CHAR, baseLen + 1) != -1) {
                 return false;
             }
         } else if (scope == NameScope.DESCENDENT) {
-            if (path.length() == baseLen || baseLen > 1 && path.charAt(baseLen) != SEPARATOR_CHAR) {
+            if (path.length() == baseLen || (baseLen > 1 && path.charAt(baseLen) != SEPARATOR_CHAR)) {
                 return false;
             }
         } else if (scope == NameScope.DESCENDENT_OR_SELF) {
@@ -406,7 +406,7 @@ abstract class AbstractFileName implements FileName {
     @Override
     public int getDepth() {
         final int len = getPath().length();
-        if (len == 0 || len == 1 && getPath().charAt(0) == SEPARATOR_CHAR) {
+        if (len == 0 || (len == 1 && getPath().charAt(0) == SEPARATOR_CHAR)) {
             return 0;
         }
         int depth = 1;
