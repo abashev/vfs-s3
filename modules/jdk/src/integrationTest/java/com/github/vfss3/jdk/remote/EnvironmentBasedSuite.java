@@ -29,9 +29,9 @@ import software.amazon.awssdk.services.s3.S3Client;
  * <p>The suite creates the bucket on startup and deletes it together with all its contents in
  * {@code @AfterSuite}, via a raw {@code S3Client} (not through the provider under test).
  */
+@SelectPackages("com.github.vfss3.jdk.tests")
 @Suite
 @SuiteDisplayName("Remote S3 integration tests (environment-configured)")
-@SelectPackages("com.github.vfss3.jdk.tests")
 public class EnvironmentBasedSuite {
     static final String ENV_BASE_URL = "BASE_URL";
     static final String ENV_BUCKET_TOKEN = "BUCKET_TOKEN";

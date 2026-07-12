@@ -12,7 +12,7 @@ import java.nio.file.FileSystemNotFoundException;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-class S3FileSystemProviderTest {
+final class S3FileSystemProviderTest {
 
     private final S3FileSystemProvider provider = new S3FileSystemProvider();
 

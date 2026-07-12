@@ -3,7 +3,6 @@ package com.github.vfss3.commonsvfs;
 import static com.github.vfss3.commonsvfs.operations.Acl.Permission.READ;
 import static com.github.vfss3.commonsvfs.operations.Acl.Permission.WRITE;
 import static java.util.Objects.requireNonNull;
-import static java.util.Optional.of;
 import static org.apache.commons.vfs2.FileName.ROOT_PATH;
 import static org.apache.commons.vfs2.FileName.SEPARATOR;
 import static org.apache.commons.vfs2.FileType.*;
@@ -267,7 +266,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 getName().getS3Key().orElseThrow(() -> new FileSystemException("Not able to get object path"));
 
         if ((objectMetadataHolder.getContentLength() == 0)
-                || (!objectMetadataHolder.getMD5Hash().isPresent())) {
+                || !objectMetadataHolder.getMD5Hash().isPresent()) {
             if (log.isWarnEnabled()) {
                 log.warn("Try to get input stream from empty object [" + objectPath + "]. Return empty stream");
             }
@@ -629,7 +628,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             throw new FileSystemException("Not able to fetch real metadata from " + getName());
         }
 
-        return of(objectMetadataHolder).map(ObjectMetadataHolder::getServerSideEncryption);
+        return Optional.of(objectMetadataHolder).map(ObjectMetadataHolder::getServerSideEncryption);
     }
 
     public String getCacheFile() throws FileSystemException {
@@ -680,7 +679,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         file.findFiles(selector, false, files);
 
         if (log.isDebugEnabled()) {
-            log.debug("Found files " + files.toString());
+            log.debug("Found files " + files);
         }
 
         Map<FileObject, FileObject> filesToCopy = new LinkedHashMap<>();
@@ -721,7 +720,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     protected boolean allowS3Copy(FileObject fromFile, FileObject toFile) throws FileSystemException {
         if (fromFile.getType().hasChildren()) {
             return true;
-        } else if ((fromFile instanceof S3FileObject) && (((S3FileObject) fromFile).sameFileSystem(toFile))) {
+        } else if ((fromFile instanceof S3FileObject s3FileObject) && s3FileObject.sameFileSystem(toFile)) {
             return true;
         } else if (fromFile.getType().hasContent()
                 && fromFile.getURL().getProtocol().equals("file")
@@ -756,8 +755,8 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
         try {
             if (fromFile.getType().hasChildren()) {
                 toFile.createFolder();
-            } else if ((fromFile instanceof S3FileObject) && (((S3FileObject) fromFile).sameFileSystem(toFile))) {
-                S3FileObject s3SrcFile = (S3FileObject) fromFile;
+            } else if ((fromFile instanceof S3FileObject s3SrcFile) && s3SrcFile.sameFileSystem(toFile)) {
+
                 S3FileObject s3DestFile = (S3FileObject) toFile;
 
                 String srcBucketName = s3SrcFile.getBucketName();
@@ -805,8 +804,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
                 }
             } else if (fromFile.getType().hasContent()
                     && fromFile.getURL().getProtocol().equals("file")
-                    && (toFile instanceof S3FileObject)) {
-                S3FileObject s3DestFile = (S3FileObject) toFile;
+                    && (toFile instanceof S3FileObject s3DestFile)) {
 
                 try {
                     File localFile = new File(fromFile.getURL().toURI());
@@ -823,11 +821,11 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
     }
 
     protected boolean sameFileSystem(FileObject toFile) {
-        if (!(toFile instanceof S3FileObject)) {
+        if (!(toFile instanceof S3FileObject s3FileObject)) {
             return false;
         }
 
-        final S3FileName destFile = ((S3FileObject) toFile).getName();
+        final S3FileName destFile = s3FileObject.getName();
 
         return Objects.equals(getName().getEndpoint(), destFile.getEndpoint())
                 && Objects.equals(getName().getAccessKey(), destFile.getAccessKey())

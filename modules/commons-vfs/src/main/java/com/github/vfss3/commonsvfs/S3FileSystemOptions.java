@@ -28,7 +28,7 @@ public class S3FileSystemOptions implements Cloneable {
     /**
      * Create new object with copy of existed properties.
      *
-     * @param options
+     * @param options the options to copy
      */
     public S3FileSystemOptions(FileSystemOptions options) {
         this(options, true);
@@ -37,8 +37,8 @@ public class S3FileSystemOptions implements Cloneable {
     /**
      * Create new options object based on existed options. cloneOptions useful for old config builder.
      *
-     * @param options
-     * @param cloneOptions
+     * @param options the options to base this instance on
+     * @param cloneOptions whether to clone {@code options} instead of referencing it directly
      */
     public S3FileSystemOptions(FileSystemOptions options, boolean cloneOptions) {
         if (options != null) {
@@ -131,8 +131,8 @@ public class S3FileSystemOptions implements Cloneable {
         return (FileSystemOptions) options.clone();
     }
 
-    @SuppressWarnings({"MethodDoesntCallSuperMethod", "CloneDoesntDeclareCloneNotSupportedException"})
     @Override
+    @SuppressWarnings({"MethodDoesntCallSuperMethod", "CloneDoesntDeclareCloneNotSupportedException"})
     public S3FileSystemOptions clone() {
         return new S3FileSystemOptions(options);
     }

@@ -15,9 +15,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * Floci container — a free open-source local AWS emulator that drops in on the same
  * port as LocalStack (https://github.com/floci-io/floci).
  */
+@SelectPackages("com.github.vfss3.commonsvfs.tests")
 @Suite
 @SuiteDisplayName("Floci integration tests")
-@SelectPackages("com.github.vfss3.commonsvfs.tests")
 public class FlociSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("floci/floci:1.5.8");
     private static final int API_PORT = 4566;

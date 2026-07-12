@@ -12,14 +12,15 @@ public interface IPublicUrlsGetter extends FileOperation {
     /**
      * Get direct http url to file.
      *
-     * @return
+     * @return the direct HTTP URL to the object
      */
     String getHttpUrl();
 
     /**
+     * Get a time-limited signed url to the file.
      *
-     * @param expireInSeconds
-     * @return
+     * @param expireInSeconds how long the signed URL stays valid, in seconds
+     * @return a pre-signed URL granting temporary access to the object
      */
     String getSignedUrl(int expireInSeconds) throws FileSystemException;
 }

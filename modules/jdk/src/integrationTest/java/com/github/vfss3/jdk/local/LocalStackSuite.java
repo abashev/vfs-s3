@@ -13,9 +13,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * Runs every test in {@code com.github.vfss3.jdk.tests} against a freshly-started LocalStack
  * container, mirroring {@code modules/commons-vfs}'s {@code local.LocalStackSuite}.
  */
+@SelectPackages("com.github.vfss3.jdk.tests")
 @Suite
 @SuiteDisplayName("LocalStack integration tests")
-@SelectPackages("com.github.vfss3.jdk.tests")
 public class LocalStackSuite {
     // testcontainers 1.19.8's LocalStackContainer wait strategy expects the older "Ready." log
     // line, which LocalStack dropped in the 4.x / 2026.x stream. Stay on the latest 3.x

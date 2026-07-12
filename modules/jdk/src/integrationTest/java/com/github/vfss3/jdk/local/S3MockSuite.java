@@ -14,9 +14,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * (https://github.com/adobe/S3Mock) — Apache-2.0, ~96 MB image, no auth required — mirroring
  * {@code modules/commons-vfs}'s {@code local.S3MockSuite}.
  */
+@SelectPackages("com.github.vfss3.jdk.tests")
 @Suite
 @SuiteDisplayName("Adobe S3Mock integration tests")
-@SelectPackages("com.github.vfss3.jdk.tests")
 public class S3MockSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("adobe/s3mock:5.0.0");
     private static final int HTTP_PORT = 9090;

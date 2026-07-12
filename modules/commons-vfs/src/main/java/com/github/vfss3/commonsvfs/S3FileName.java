@@ -184,8 +184,8 @@ public class S3FileName extends AbstractFileName {
     /**
      * Returns S3 key from name or empty for a bucket.
      *
-     * @return
-     * @throws FileSystemException
+     * @return the S3 key for this name, or empty when the name is the bucket root
+     * @throws FileSystemException if the name refers to an imaginary file
      */
     public Optional<String> getS3Key() throws FileSystemException {
         if ((type != FILE) && (type != FOLDER)) {

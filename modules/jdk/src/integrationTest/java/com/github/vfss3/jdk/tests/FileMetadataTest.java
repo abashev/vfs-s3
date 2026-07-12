@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
  * analog and are intentionally omitted. Runs against whatever real S3-compatible backend the
  * enclosing {@code @Suite} wired up via {@link JdkIntegrationContext}.
  */
-class FileMetadataTest {
+final class FileMetadataTest {
 
     private static final String PREFIX = "/metadata/";
 
@@ -44,15 +44,15 @@ class FileMetadataTest {
     }
 
     /** Step 2: content size matches the written payload. */
-    @Test
     @DisplayName("Step 2: size matches the written payload")
+    @Test
     void step2_size() throws IOException {
         assertEquals(payload.length, Files.size(fs.getPath(PREFIX + "backup.bin")));
     }
 
     /** Step 3: last-modified time is a recent (post-2010) timestamp. */
-    @Test
     @DisplayName("Step 3: last-modified time is recent")
+    @Test
     void step3_lastModified() throws IOException {
         var lastModified = Files.getLastModifiedTime(fs.getPath(PREFIX + "backup.bin"));
         assertTrue(lastModified.toMillis() > 0, "lastModifiedTime should be positive");
@@ -62,8 +62,8 @@ class FileMetadataTest {
     }
 
     /** Bonus: BasicFileAttributes reports size and a regular-file flag consistently. */
-    @Test
     @DisplayName("BasicFileAttributes are consistent")
+    @Test
     void readAttributesAreConsistent() throws IOException {
         var attrs = Files.readAttributes(fs.getPath(PREFIX + "backup.bin"), BasicFileAttributes.class);
         assertEquals(payload.length, attrs.size());

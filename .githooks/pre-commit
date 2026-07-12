@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-FORMATTER_VERSION="2.89.0"
+FORMATTER_VERSION="2.96.0"
 CACHE_DIR="${HOME}/.cache/palantir-java-format"
 BINARY="${CACHE_DIR}/palantir-java-format-${FORMATTER_VERSION}"
 BASE_URL="https://repo1.maven.org/maven2/com/palantir/javaformat/palantir-java-format-native/${FORMATTER_VERSION}"

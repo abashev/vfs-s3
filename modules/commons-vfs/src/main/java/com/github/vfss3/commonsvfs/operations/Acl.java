@@ -67,8 +67,9 @@ public class Acl {
 
     /**
      * Allow access for a group
-     * @param group
-     * @param permission
+     *
+     * @param group the group to grant access to
+     * @param permission the permission to allow
      */
     public void allow(Group group, Permission permission) {
         setRule(group, permission, (byte) 1);
@@ -76,8 +77,9 @@ public class Acl {
 
     /**
      * Set a list of permissions for a group.
-     * @param group
-     * @param permission_list
+     *
+     * @param group the group to grant access to
+     * @param permission_list the permissions to allow
      */
     public void allow(Group group, Permission[] permission_list) {
         setRule(group, permission_list, (byte) 1);
@@ -85,7 +87,8 @@ public class Acl {
 
     /**
      * Allow all permissions for a group
-     * @param group
+     *
+     * @param group the group to grant every permission to
      */
     public void allow(Group group) {
         setRule(group, (byte) 1);
@@ -128,7 +131,8 @@ public class Acl {
 
     /**
      * Deny all to for a group
-     * @param group
+     *
+     * @param group the group to deny every permission for
      */
     public void deny(Group group) {
         setRule(group, (byte) 0);
@@ -172,7 +176,7 @@ public class Acl {
     /**
      * Returns a list of allowed rules.
      *
-     * @return
+     * @return the allowed permissions per group
      */
     public Map<Group, Permission[]> getRules() {
         if (changed) {
@@ -230,7 +234,6 @@ public class Acl {
 
     /*
      * Helper methods
-     *
      */
 
     private void setRule(Group group, byte allow) {
@@ -277,7 +280,7 @@ public class Acl {
                     .append(',');
         }
 
-        return "Acl{rules={" + sb.toString() + "}}";
+        return "Acl{rules={" + sb + "}}";
     }
 
     public enum Permission {

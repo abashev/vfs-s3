@@ -21,8 +21,8 @@ public final class FileAssert {
     /**
      * Check list of children for file object. Number of children and names should exactly as `children` param.
      *
-     * @param file
-     * @param children
+     * @param file the folder whose children are asserted
+     * @param children the exact set of child names the folder must contain
      */
     public static void assertHasChildren(FileObject file, String... children) {
         assertNotNull(file, "Source file object is null");
@@ -46,7 +46,7 @@ public final class FileAssert {
         if (names.size() != children.length) {
             fail("Wrong number of children for " + file + ". Expected <"
                     + Arrays.toString(children) + "> but was <"
-                    + names.toString() + ">");
+                    + names + ">");
         }
 
         int i = 0;
@@ -55,7 +55,7 @@ public final class FileAssert {
             if (!name.equals(children[i++])) {
                 fail("Wrong list of children for " + file + ". Expected <"
                         + Arrays.toString(children) + "> but was <"
-                        + names.toString() + ">");
+                        + names + ">");
             }
         }
     }

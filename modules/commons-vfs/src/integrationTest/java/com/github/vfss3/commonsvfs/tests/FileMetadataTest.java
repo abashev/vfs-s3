@@ -33,7 +33,7 @@ import org.junit.jupiter.api.TestInstance;
  * {@code @AfterAll}. A single {@code backup.zip} is uploaded once for the whole class.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class FileMetadataTest {
+final class FileMetadataTest {
     private static final String PREFIX = "/metadata/";
     private static final long BACKUP_SIZE = 996_166L;
 
@@ -63,19 +63,19 @@ class FileMetadataTest {
 
     /** Step 1: content type is reported as application/zip. */
     @Test
-    void testContentType() throws FileSystemException {
+    void contentType() throws FileSystemException {
         assertEquals("application/zip", backup.getContent().getContentInfo().getContentType());
     }
 
     /** Step 2: content size matches the local file. */
     @Test
-    void testContentSize() throws FileSystemException {
+    void contentSize() throws FileSystemException {
         assertEquals(BACKUP_SIZE, backup.getContent().getSize());
     }
 
     /** Step 3: last-modified time is a recent (post-2010) timestamp. */
     @Test
-    void testLastModified() throws FileSystemException {
+    void lastModified() throws FileSystemException {
         int year = ofEpochMilli(backup.getContent().getLastModifiedTime())
                 .atZone(UTC)
                 .getYear();
@@ -84,7 +84,7 @@ class FileMetadataTest {
 
     /** Step 4: public and signed URLs are exposed via IPublicUrlsGetter. */
     @Test
-    void testUrls() throws FileSystemException {
+    void urls() throws FileSystemException {
         assertTrue(backup.getFileOperations().hasOperation(IPublicUrlsGetter.class));
 
         IPublicUrlsGetter urls = (IPublicUrlsGetter) backup.getFileOperations().getOperation(IPublicUrlsGetter.class);
@@ -98,7 +98,7 @@ class FileMetadataTest {
 
     /** Step 5: the remote MD5 hash matches the locally computed one. */
     @Test
-    void testMd5Hash() throws NoSuchAlgorithmException, IOException {
+    void md5Hash() throws NoSuchAlgorithmException, IOException {
         assertTrue(backup.getFileOperations().hasOperation(IMD5HashGetter.class));
 
         IMD5HashGetter md5Getter = (IMD5HashGetter) backup.getFileOperations().getOperation(IMD5HashGetter.class);

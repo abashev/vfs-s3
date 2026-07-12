@@ -14,5 +14,5 @@ jobs:
 
       - uses: abashev/palantir-java-format-action@c0f94ea367a83fbcf4838f4e68a0807d0e89971c # v1
         with:
-          version: '2.89.0'
+          version: '2.96.0'
           mode: 'all'

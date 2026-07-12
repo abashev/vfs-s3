@@ -69,7 +69,7 @@ jacocoTestReport {
 // Spotless
 spotless {
     java {
-        palantirJavaFormat('2.89.0')
+        palantirJavaFormat('2.96.0')
         target 'src/*/java/**/*.java'
     }
 }
@@ -95,6 +95,21 @@ tasks.withType(JavaCompile).configureEach {
     options.errorprone {
         error('StaticImport')
         error('UnnecessarilyFullyQualified')
+        error('EmptyBlockTag')
+        error('OperatorPrecedence')
+        error('RedundantStringConversion')
+        error('PatternMatchingInstanceof')
+        error('UnnecessaryParentheses')
+        error('LexicographicalAnnotationListing')
+        error('JUnitMethodDeclaration')
+        error('JUnitClassModifiers')
+        error('MissingSummary')
+        error('AlmostJavadoc')
+        error('BadImport')
+        error('JdkObsolete')
+        // NonStaticImport (Picnic) is the inverse of StaticImport above and pushes some members the
+        // other way; we enforce StaticImport, so silence its counterpart to avoid contradictory advice.
+        disable('NonStaticImport')
     }
 }
 

@@ -11,11 +11,11 @@ import org.junit.jupiter.api.Test;
  * AclFileAttributeView} is exposed), so the whole suite is not applicable to this module and is
  * disabled.
  */
-class AclTest {
+final class AclTest {
 
-    @Test
     @Disabled("S3 ACLs are not exposed through the JDK NIO.2 API")
     @DisplayName("ACL operations are not applicable to the NIO.2 module")
+    @Test
     void aclNotApplicable() {
         // Intentionally empty — see class javadoc.
     }

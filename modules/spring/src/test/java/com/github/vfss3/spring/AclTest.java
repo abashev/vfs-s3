@@ -10,11 +10,11 @@ import org.junit.jupiter.api.Test;
  * <p>The Spring {@link org.springframework.core.io.Resource} abstraction has no concept of S3
  * ACLs, so the whole suite is not applicable to this module and is disabled.
  */
-class AclTest {
+final class AclTest {
 
-    @Test
     @Disabled("S3 ACLs are not exposed through the Spring Resource API")
     @DisplayName("ACL operations are not applicable to the Spring Resource module")
+    @Test
     void aclNotApplicable() {
         // Intentionally empty — see class javadoc.
     }

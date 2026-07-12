@@ -28,8 +28,7 @@ public class S3FileOperationsProvider implements FileOperationProvider {
         requireNonNull(file);
         requireNonNull(operationClass);
 
-        if (file instanceof S3FileObject) {
-            final S3FileObject s3file = (S3FileObject) file;
+        if (file instanceof S3FileObject s3file) {
 
             if (operationClass.equals(IAclGetter.class)) {
                 // getter
@@ -45,9 +44,9 @@ public class S3FileOperationsProvider implements FileOperationProvider {
                 return new MD5HashGetter(s3file);
             } else if (operationClass.equals(ServerSideEncryption.class)) {
                 if (s3file.getName().getPlatformFeatures().supportsServerSideEncryption()) {
-                    return (new ServerSideEncryptionImpl(s3file));
+                    return new ServerSideEncryptionImpl(s3file);
                 } else {
-                    return (new MockServerSideEncryption());
+                    return new MockServerSideEncryption();
                 }
             } else if (operationClass.equals(PlatformFeatures.class)) {
                 return s3file.getName().getPlatformFeatures();

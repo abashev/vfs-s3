@@ -13,9 +13,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * Runs every test in {@code com.github.vfss3.jdk.tests} against a freshly-started MinIO
  * container, mirroring {@code modules/commons-vfs}'s {@code local.MinioSuite}.
  */
+@SelectPackages("com.github.vfss3.jdk.tests")
 @Suite
 @SuiteDisplayName("MinIO integration tests")
-@SelectPackages("com.github.vfss3.jdk.tests")
 public class MinioSuite {
     private static final DockerImageName MINIO_IMAGE =
             DockerImageName.parse("minio/minio:RELEASE.2025-09-07T16-13-09Z");

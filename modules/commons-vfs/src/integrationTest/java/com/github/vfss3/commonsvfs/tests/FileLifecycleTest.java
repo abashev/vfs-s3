@@ -24,7 +24,7 @@ import org.junit.jupiter.api.TestInstance;
  * {@code @AfterAll}. Each test creates the files it needs so the suite is order-independent.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class FileLifecycleTest {
+final class FileLifecycleTest {
     private static final String PREFIX = "/file-lifecycle/";
 
     private FileObject root;
@@ -44,7 +44,7 @@ class FileLifecycleTest {
 
     /** Step 1: create a file and assert it exists. */
     @Test
-    void testCreateFile() throws FileSystemException {
+    void createFile() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "test-file");
         file.createFile();
 
@@ -53,7 +53,7 @@ class FileLifecycleTest {
 
     /** Step 2: create a file whose name contains a space. */
     @Test
-    void testCreateFileWithSpace() throws FileSystemException {
+    void createFileWithSpace() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "name with space");
         file.createFile();
 
@@ -62,7 +62,7 @@ class FileLifecycleTest {
 
     /** Step 3: lastModifiedTime is positive; setLastModifiedTime is not supported. */
     @Test
-    void testLastModifiedTimeAndImmutability() throws FileSystemException {
+    void lastModifiedTimeAndImmutability() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "test-file");
         file.createFile();
 
@@ -78,7 +78,7 @@ class FileLifecycleTest {
 
     /** Step 4: createFolder on an existing file path fails. */
     @Test
-    void testCreateFolderOnExistingFile() throws FileSystemException {
+    void createFolderOnExistingFile() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "test-file");
         file.createFile();
 
@@ -90,7 +90,7 @@ class FileLifecycleTest {
 
     /** Step 5: move/rename a file there and back; moving onto itself fails. */
     @Test
-    void testMoveAndRename() throws FileSystemException {
+    void moveAndRename() throws FileSystemException {
         FileObject sourceFile = root.resolveFile(PREFIX + "test-file");
         sourceFile.createFile();
 
@@ -117,7 +117,7 @@ class FileLifecycleTest {
 
     /** Step 6: IMAGINARY for a non-existent path, FILE for an existing file. */
     @Test
-    void testGetType() throws FileSystemException {
+    void getType() throws FileSystemException {
         FileObject nonexistent = root.resolveFile(PREFIX + "nonexistent");
         assertEquals(IMAGINARY, nonexistent.getType(), "Nonexistent file should have IMAGINARY type");
 
@@ -129,7 +129,7 @@ class FileLifecycleTest {
 
     /** Step 7: a deeply nested non-existent path simply does not exist. */
     @Test
-    void testNonexistentPathDoesNotExist() throws FileSystemException {
+    void nonexistentPathDoesNotExist() throws FileSystemException {
         FileObject nonexistent = root.resolveFile(PREFIX + "does/not/exist");
 
         assertFalse(nonexistent.exists(), "Nonexistent path with multiple segments should not exist");

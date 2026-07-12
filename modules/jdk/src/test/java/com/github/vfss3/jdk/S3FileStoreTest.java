@@ -10,7 +10,7 @@ import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileStoreAttributeView;
 import org.junit.jupiter.api.Test;
 
-class S3FileStoreTest {
+final class S3FileStoreTest {
 
     private final S3FileStore store = new S3FileStore("my-bucket");
 

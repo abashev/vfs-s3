@@ -13,9 +13,9 @@ import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
  * container in S3 gateway mode, mirroring {@code modules/commons-vfs}'s
  * {@code local.SeaweedFsSuite}.
  */
+@SelectPackages("com.github.vfss3.jdk.tests")
 @Suite
 @SuiteDisplayName("SeaweedFS integration tests")
-@SelectPackages("com.github.vfss3.jdk.tests")
 public class SeaweedFsSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("chrislusf/seaweedfs:4.22");
     private static final int S3_PORT = 8333;

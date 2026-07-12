@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import com.github.vfss3.commonsvfs.parser.PlatformFeaturesImpl;
 import org.junit.jupiter.api.Test;
 
-class S3FileSystemOptionsTest {
+final class S3FileSystemOptionsTest {
     @Test
     void checkPlatformFeaturesOption() {
         var features = new PlatformFeaturesImpl(true, true, false, true, false);

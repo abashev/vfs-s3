@@ -31,7 +31,7 @@ import org.junit.jupiter.api.TestInstance;
  * {@code @AfterAll}.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class UploadDownloadTest {
+final class UploadDownloadTest {
     private static final String PREFIX = "/upload/";
 
     private FileObject root;
@@ -56,7 +56,7 @@ class UploadDownloadTest {
 
     /** Step 1: copy a local binary file to the bucket. */
     @Test
-    void testUpload() throws FileSystemException {
+    void upload() throws FileSystemException {
         FileObject dest = root.resolveFile(PREFIX + "backup.zip");
         if (dest.exists()) {
             dest.delete();
@@ -70,7 +70,7 @@ class UploadDownloadTest {
 
     /** Step 2: overwrite the same key after a short delay. */
     @Test
-    void testOverwrite() throws Exception {
+    void overwrite() throws Exception {
         FileObject dest = root.resolveFile(PREFIX + "overwrite.zip");
         if (dest.exists()) {
             dest.delete();
@@ -86,7 +86,7 @@ class UploadDownloadTest {
 
     /** Step 3: round-trip the bytes through an output stream and read them back. */
     @Test
-    void testOutputStreamRoundTrip() throws IOException {
+    void outputStreamRoundTrip() throws IOException {
         FileObject dest = root.resolveFile(PREFIX + "output.txt");
         if (dest.exists()) {
             dest.delete();
@@ -113,7 +113,7 @@ class UploadDownloadTest {
 
     /** Step 4: uploading to a deep key auto-creates the intermediate folders. */
     @Test
-    void testNestedUploadCreatesFolders() throws FileSystemException {
+    void nestedUploadCreatesFolders() throws FileSystemException {
         FileObject dest = root.resolveFile(PREFIX + "deep/sub1/sub2/backup.zip");
         dest.copyFrom(local, SELECT_SELF);
 
@@ -131,7 +131,7 @@ class UploadDownloadTest {
 
     /** Step 5: download the uploaded file back into a local temp file. */
     @Test
-    void testDownload() throws IOException {
+    void download() throws IOException {
         FileObject dest = root.resolveFile(PREFIX + "download.zip");
         if (!dest.exists()) {
             dest.copyFrom(local, SELECT_SELF);

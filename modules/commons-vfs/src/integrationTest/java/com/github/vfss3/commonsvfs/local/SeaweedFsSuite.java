@@ -15,9 +15,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * Runs every test in {@code com.github.vfss3.commonsvfs.tests} against a freshly-started
  * SeaweedFS container in S3 gateway mode.
  */
+@SelectPackages("com.github.vfss3.commonsvfs.tests")
 @Suite
 @SuiteDisplayName("SeaweedFS integration tests")
-@SelectPackages("com.github.vfss3.commonsvfs.tests")
 public class SeaweedFsSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("chrislusf/seaweedfs:4.22");
     private static final int S3_PORT = 8333;

@@ -15,9 +15,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * (https://github.com/Nahuel990/ministack), mirroring {@code modules/commons-vfs}'s
  * {@code local.MiniStackSuite}.
  */
+@SelectPackages("com.github.vfss3.jdk.tests")
 @Suite
 @SuiteDisplayName("MiniStack integration tests")
-@SelectPackages("com.github.vfss3.jdk.tests")
 public class MiniStackSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("ministackorg/ministack:1.3");
     private static final int API_PORT = 4566;

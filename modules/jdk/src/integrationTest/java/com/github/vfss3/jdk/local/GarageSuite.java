@@ -19,9 +19,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * done via {@code execInContainer}, mirroring {@code modules/commons-vfs}'s
  * {@code local.GarageSuite}.
  */
+@SelectPackages("com.github.vfss3.jdk.tests")
 @Suite
 @SuiteDisplayName("Garage integration tests")
-@SelectPackages("com.github.vfss3.jdk.tests")
 public class GarageSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("dxflrs/garage:v2.3.0");
     private static final int S3_PORT = 3900;

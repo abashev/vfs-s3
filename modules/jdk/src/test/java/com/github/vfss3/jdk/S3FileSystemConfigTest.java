@@ -15,7 +15,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
-class S3FileSystemConfigTest {
+final class S3FileSystemConfigTest {
 
     @Test
     void fromEnvFallsBackToSdkDefaultsWhenEnvIsEmpty() {

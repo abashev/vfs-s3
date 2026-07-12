@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
-class S3FileNameParserTest {
+final class S3FileNameParserTest {
     @Test
     void checkHostedStyleUrl() throws FileSystemException {
         assertThat(parse("s3://bucket.s3.amazonaws.com"))
@@ -204,7 +204,7 @@ class S3FileNameParserTest {
     }
 
     private S3FileNameAssert parse(String url) throws FileSystemException {
-        return (new S3FileNameAssert((new S3FileNameParser()).parseUri(null, null, url)));
+        return new S3FileNameAssert(new S3FileNameParser().parseUri(null, null, url));
     }
 
     private static class S3FileNameAssert implements AssertDelegateTarget {

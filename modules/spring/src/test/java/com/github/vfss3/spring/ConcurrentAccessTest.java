@@ -22,7 +22,7 @@ import org.springframework.core.io.WritableResource;
  * {@code docs/test-cases/g-concurrent-access.md}. Many threads write and read independent
  * resources concurrently; any failure on a worker thread fails the test.
  */
-class ConcurrentAccessTest {
+final class ConcurrentAccessTest {
 
     private static final String BUCKET = "test-bucket";
     private static final String PREFIX = "s3://" + BUCKET + "/concurrent/";
@@ -40,8 +40,8 @@ class ConcurrentAccessTest {
     }
 
     /** Step 1 analog: concurrent write + verify of independent resources. */
-    @Test
     @DisplayName("Step 1: concurrent writes to independent resources")
+    @Test
     void step1_concurrentWrites() throws Exception {
         runConcurrently(8, 200, i -> {
             var resource = (WritableResource) loader.getResource(PREFIX + "write/file-" + i + ".bin");
@@ -54,8 +54,8 @@ class ConcurrentAccessTest {
     }
 
     /** Step 2 analog: concurrent read of a shared resource. */
-    @Test
     @DisplayName("Step 2: concurrent reads of a shared resource")
+    @Test
     void step2_concurrentReads() throws Exception {
         var shared = (WritableResource) loader.getResource(PREFIX + "read/shared.bin");
         byte[] body = "shared-content".getBytes(UTF_8);

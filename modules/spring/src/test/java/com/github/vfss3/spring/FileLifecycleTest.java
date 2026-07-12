@@ -27,7 +27,7 @@ import org.springframework.core.io.WritableResource;
  * are skipped. Focus is on read/write/exists/metadata operations.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class FileLifecycleTest {
+final class FileLifecycleTest {
 
     private static final String BUCKET = "test-bucket";
     private static final String CONTENT = "Hello, Spring S3!";
@@ -45,9 +45,9 @@ class FileLifecycleTest {
     }
 
     /** Step 1: Write file via WritableResource.getOutputStream(). Verify exists and content. */
-    @Test
-    @Order(1)
     @DisplayName("Step 1: write file and verify exists and content")
+    @Order(1)
+    @Test
     void step1_writeFileAndVerifyExistsAndContent() throws IOException {
         var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
 
@@ -63,9 +63,9 @@ class FileLifecycleTest {
     }
 
     /** Step 2: Check getFilename() returns the last segment of the key. */
-    @Test
-    @Order(2)
     @DisplayName("Step 2: getFilename() returns the last segment of the key")
+    @Order(2)
+    @Test
     void step2_getFilenameReturnsLastSegment() throws IOException {
         var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
 
@@ -77,9 +77,9 @@ class FileLifecycleTest {
     }
 
     /** Step 2b: Create a file with spaces in its name. */
-    @Test
-    @Order(3)
     @DisplayName("Step 2b: create file with spaces in its name")
+    @Order(3)
+    @Test
     void step2b_createFileWithSpacesInName() throws IOException {
         var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/name with spaces.txt");
 
@@ -92,9 +92,9 @@ class FileLifecycleTest {
     }
 
     /** Step 4: lastModified() returns a valid (positive) timestamp. */
-    @Test
-    @Order(4)
     @DisplayName("Step 4: lastModified() returns a positive timestamp")
+    @Order(4)
+    @Test
     void step4_lastModifiedReturnsPositiveTimestamp() throws IOException {
         var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
 
@@ -106,9 +106,9 @@ class FileLifecycleTest {
     }
 
     /** Step 5: contentLength() matches the number of bytes written. */
-    @Test
-    @Order(5)
     @DisplayName("Step 5: contentLength() matches the number of bytes written")
+    @Order(5)
+    @Test
     void step5_contentLengthMatchesWrittenBytes() throws IOException {
         var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
         var contentBytes = CONTENT.getBytes(UTF_8);
@@ -121,9 +121,9 @@ class FileLifecycleTest {
     }
 
     /** Step 6: Non-existent resource — exists() == false, getInputStream() throws IOException. */
-    @Test
-    @Order(6)
     @DisplayName("Step 6: non-existent resource returns exists()=false and getInputStream() throws")
+    @Order(6)
+    @Test
     void step6_nonExistentResourceExistsFalseAndGetInputStreamThrows() {
         var resource = loader.getResource("s3://" + BUCKET + "/file-lifecycle/nonexistent.txt");
 
@@ -135,9 +135,9 @@ class FileLifecycleTest {
     }
 
     /** isWritable() returns true for mock-backed resources. */
-    @Test
-    @Order(7)
     @DisplayName("isWritable() returns true for mock-backed S3Resource")
+    @Order(7)
+    @Test
     void isWritableReturnsTrueForMockResource() {
         var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
         assertTrue(resource.isWritable(), "isWritable() should return true for mock-backed S3Resource");

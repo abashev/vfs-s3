@@ -15,9 +15,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * Runs every test in {@code com.github.vfss3.commonsvfs.tests} against a freshly-started
  * RustFS container.
  */
+@SelectPackages("com.github.vfss3.commonsvfs.tests")
 @Suite
 @SuiteDisplayName("RustFS integration tests")
-@SelectPackages("com.github.vfss3.commonsvfs.tests")
 public class RustFsSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("rustfs/rustfs:1.0.0-alpha.99");
     private static final int API_PORT = 9000;
