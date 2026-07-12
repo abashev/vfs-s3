@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 /**
  * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */
-class S3FileProviderTest {
+final class S3FileProviderTest {
     @Test
     void checkCache() throws FileSystemException {
         final FileSystemManager manager = VFS.getManager();

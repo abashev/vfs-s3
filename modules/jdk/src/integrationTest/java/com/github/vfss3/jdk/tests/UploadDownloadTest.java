@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
  * {@link Files} input/output streams. Runs against whatever real S3-compatible backend the
  * enclosing {@code @Suite} wired up via {@link JdkIntegrationContext}.
  */
-class UploadDownloadTest {
+final class UploadDownloadTest {
 
     private static final String PREFIX = "/upload/";
 
@@ -43,8 +43,8 @@ class UploadDownloadTest {
     }
 
     /** Step 1: upload the payload to a key. */
-    @Test
     @DisplayName("Step 1: upload a binary payload")
+    @Test
     void step1_upload() throws IOException {
         var dest = fs.getPath(PREFIX + "backup.bin");
         Files.write(dest, payload);
@@ -55,8 +55,8 @@ class UploadDownloadTest {
     }
 
     /** Step 2: overwrite the same key. */
-    @Test
     @DisplayName("Step 2: overwrite an existing key")
+    @Test
     void step2_overwrite() throws IOException {
         var dest = fs.getPath(PREFIX + "overwrite.bin");
         Files.write(dest, new byte[] {1, 2, 3});
@@ -67,8 +67,8 @@ class UploadDownloadTest {
     }
 
     /** Step 3: round-trip bytes through output/input streams. */
-    @Test
     @DisplayName("Step 3: output/input stream round-trip")
+    @Test
     void step3_outputStreamRoundTrip() throws IOException {
         var dest = fs.getPath(PREFIX + "output.bin");
 
@@ -88,8 +88,8 @@ class UploadDownloadTest {
     }
 
     /** Step 4: writing to a deep key auto-creates the intermediate folders. */
-    @Test
     @DisplayName("Step 4: nested upload creates intermediate folders")
+    @Test
     void step4_nestedUploadCreatesFolders() throws IOException {
         var dest = fs.getPath(PREFIX + "deep/sub1/sub2/backup.bin");
         Files.write(dest, payload);
@@ -100,8 +100,8 @@ class UploadDownloadTest {
     }
 
     /** Step 5: download the uploaded file back into a local temp file. */
-    @Test
     @DisplayName("Step 5: download to a local temp file")
+    @Test
     void step5_download() throws IOException {
         var dest = fs.getPath(PREFIX + "download.bin");
         Files.write(dest, payload);
@@ -118,8 +118,8 @@ class UploadDownloadTest {
     }
 
     /** Step 6: cross-provider round-trip — {@code Files.copy(local, s3)} up, then {@code Files.copy(s3, local)} down. */
-    @Test
     @DisplayName("Step 6: local↔S3 round-trip via Files.copy(Path, Path)")
+    @Test
     void step6_crossProviderCopyRoundTrip() throws IOException {
         var localSource = Files.createTempFile("vfs-jdk-src.", ".bin");
         var localTarget = Files.createTempFile("vfs-jdk-dst.", ".bin");

@@ -27,7 +27,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class AclHandlingTest {
+final class AclHandlingTest {
     private static final String FOLDER = "/acl";
 
     private FileObject root;
@@ -47,8 +47,8 @@ class AclHandlingTest {
         binaryFile = manager.resolveFile(new File(S3IntegrationContext.BINARY_FILE).getAbsolutePath());
     }
 
-    @Test
     @Order(1)
+    @Test
     void checkGet() throws FileSystemException {
         file = root.resolveFile(FOLDER + "/check_acl.zip");
 
@@ -81,8 +81,8 @@ class AclHandlingTest {
         assertDenied(fileAcl, EVERYONE);
     }
 
-    @Test
     @Order(2)
+    @Test
     void checkSet() throws FileSystemException {
         if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
             return;
@@ -102,8 +102,8 @@ class AclHandlingTest {
         fileAcl = changedAcl;
     }
 
-    @Test
     @Order(3)
+    @Test
     void checkSet2() throws FileSystemException {
         if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class))
                 .supportsAuthorizedGroup()) {
@@ -125,8 +125,8 @@ class AclHandlingTest {
         fileAcl = changedAcl;
     }
 
-    @Test
     @Order(4)
+    @Test
     void checkDenyAllForFile() throws FileSystemException {
         if (!((PlatformFeatures) file.getFileOperations().getOperation(PlatformFeatures.class)).supportsAcl()) {
             return;
@@ -156,8 +156,8 @@ class AclHandlingTest {
         assertDenied(changedAcl, EVERYONE);
     }
 
-    @Test
     @Order(5)
+    @Test
     void checkDenyAllForFolder() throws FileSystemException {
         folder = root.resolveFile(FOLDER + "/check_acl/");
 

@@ -15,9 +15,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * MiniStack container — a free MIT-licensed drop-in replacement for LocalStack
  * (https://github.com/Nahuel990/ministack).
  */
+@SelectPackages("com.github.vfss3.commonsvfs.tests")
 @Suite
 @SuiteDisplayName("MiniStack integration tests")
-@SelectPackages("com.github.vfss3.commonsvfs.tests")
 public class MiniStackSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("ministackorg/ministack:1.3");
     private static final int API_PORT = 4566;

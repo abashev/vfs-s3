@@ -19,9 +19,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * wrapper fails to load ({@code MODULE_NOT_FOUND}) and every S3 call returns a 500. CI runs on
  * amd64 (ubuntu-latest) where the image runs natively and this suite is expected to pass.
  */
+@SelectPackages("com.github.vfss3.jdk.tests")
 @Suite
 @SuiteDisplayName("CloudServer integration tests")
-@SelectPackages("com.github.vfss3.jdk.tests")
 public class CloudServerSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("zenko/cloudserver:latest-7.70.10");
     private static final int API_PORT = 8000;

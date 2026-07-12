@@ -22,6 +22,9 @@ import org.apache.commons.vfs2.provider.VfsComponentContext;
 import software.amazon.awssdk.regions.Region;
 
 /**
+ * Parses {@code s3://} URIs into {@link S3FileName}s, resolving the bucket, endpoint and signing
+ * region from the host and path for AWS and the supported S3-compatible providers.
+ *
  * @author Matthias L. Jugel
  * @author <A href="mailto:alexey@abashev.ru">Alexey Abashev</A>
  */

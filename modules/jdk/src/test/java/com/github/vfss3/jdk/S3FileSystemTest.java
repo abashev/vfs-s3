@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-class S3FileSystemTest {
+final class S3FileSystemTest {
 
     private final S3FileSystemProvider provider = new S3FileSystemProvider();
     private final S3FileSystem fs = new S3FileSystem(provider, "test-bucket", new FakeS3Client());

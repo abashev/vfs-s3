@@ -14,10 +14,10 @@ import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 /**
  * Integration test for accessing public buckets — does not need the suite's container.
  */
-public class LegacyPublicAccessBucketTest {
+final class LegacyPublicAccessBucketTest {
 
     @Test
-    void testCreate() throws Exception {
+    void create() throws Exception {
         FileSystemManager manager = VFS.getManager();
         FileSystemOptions options = new FileSystemOptions();
         DelegatingFileSystemOptionsBuilder builder = new DelegatingFileSystemOptionsBuilder(manager);
@@ -29,9 +29,9 @@ public class LegacyPublicAccessBucketTest {
         assertNotNull(cloned);
     }
 
-    @Test
     @DisplayName("Test how VFS-S3 plugin can access public OSM bucket, see https://registry.opendata.aws/osm/")
-    void testResolvePublicBucket1() throws FileSystemException {
+    @Test
+    void resolvePublicBucket1() throws FileSystemException {
         FileSystemManager manager = VFS.getManager();
         S3FileSystemOptions options = new S3FileSystemOptions();
 
@@ -46,9 +46,9 @@ public class LegacyPublicAccessBucketTest {
         assertTrue(children.length > 0, "Public bucket " + bucket + " is not resolved");
     }
 
-    @Test
     @DisplayName("Test how VFS-S3 plugin can access public OSM bucket, see https://registry.opendata.aws/osm/")
-    void testResolvePublicBucket2() throws FileSystemException {
+    @Test
+    void resolvePublicBucket2() throws FileSystemException {
         FileSystemManager manager = VFS.getManager();
         S3FileSystemOptions options = new S3FileSystemOptions();
 

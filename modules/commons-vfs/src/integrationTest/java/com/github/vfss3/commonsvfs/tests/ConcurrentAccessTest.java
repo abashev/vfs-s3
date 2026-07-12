@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * {@code @AfterAll}.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ConcurrentAccessTest {
+final class ConcurrentAccessTest {
     private static final String FOLDERS = "/concurrent/folders/";
     private static final String READ_TEST = "/concurrent/read-test/";
 
@@ -66,9 +66,9 @@ class ConcurrentAccessTest {
     }
 
     /** Step 1: repeatedly create, refresh, and delete a per-iteration folder. */
-    @RepeatedTest(200)
     @Execution(ExecutionMode.CONCURRENT)
-    void testConcurrentCreateDelete() throws FileSystemException {
+    @RepeatedTest(200)
+    void concurrentCreateDelete() throws FileSystemException {
         String name = "folder-" + Thread.currentThread().getId() + "-" + new Random().nextInt(1000) + "/";
 
         FileObject folder = root.resolveFile(FOLDERS).resolveFile(name);
@@ -86,9 +86,9 @@ class ConcurrentAccessTest {
     }
 
     /** Step 2: repeatedly resolve a folder and walk parent/children. */
-    @RepeatedTest(200)
     @Execution(ExecutionMode.CONCURRENT)
-    void testConcurrentRead() throws FileSystemException {
+    @RepeatedTest(200)
+    void concurrentRead() throws FileSystemException {
         FileObject file = root.resolveFile(READ_TEST);
 
         assertNotNull(file.getParent());
@@ -101,7 +101,7 @@ class ConcurrentAccessTest {
 
     /** Step 3: hammer getParent()/getChildren() from many threads and watch for deadlocks. */
     @Test
-    void testGetChildrenGetParentDeadlock() throws FileSystemException, InterruptedException {
+    void getChildrenGetParentDeadlock() throws FileSystemException, InterruptedException {
         final FileObject parent = root.resolveFile(FOLDERS);
         parent.delete(Selectors.EXCLUDE_SELF);
 

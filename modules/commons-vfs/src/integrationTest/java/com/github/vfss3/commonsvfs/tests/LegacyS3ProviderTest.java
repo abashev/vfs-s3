@@ -28,7 +28,7 @@ import org.junit.jupiter.api.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class S3ProviderTest {
+final class S3ProviderTest {
     private static final String BIG_FILE = "big_file.iso";
 
     private FileObject root;
@@ -55,8 +55,8 @@ class S3ProviderTest {
         dirName = "vfs-dir" + r.nextInt(1000);
     }
 
-    @Test
     @Order(1)
+    @Test
     void createFileOk() throws FileSystemException {
         file = root.resolveFile("/test-place/" + fileName);
         file.createFile();
@@ -71,8 +71,8 @@ class S3ProviderTest {
         assertTrue(f2.exists());
     }
 
-    @Test
     @Order(3)
+    @Test
     void checkLastModified() throws FileSystemException {
         file = root.resolveFile("/test-place/" + fileName);
 
@@ -85,8 +85,8 @@ class S3ProviderTest {
         });
     }
 
-    @Test
     @Order(3)
+    @Test
     void createFileFailed2() throws FileSystemException {
         FileObject tmpFile = root.resolveFile("/test-place/" + fileName);
         assertThrows(FileSystemException.class, () -> {
@@ -94,8 +94,8 @@ class S3ProviderTest {
         });
     }
 
-    @Test
     @Order(2)
+    @Test
     void createDirOk() throws FileSystemException {
         dir = root.resolveFile("/test-place/" + dirName);
         dir.createFolder();
@@ -104,8 +104,8 @@ class S3ProviderTest {
         assertEquals(FileType.FOLDER, dir.getName().getType());
     }
 
-    @Test
     @Order(3)
+    @Test
     void createDirFailed2() throws FileSystemException {
         FileObject tmpFile = root.resolveFile("/test-place/" + dirName);
         assertThrows(FileSystemException.class, () -> {
@@ -113,8 +113,8 @@ class S3ProviderTest {
         });
     }
 
-    @Test
     @Order(8)
+    @Test
     void exists() throws IOException {
         FileObject existedDir = root.resolveFile("/test-place");
         assertTrue(existedDir.exists());
@@ -126,8 +126,8 @@ class S3ProviderTest {
         assertFalse(nonExistedFile.exists());
     }
 
-    @Test
     @Order(4)
+    @Test
     void upload() throws IOException {
         FileObject dest = root.resolveFile("/test-place/backup.zip");
 
@@ -140,8 +140,8 @@ class S3ProviderTest {
         assertTrue(dest.exists() && dest.getType().equals(FILE));
     }
 
-    @Test
     @Order(5)
+    @Test
     void uploadMultiple() throws Exception {
         FileObject dest = root.resolveFile("/test-place/backup.zip");
 
@@ -156,10 +156,10 @@ class S3ProviderTest {
         assertTrue(dest.exists() && dest.getType().equals(FILE));
     }
 
-    @Test
-    @Order(6)
     @Disabled("Unreliable external dependency: downloads a ~64 MB ISO from archive.ubuntu.com at "
             + "test time and asserts an exact byte count. See docs/test-cases/changes-from-original.md")
+    @Order(6)
+    @Test
     void uploadBigFile() throws IOException {
         // Resolved lazily here (not in @BeforeAll): S3IntegrationContext.BIG_FILE is an http:// URL,
         // and resolving it requires VFS's http provider. This is the only test that needs it, so the
@@ -185,8 +185,8 @@ class S3ProviderTest {
         assertEquals(63963136, dest.getContent().getSize());
     }
 
-    @Test
     @Order(5)
+    @Test
     void outputStream() throws IOException {
         FileObject dest = root.resolveFile("/test-place/output.txt");
 
@@ -214,8 +214,8 @@ class S3ProviderTest {
         dest.delete();
     }
 
-    @Test
     @Order(9)
+    @Test
     void download() throws IOException {
         FileObject typica = root.resolveFile("/test-place/backup.zip");
         File localCache = File.createTempFile("vfs.", ".s3-test");
@@ -228,8 +228,8 @@ class S3ProviderTest {
         localCache.delete();
     }
 
-    @Test
     @Order(7)
+    @Test
     void listChildren() throws FileSystemException {
         FileObject baseDir = dir.resolveFile("list-children-test");
         baseDir.createFolder();
@@ -243,10 +243,10 @@ class S3ProviderTest {
         assertEquals(5, children.length);
     }
 
-    @Test
-    @Order(7)
     @Disabled("Depends on big_file.iso created by the disabled uploadBigFile; the listing checks "
             + "are split into Suite B and Suite E. See docs/test-cases/changes-from-original.md")
+    @Order(7)
+    @Test
     void listChildrenRoot() throws FileSystemException {
         assertHasChildren(root.resolveFile("/"), "test-place", BIG_FILE);
         assertHasChildren(
@@ -271,8 +271,8 @@ class S3ProviderTest {
         assertHasChildren(destFile, "backup.zip", dirName, fileName, "folder with space", "name with space");
     }
 
-    @Test
     @Order(7)
+    @Test
     void findFiles() throws FileSystemException {
         FileObject baseDir = dir.resolveFile("find-tests");
         baseDir.createFolder();
@@ -295,8 +295,8 @@ class S3ProviderTest {
         assertEquals(6, files.length);
     }
 
-    @Test
     @Order(7)
+    @Test
     void renameAndMove() throws FileSystemException {
         FileObject sourceFile = root.resolveFile("/test-place/" + fileName);
         FileObject targetFile = root.resolveFile("/test-place/rename-target");
@@ -325,8 +325,8 @@ class S3ProviderTest {
         });
     }
 
-    @Test
     @Order(7)
+    @Test
     void getType() throws FileSystemException {
         FileObject imagine = dir.resolveFile("imagine-there-is-no-countries");
 
@@ -335,8 +335,8 @@ class S3ProviderTest {
         assertEquals(FILE, file.getType());
     }
 
-    @Test
     @Order(7)
+    @Test
     void getTypeAfterCopyToSubFolder() throws FileSystemException {
         FileObject dest = dir.resolveFile("type-tests/sub1/sub2/backup.zip");
 
@@ -353,23 +353,23 @@ class S3ProviderTest {
         assertTrue(sub2.getType().equals(FileType.FOLDER));
     }
 
-    @Test
     @Order(7)
+    @Test
     void getContentType() throws FileSystemException {
         FileObject backup = root.resolveFile("/test-place/backup.zip");
         assertEquals("application/zip", backup.getContent().getContentInfo().getContentType());
     }
 
-    @Test
     @Order(7)
+    @Test
     void getSize() throws FileSystemException {
         FileObject backup = root.resolveFile("/test-place/backup.zip");
 
         assertEquals(996166, backup.getContent().getSize());
     }
 
-    @Test
     @Order(7)
+    @Test
     void getUrls() throws FileSystemException {
         FileObject backup = root.resolveFile("/test-place/backup.zip");
 
@@ -393,8 +393,8 @@ class S3ProviderTest {
                         "X-Amz-Signature=");
     }
 
-    @Test
     @Order(7)
+    @Test
     void getMD5Hash() throws NoSuchAlgorithmException, IOException {
         FileObject backup = root.resolveFile("/test-place/backup.zip");
 
@@ -411,8 +411,8 @@ class S3ProviderTest {
         assertTrue(md5Remote.equalsIgnoreCase(md5Local), "Local and remote md5 should be equal");
     }
 
-    @Test
     @Order(7)
+    @Test
     void getLastModified() throws FileSystemException {
         FileObject backup = root.resolveFile("/test-place/backup.zip");
 
@@ -422,8 +422,8 @@ class S3ProviderTest {
                 > 2010);
     }
 
-    @Test
     @Order(10)
+    @Test
     void delete() throws FileSystemException {
         FileObject testsDir = dir.resolveFile("find-tests");
         testsDir.delete(Selectors.EXCLUDE_SELF);

@@ -9,7 +9,7 @@ import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
-class S3FileAttributesTest {
+final class S3FileAttributesTest {
 
     @Test
     void fileAttributesMirrorTheHeadResponse() {

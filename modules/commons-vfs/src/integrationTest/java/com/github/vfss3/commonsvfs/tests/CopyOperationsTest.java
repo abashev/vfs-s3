@@ -31,7 +31,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class CopyOperationsTest {
+final class CopyOperationsTest {
     private static final String PREFIX = "/copy/";
 
     private FileObject root;
@@ -55,9 +55,9 @@ class CopyOperationsTest {
     }
 
     /** Step 1: build a tree and verify the find selectors. */
-    @Test
     @Order(1)
-    void testCreateTree() throws FileSystemException {
+    @Test
+    void createTree() throws FileSystemException {
         base.resolveFile("child-file.tmp").createFile();
         base.resolveFile("child-file2.tmp").createFile();
         base.resolveFile("child-dir").createFolder();
@@ -72,9 +72,9 @@ class CopyOperationsTest {
     }
 
     /** Step 2: copy a sub-directory and confirm the copy mirrors the source. */
-    @Test
     @Order(2)
-    void testCopyInsideBucket() throws FileSystemException {
+    @Test
+    void copyInsideBucket() throws FileSystemException {
         FileObject source = base.resolveFile("child-dir");
         FileObject copy = base.resolveFile("child-dir-copy");
 
@@ -95,9 +95,9 @@ class CopyOperationsTest {
     }
 
     /** Step 3: the prefix lists the original tree plus the copy. */
-    @Test
     @Order(3)
-    void testListChildren() throws FileSystemException {
+    @Test
+    void listChildren() throws FileSystemException {
         // The copy in step 2 was created through a child handle, so the prefix's cached child
         // list can be stale — refresh before listing.
         base.refresh();
@@ -105,9 +105,9 @@ class CopyOperationsTest {
     }
 
     /** Step 4: deleting the children removes the whole tree. */
-    @Test
     @Order(4)
-    void testDeleteChildren() throws FileSystemException {
+    @Test
+    void deleteChildren() throws FileSystemException {
         assertTrue(base.delete(EXCLUDE_SELF) > 0, "Delete should report a positive count");
         assertFalse(base.resolveFile("child-dir").exists(), "child-dir should be gone");
     }

@@ -17,9 +17,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * version pre-dates the dedicated {@code MinIOContainer} module — once we bump
  * testcontainers we can swap to that.
  */
+@SelectPackages("com.github.vfss3.commonsvfs.tests")
 @Suite
 @SuiteDisplayName("MinIO integration tests")
-@SelectPackages("com.github.vfss3.commonsvfs.tests")
 public class MinioSuite {
     private static final DockerImageName MINIO_IMAGE =
             DockerImageName.parse("minio/minio:RELEASE.2025-09-07T16-13-09Z");

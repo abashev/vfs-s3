@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class LegacyFileLifecycleTest {
+final class LegacyFileLifecycleTest {
     private static final String PREFIX = "/file-lifecycle/";
 
     private FileObject root;
@@ -38,7 +38,7 @@ class LegacyFileLifecycleTest {
     }
 
     @Test
-    void testCreateFile() throws FileSystemException {
+    void createFile() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "test-file");
         file.createFile();
 
@@ -46,7 +46,7 @@ class LegacyFileLifecycleTest {
     }
 
     @Test
-    void testCreateFileWithSpace() throws FileSystemException {
+    void createFileWithSpace() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "name with space");
         file.createFile();
 
@@ -54,7 +54,7 @@ class LegacyFileLifecycleTest {
     }
 
     @Test
-    void testLastModifiedTime() throws FileSystemException {
+    void lastModifiedTime() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "test-file");
         file.createFile();
 
@@ -68,7 +68,7 @@ class LegacyFileLifecycleTest {
     }
 
     @Test
-    void testCreateFolderOnExistingFile() throws FileSystemException {
+    void createFolderOnExistingFile() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "test-file");
         file.createFile();
 
@@ -79,7 +79,7 @@ class LegacyFileLifecycleTest {
     }
 
     @Test
-    void testMoveAndRename() throws FileSystemException {
+    void moveAndRename() throws FileSystemException {
         FileObject sourceFile = root.resolveFile(PREFIX + "test-file");
         sourceFile.createFile();
 
@@ -102,7 +102,7 @@ class LegacyFileLifecycleTest {
     }
 
     @Test
-    void testGetType() throws FileSystemException {
+    void getType() throws FileSystemException {
         FileObject nonexistent = root.resolveFile(PREFIX + "nonexistent");
         assertEquals(IMAGINARY, nonexistent.getType(), "Nonexistent file should have IMAGINARY type");
 
@@ -113,7 +113,7 @@ class LegacyFileLifecycleTest {
     }
 
     @Test
-    void testNonexistentPathDoesNotExist() throws FileSystemException {
+    void nonexistentPathDoesNotExist() throws FileSystemException {
         FileObject nonexistent = root.resolveFile(PREFIX + "does/not/exist");
 
         assertFalse(nonexistent.exists(), "Nonexistent path with multiple segments should not exist");

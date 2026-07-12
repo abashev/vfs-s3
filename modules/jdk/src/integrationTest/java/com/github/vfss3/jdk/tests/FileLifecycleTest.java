@@ -31,7 +31,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  * {@link JdkIntegrationContext}.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class FileLifecycleTest {
+final class FileLifecycleTest {
 
     private static final String PREFIX = "/file-lifecycle/";
     private static final String CONTENT = "Hello, S3!";
@@ -51,9 +51,9 @@ class FileLifecycleTest {
     }
 
     /** Step 1: Create a file and assert it exists. Content is readable back. */
-    @Test
-    @Order(1)
     @DisplayName("Step 1: create file and verify content is readable back")
+    @Order(1)
+    @Test
     void step1_createFileAndVerifyExists() throws IOException {
         var path = fs.getPath(PREFIX + "test-file");
 
@@ -64,9 +64,9 @@ class FileLifecycleTest {
     }
 
     /** Step 1b: Verify getFileName() returns the last segment. */
-    @Test
-    @Order(2)
     @DisplayName("Step 1b: getFileName() returns the last path segment")
+    @Order(2)
+    @Test
     void step1b_getFilenameReturnsLastSegment() throws IOException {
         var path = fs.getPath(PREFIX + "file.txt");
         Files.write(path, CONTENT.getBytes(UTF_8), CREATE, WRITE);
@@ -76,9 +76,9 @@ class FileLifecycleTest {
     }
 
     /** Step 2: Create a file with spaces in its name and assert it exists. */
-    @Test
-    @Order(3)
     @DisplayName("Step 2: create file with spaces in name")
+    @Order(3)
+    @Test
     void step2_createFileWithSpacesInName() throws IOException {
         var path = fs.getPath(PREFIX + "name with space");
 
@@ -91,9 +91,9 @@ class FileLifecycleTest {
      * Step 3: lastModifiedTime returns a positive timestamp. setLastModifiedTime is not
      * supported and throws an exception.
      */
-    @Test
-    @Order(4)
     @DisplayName("Step 3: lastModifiedTime is positive; setAttribute throws UnsupportedOperationException")
+    @Order(4)
+    @Test
     void step3_lastModifiedTimeIsPositiveAndSetLastModifiedTimeThrows() throws IOException {
         var path = fs.getPath(PREFIX + "test-file");
         Files.write(path, CONTENT.getBytes(UTF_8), CREATE, WRITE);
@@ -108,9 +108,9 @@ class FileLifecycleTest {
     }
 
     /** Step 4: Attempt createDirectory on an existing regular file path → FileAlreadyExistsException. */
-    @Test
-    @Order(5)
     @DisplayName("Step 4: createDirectory on existing file throws FileAlreadyExistsException")
+    @Order(5)
+    @Test
     void step4_createDirectoryOnExistingFileThrows() throws IOException {
         var path = fs.getPath(PREFIX + "test-file");
         Files.write(path, CONTENT.getBytes(UTF_8), CREATE, WRITE);
@@ -122,9 +122,9 @@ class FileLifecycleTest {
      * Step 5: Move file, verify old path gone and new path exists. Move back. Try self-move →
      * throws error.
      */
-    @Test
-    @Order(6)
     @DisplayName("Step 5: move file succeeds; self-move throws FileSystemException")
+    @Order(6)
+    @Test
     void step5_moveFileAndSelfMoveThrows() throws IOException {
         var original = fs.getPath(PREFIX + "test-file");
         var renamed = fs.getPath(PREFIX + "renamed");
@@ -146,9 +146,9 @@ class FileLifecycleTest {
     }
 
     /** Step 5b: move onto an existing destination without REPLACE_EXISTING throws. */
-    @Test
-    @Order(7)
     @DisplayName("Step 5b: move onto existing destination throws without REPLACE_EXISTING")
+    @Order(7)
+    @Test
     void step5b_moveOntoExistingDestinationThrows() throws IOException {
         var source = fs.getPath(PREFIX + "test-file");
         var destination = fs.getPath(PREFIX + "existing-destination");
@@ -168,9 +168,9 @@ class FileLifecycleTest {
      * Step 6: Non-existent path → does not exist. Existing file path → exists and is a regular
      * file.
      */
-    @Test
-    @Order(8)
     @DisplayName("Step 6: file type checks — exists() and isRegularFile()")
+    @Order(8)
+    @Test
     void step6_fileTypeChecks() throws IOException {
         var existing = fs.getPath(PREFIX + "test-file");
         var nonexistent = fs.getPath(PREFIX + "nonexistent");
@@ -183,18 +183,18 @@ class FileLifecycleTest {
     }
 
     /** Step 7: Deeply nested non-existent path → does not exist. No exception thrown. */
-    @Test
-    @Order(9)
     @DisplayName("Step 7: deeply nested non-existent path returns false without exception")
+    @Order(9)
+    @Test
     void step7_deeplyNestedNonExistentPathDoesNotExist() {
         var path = fs.getPath(PREFIX + "does/not/exist");
         assertFalse(Files.exists(path), "Deeply nested non-existent path should return false");
     }
 
     /** Verify reading a non-existent file throws NoSuchFileException. */
-    @Test
-    @Order(10)
     @DisplayName("Read non-existent file throws NoSuchFileException")
+    @Order(10)
+    @Test
     void readNonExistentFileThrows() {
         var path = fs.getPath("/ghost.txt");
         assertThrows(NoSuchFileException.class, () -> Files.readAllBytes(path));

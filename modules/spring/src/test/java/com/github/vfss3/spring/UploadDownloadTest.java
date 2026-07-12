@@ -20,7 +20,7 @@ import org.springframework.core.io.WritableResource;
  * {@code docs/test-cases/c-upload-download.md}. Uses {@link WritableResource#getOutputStream()}
  * and {@link org.springframework.core.io.Resource#getInputStream()}.
  */
-class UploadDownloadTest {
+final class UploadDownloadTest {
 
     private static final String BUCKET = "test-bucket";
     private static final String PREFIX = "s3://" + BUCKET + "/upload/";
@@ -45,8 +45,8 @@ class UploadDownloadTest {
     }
 
     /** Step 1: upload a payload to a key. */
-    @Test
     @DisplayName("Step 1: upload a binary payload")
+    @Test
     void step1_upload() throws IOException {
         var dest = resource("backup.bin");
         try (OutputStream out = dest.getOutputStream()) {
@@ -58,8 +58,8 @@ class UploadDownloadTest {
     }
 
     /** Step 2: overwrite the same key. */
-    @Test
     @DisplayName("Step 2: overwrite an existing key")
+    @Test
     void step2_overwrite() throws IOException {
         var dest = resource("overwrite.bin");
         try (OutputStream out = dest.getOutputStream()) {
@@ -73,8 +73,8 @@ class UploadDownloadTest {
     }
 
     /** Step 3: round-trip the bytes through output / input streams. */
-    @Test
     @DisplayName("Step 3: output/input stream round-trip")
+    @Test
     void step3_outputStreamRoundTrip() throws IOException {
         var dest = resource("output.bin");
         try (OutputStream out = dest.getOutputStream()) {
@@ -87,8 +87,8 @@ class UploadDownloadTest {
     }
 
     /** Step 4: writing to a deep key auto-creates the intermediate folders. */
-    @Test
     @DisplayName("Step 4: nested upload writes through intermediate folders")
+    @Test
     void step4_nestedUpload() throws IOException {
         var dest = resource("deep/sub1/sub2/backup.bin");
         try (OutputStream out = dest.getOutputStream()) {
@@ -100,8 +100,8 @@ class UploadDownloadTest {
     }
 
     /** Step 5: download the uploaded resource into a byte array via the input stream. */
-    @Test
     @DisplayName("Step 5: download via the input stream")
+    @Test
     void step5_download() throws IOException {
         var dest = resource("download.bin");
         try (OutputStream out = dest.getOutputStream()) {

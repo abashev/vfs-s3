@@ -131,8 +131,8 @@ public class S3FileSystemOptions implements Cloneable {
         return (FileSystemOptions) options.clone();
     }
 
-    @SuppressWarnings({"MethodDoesntCallSuperMethod", "CloneDoesntDeclareCloneNotSupportedException"})
     @Override
+    @SuppressWarnings({"MethodDoesntCallSuperMethod", "CloneDoesntDeclareCloneNotSupportedException"})
     public S3FileSystemOptions clone() {
         return new S3FileSystemOptions(options);
     }

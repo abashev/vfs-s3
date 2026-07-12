@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
  * {@link java.lang.management.ThreadMXBean}. Runs against whatever real S3-compatible backend
  * the enclosing {@code @Suite} wired up via {@link JdkIntegrationContext}.
  */
-class ConcurrentAccessTest {
+final class ConcurrentAccessTest {
 
     private static final String FOLDERS = "/concurrent/folders/";
     private static final String READ_TEST = "/concurrent/read-test/";
@@ -51,8 +51,8 @@ class ConcurrentAccessTest {
     }
 
     /** Step 1: many threads create / verify / delete their own folder. */
-    @Test
     @DisplayName("Step 1: concurrent create and delete")
+    @Test
     void step1_concurrentCreateDelete() throws Exception {
         runConcurrently(8, 200, i -> {
             var folder = fs.getPath(FOLDERS + "folder-" + Thread.currentThread().getId() + "-" + i);
@@ -64,8 +64,8 @@ class ConcurrentAccessTest {
     }
 
     /** Step 2: many threads resolve a folder and walk parent / children. */
-    @Test
     @DisplayName("Step 2: concurrent read")
+    @Test
     void step2_concurrentRead() throws Exception {
         runConcurrently(8, 200, i -> {
             var dir = fs.getPath(READ_TEST);
@@ -78,8 +78,8 @@ class ConcurrentAccessTest {
     }
 
     /** Step 3: hammer getParent / listChildren and confirm no deadlock and correct counts. */
-    @Test
     @DisplayName("Step 3: deadlock detection")
+    @Test
     void step3_deadlockDetection() throws Exception {
         var parent = fs.getPath(FOLDERS);
         final int childCount = 10;

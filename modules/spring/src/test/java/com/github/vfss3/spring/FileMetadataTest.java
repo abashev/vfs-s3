@@ -20,7 +20,7 @@ import org.springframework.core.io.WritableResource;
  * checked: {@code contentLength()} and {@code lastModified()}. The S3-specific items (content
  * type, signed URL, MD5 hash) have no Resource analog and are intentionally omitted.
  */
-class FileMetadataTest {
+final class FileMetadataTest {
 
     private static final String BUCKET = "test-bucket";
     private static final String KEY = "s3://" + BUCKET + "/metadata/backup.bin";
@@ -44,22 +44,22 @@ class FileMetadataTest {
     }
 
     /** Step 2: content size matches the written payload. */
-    @Test
     @DisplayName("Step 2: contentLength matches the written payload")
+    @Test
     void step2_contentLength() throws IOException {
         assertEquals(CONTENT.length, resource.contentLength());
     }
 
     /** Step 3: last-modified time is a positive timestamp. */
-    @Test
     @DisplayName("Step 3: lastModified is a positive timestamp")
+    @Test
     void step3_lastModified() throws IOException {
         assertTrue(resource.lastModified() > 0, "lastModified() should be positive");
     }
 
     /** getFilename returns the last segment of the key. */
-    @Test
     @DisplayName("getFilename returns the last key segment")
+    @Test
     void getFilenameReturnsLastSegment() {
         assertEquals("backup.bin", resource.getFilename());
     }

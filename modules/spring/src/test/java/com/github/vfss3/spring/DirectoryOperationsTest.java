@@ -23,7 +23,7 @@ import org.springframework.core.io.WritableResource;
  * listing through {@link S3ResourcePatternResolver} is asserted to be unsupported (it requires
  * a real S3 listing call), matching the current scaffolding contract.
  */
-class DirectoryOperationsTest {
+final class DirectoryOperationsTest {
 
     private static final String BUCKET = "test-bucket";
     private static final String PREFIX = "s3://" + BUCKET + "/dir-ops/";
@@ -41,8 +41,8 @@ class DirectoryOperationsTest {
     }
 
     /** Step 4 (analog): write several keys under a prefix and resolve each one back. */
-    @Test
     @DisplayName("Steps 1/4 analog: keys written under a prefix each resolve and exist")
+    @Test
     void keysUnderPrefixResolveIndependently() throws IOException {
         for (int i = 0; i < 5; i++) {
             var resource = (WritableResource) loader.getResource(PREFIX + "my-folder/" + i + ".tmp");
@@ -59,8 +59,8 @@ class DirectoryOperationsTest {
     }
 
     /** A key written under a deep prefix can hold a name containing a space. */
-    @Test
     @DisplayName("Step 3 analog: a key name with a space round-trips")
+    @Test
     void keyNameWithSpace() throws IOException {
         var resource = (WritableResource) loader.getResource(PREFIX + "folder with space/file.tmp");
         try (OutputStream out = resource.getOutputStream()) {
@@ -70,8 +70,8 @@ class DirectoryOperationsTest {
     }
 
     /** Step 5 (not applicable): wildcard pattern listing is not supported by the scaffolding. */
-    @Test
     @DisplayName("Step 5: wildcard listing is unsupported on the Resource API")
+    @Test
     void wildcardListingIsUnsupported() {
         var resolver = new S3ResourcePatternResolver();
         assertThrows(

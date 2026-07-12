@@ -100,6 +100,11 @@ tasks.withType(JavaCompile).configureEach {
         error('RedundantStringConversion')
         error('PatternMatchingInstanceof')
         error('UnnecessaryParentheses')
+        error('LexicographicalAnnotationListing')
+        error('JUnitMethodDeclaration')
+        error('JUnitClassModifiers')
+        error('MissingSummary')
+        error('AlmostJavadoc')
     }
 }
 

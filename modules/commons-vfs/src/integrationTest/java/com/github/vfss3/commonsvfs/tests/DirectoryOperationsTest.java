@@ -30,7 +30,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class DirectoryOperationsTest {
+final class DirectoryOperationsTest {
     private static final String PREFIX = "/dir-ops/";
 
     private FileObject root;
@@ -49,9 +49,9 @@ class DirectoryOperationsTest {
     }
 
     /** Step 1: create a folder and assert it exists with FOLDER type. */
-    @Test
     @Order(1)
-    void testCreateFolder() throws FileSystemException {
+    @Test
+    void createFolder() throws FileSystemException {
         FileObject folder = root.resolveFile(PREFIX + "my-folder");
         folder.createFolder();
 
@@ -60,9 +60,9 @@ class DirectoryOperationsTest {
     }
 
     /** Step 2: createFile on an existing folder path fails. */
-    @Test
     @Order(2)
-    void testCreateFileOnExistingFolder() throws FileSystemException {
+    @Test
+    void createFileOnExistingFolder() throws FileSystemException {
         FileObject folder = root.resolveFile(PREFIX + "my-folder");
         folder.createFolder();
 
@@ -73,9 +73,9 @@ class DirectoryOperationsTest {
     }
 
     /** Step 3: create a folder whose name contains a space. */
-    @Test
     @Order(3)
-    void testCreateFolderWithSpace() throws FileSystemException {
+    @Test
+    void createFolderWithSpace() throws FileSystemException {
         FileObject folder = root.resolveFile(PREFIX + "folder with space");
         folder.createFolder();
 
@@ -83,9 +83,9 @@ class DirectoryOperationsTest {
     }
 
     /** Step 4: create five files inside a folder, then list its children. */
-    @Test
     @Order(4)
-    void testListChildren() throws FileSystemException {
+    @Test
+    void listChildren() throws FileSystemException {
         FileObject folder = root.resolveFile(PREFIX + "my-folder");
         folder.createFolder();
 
@@ -97,9 +97,9 @@ class DirectoryOperationsTest {
     }
 
     /** Step 5: build a nested tree and check the find selectors. */
-    @Test
     @Order(5)
-    void testFindWithSelectors() throws FileSystemException {
+    @Test
+    void findWithSelectors() throws FileSystemException {
         FileObject base = root.resolveFile(PREFIX + "find-tests");
         base.createFolder();
 
@@ -117,9 +117,9 @@ class DirectoryOperationsTest {
     }
 
     /** Step 6: delete the children of the tree and confirm only the folder itself remains. */
-    @Test
     @Order(6)
-    void testDeleteChildren() throws FileSystemException {
+    @Test
+    void deleteChildren() throws FileSystemException {
         FileObject base = root.resolveFile(PREFIX + "find-tests");
         base.createFolder();
 

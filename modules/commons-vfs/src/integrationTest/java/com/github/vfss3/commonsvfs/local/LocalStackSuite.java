@@ -16,9 +16,9 @@ import software.amazon.awssdk.services.s3.model.ObjectOwnership;
  * LocalStack container. The container is booted in {@link #startContainer()} and stopped in
  * {@link #stopContainer()} once the entire suite finishes.
  */
+@SelectPackages("com.github.vfss3.commonsvfs.tests")
 @Suite
 @SuiteDisplayName("LocalStack integration tests")
-@SelectPackages("com.github.vfss3.commonsvfs.tests")
 public class LocalStackSuite {
     // testcontainers 1.19.8's LocalStackContainer wait strategy expects the older
     // "Ready." log line, which LocalStack dropped in the 4.x / 2026.x stream. Stay

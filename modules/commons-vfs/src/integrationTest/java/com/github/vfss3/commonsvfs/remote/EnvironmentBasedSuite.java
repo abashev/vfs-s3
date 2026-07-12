@@ -54,9 +54,9 @@ import software.amazon.awssdk.services.s3.model.ObjectOwnership;
  * <p>The suite creates the unique bucket on startup (via {@code setCreateBucket(true)})
  * and deletes it together with all its contents in {@code @AfterSuite}.
  */
+@SelectPackages("com.github.vfss3.commonsvfs.tests")
 @Suite
 @SuiteDisplayName("Remote S3 integration tests (environment-configured)")
-@SelectPackages("com.github.vfss3.commonsvfs.tests")
 public class EnvironmentBasedSuite {
     static final String ENV_BASE_URL = "BASE_URL";
     static final String ENV_BUCKET_TOKEN = "BUCKET_TOKEN";

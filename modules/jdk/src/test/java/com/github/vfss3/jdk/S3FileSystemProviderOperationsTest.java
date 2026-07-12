@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
  * Behavior of every S3-backed provider operation against an in-memory {@link FakeS3Client} —
  * the same code paths the integration suites exercise against real backends, minus the network.
  */
-class S3FileSystemProviderOperationsTest {
+final class S3FileSystemProviderOperationsTest {
 
     private final S3FileSystemProvider provider = new S3FileSystemProvider();
     private final FakeS3Client s3 = new FakeS3Client();
@@ -100,8 +100,8 @@ class S3FileSystemProviderOperationsTest {
                 NoSuchFileException.class, () -> provider.readAttributes(path("/nope"), BasicFileAttributes.class));
     }
 
-    @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
     void readAttributesRejectsNonBasicTypes() {
         // Only reachable through a raw cast — the signature already bounds the type parameter.
         Class rawType = String.class;
@@ -347,8 +347,8 @@ class S3FileSystemProviderOperationsTest {
         assertEquals(List.of(), childNames(path("/dir"), p -> true));
     }
 
-    @Test
     @DisplayName("directory stream deduplicates entries repeated across listing pages")
+    @Test
     void directoryStreamPaginatesWithoutDuplicates() throws IOException {
         // Page size 2 forces the "dir/sub/" common prefix to be reported on several pages.
         var pagingS3 = new FakeS3Client(2);

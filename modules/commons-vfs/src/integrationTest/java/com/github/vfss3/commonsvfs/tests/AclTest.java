@@ -37,7 +37,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class AclTest {
+final class AclTest {
     private static final String PREFIX = "/acl/";
 
     private FileObject root;
@@ -60,9 +60,9 @@ class AclTest {
     }
 
     /** Step 1: the default ACL grants/denies the owner per platform, and denies the other groups. */
-    @Test
     @Order(1)
-    void testGetAcl() throws FileSystemException {
+    @Test
+    void getAcl() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "test-file.zip");
         assumeAcl(file);
         if (!file.exists()) {
@@ -82,9 +82,9 @@ class AclTest {
     }
 
     /** Step 2: deny READ for EVERYONE (and the owner where the platform allows it). */
-    @Test
     @Order(2)
-    void testDenyForFile() throws FileSystemException {
+    @Test
+    void denyForFile() throws FileSystemException {
         FileObject file = root.resolveFile(PREFIX + "test-file.zip");
         assumeAcl(file);
         if (!file.exists()) {
@@ -111,9 +111,9 @@ class AclTest {
     }
 
     /** Step 3: deny all permissions on a folder. */
-    @Test
     @Order(3)
-    void testDenyForFolder() throws FileSystemException {
+    @Test
+    void denyForFolder() throws FileSystemException {
         FileObject folder = root.resolveFile(PREFIX + "test-folder/");
         assumeAcl(folder);
         if (!folder.exists()) {

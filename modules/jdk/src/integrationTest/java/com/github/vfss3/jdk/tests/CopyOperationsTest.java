@@ -32,7 +32,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class CopyOperationsTest {
+final class CopyOperationsTest {
 
     private static final String PREFIX = "/copy/";
 
@@ -48,9 +48,9 @@ class CopyOperationsTest {
         JdkIntegrationContext.deleteRecursively(fs.getPath(PREFIX));
     }
 
-    @Test
-    @Order(1)
     @DisplayName("Steps 1–4: build a tree, copy a sub-directory, list, then delete children")
+    @Order(1)
+    @Test
     void copyTreeRoundTrip() throws IOException {
         var base = fs.getPath(PREFIX);
         Files.createDirectories(base);

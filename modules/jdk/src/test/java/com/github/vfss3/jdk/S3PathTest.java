@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class S3PathTest {
+final class S3PathTest {
 
     private final S3FileSystem fs = new S3FileSystem(new S3FileSystemProvider(), "test-bucket", new FakeS3Client());
     private final S3FileSystem otherFs =

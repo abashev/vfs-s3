@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 /**
  * @author <A href="mailto:alexey at abashev dot ru">Alexey Abashev</A>
  */
-class S3FileNameParserTest {
+final class S3FileNameParserTest {
     @Test
     void checkHostedStyleUrl() throws FileSystemException {
         assertThat(parse("s3://bucket.s3.amazonaws.com"))

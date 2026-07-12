@@ -20,9 +20,9 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * Garage container. Garage requires post-start bootstrap (layout assignment + S3 key
  * creation) which is done via {@code execInContainer}.
  */
+@SelectPackages("com.github.vfss3.commonsvfs.tests")
 @Suite
 @SuiteDisplayName("Garage integration tests")
-@SelectPackages("com.github.vfss3.commonsvfs.tests")
 public class GarageSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("dxflrs/garage:v2.3.0");
     private static final int S3_PORT = 3900;

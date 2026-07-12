@@ -22,7 +22,7 @@ import org.springframework.core.io.WritableResource;
  * directory-tree operation, so a copy is performed by streaming the source into the target.
  * Recursive directory copy from the original suite is not expressible and is omitted.
  */
-class CopyOperationsTest {
+final class CopyOperationsTest {
 
     private static final String BUCKET = "test-bucket";
     private static final String PREFIX = "s3://" + BUCKET + "/copy/";
@@ -41,8 +41,8 @@ class CopyOperationsTest {
     }
 
     /** Copy a single resource by streaming source → target; verify content and size match. */
-    @Test
     @DisplayName("Copy a resource by streaming source into target")
+    @Test
     void copySingleResource() throws IOException {
         var source = (WritableResource) loader.getResource(PREFIX + "child-file.tmp");
         try (OutputStream out = source.getOutputStream()) {

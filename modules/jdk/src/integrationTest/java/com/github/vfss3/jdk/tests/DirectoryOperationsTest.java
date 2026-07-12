@@ -29,7 +29,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  * {@code @Suite} wired up via {@link JdkIntegrationContext}.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class DirectoryOperationsTest {
+final class DirectoryOperationsTest {
 
     private static final String PREFIX = "/dir-ops/";
 
@@ -46,9 +46,9 @@ class DirectoryOperationsTest {
     }
 
     /** Step 1: create a folder and assert it exists as a directory. */
-    @Test
-    @Order(1)
     @DisplayName("Step 1: create folder and verify it is a directory")
+    @Order(1)
+    @Test
     void step1_createFolder() throws IOException {
         var folder = fs.getPath(PREFIX + "my-folder");
         Files.createDirectories(folder);
@@ -58,9 +58,9 @@ class DirectoryOperationsTest {
     }
 
     /** Step 2: createFile on an existing folder path throws FileAlreadyExistsException. */
-    @Test
-    @Order(2)
     @DisplayName("Step 2: createFile on existing folder throws FileAlreadyExistsException")
+    @Order(2)
+    @Test
     void step2_createFileOnExistingFolderThrows() throws IOException {
         var folder = fs.getPath(PREFIX + "my-folder");
         Files.createDirectories(folder);
@@ -69,9 +69,9 @@ class DirectoryOperationsTest {
     }
 
     /** Step 3: create a folder whose name contains a space. */
-    @Test
-    @Order(3)
     @DisplayName("Step 3: create folder with a space in its name")
+    @Order(3)
+    @Test
     void step3_createFolderWithSpace() throws IOException {
         var folder = fs.getPath(PREFIX + "folder with space");
         Files.createDirectories(folder);
@@ -80,9 +80,9 @@ class DirectoryOperationsTest {
     }
 
     /** Step 4: create five files inside a folder and list its children. */
-    @Test
-    @Order(4)
     @DisplayName("Step 4: list children returns all five files")
+    @Order(4)
+    @Test
     void step4_listChildren() throws IOException {
         var folder = fs.getPath(PREFIX + "my-folder");
         Files.createDirectories(folder);
@@ -101,9 +101,9 @@ class DirectoryOperationsTest {
     }
 
     /** Step 5: build a nested tree and verify the find selectors via Files.walk. */
-    @Test
-    @Order(5)
     @DisplayName("Step 5: find selectors over a nested tree")
+    @Order(5)
+    @Test
     void step5_findWithSelectors() throws IOException {
         var base = fs.getPath(PREFIX + "find-tests");
         Files.createDirectories(base);
@@ -136,9 +136,9 @@ class DirectoryOperationsTest {
     }
 
     /** Step 6: delete the children of the tree, leaving only the folder itself. */
-    @Test
-    @Order(6)
     @DisplayName("Step 6: delete children leaves only the folder")
+    @Order(6)
+    @Test
     void step6_deleteChildren() throws IOException {
         var base = fs.getPath(PREFIX + "find-tests");
         Files.createDirectories(base);
