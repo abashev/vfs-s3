@@ -31,12 +31,13 @@ import software.amazon.awssdk.services.s3.model.ObjectOwnership;
  * <table>
  *   <tr><th>Variable</th><th>Required by</th><th>Notes</th></tr>
  *   <tr><td>{@code BASE_URL}</td><td>this suite</td>
- *       <td>{@code printf}-style URL template — the literal {@code %s} is replaced with the
- *           bucket-name token at suite start so every run targets a uniquely-named bucket.
- *           Examples:<br>
- *           {@code s3://s3-tests-%s.ams3.digitaloceanspaces.com/}<br>
- *           {@code s3://s3-tests-%s.s3.eu-west-1.amazonaws.com/}<br>
- *           {@code s3://s3-tests-%s.storage.yandexcloud.net/}</td></tr>
+ *       <td>{@code printf}-style URL template in the jdk {@code s3://<bucket>?region=…&endpoint=…}
+ *           dialect (ADR-006, the canonical CI variable) — the literal {@code %s} in the bucket is
+ *           replaced with the bucket-name token at suite start so every run targets a
+ *           uniquely-named bucket. {@link RemoteEndpoint} translates it to the commons-vfs URL
+ *           dialect this module parses. Examples:<br>
+ *           {@code s3://s3-tests-%s?region=eu-central-1}<br>
+ *           {@code s3://s3-tests-%s?region=ru-central1&endpoint=https://storage.yandexcloud.net}</td></tr>
  *   <tr><td>{@code BUCKET_TOKEN}</td><td>optional</td>
  *       <td>Token substituted for the {@code %s} placeholder. When set (CI passes the commit
  *           SHA), the bucket name is deterministic, so a separate {@code if: always()} CI
@@ -73,7 +74,7 @@ public class EnvironmentBasedSuite {
 
         if (!urlTemplate.contains("%s")) {
             throw new IllegalStateException(ENV_BASE_URL + " must contain a '%s' placeholder for the random "
-                    + "bucket-name token (e.g. s3://s3-tests-%s.s3.amazonaws.com/), got: " + urlTemplate);
+                    + "bucket-name token (e.g. s3://s3-tests-%s?region=us-east-1), got: " + urlTemplate);
         }
 
         AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
@@ -92,7 +93,9 @@ public class EnvironmentBasedSuite {
             token = S3IntegrationContext.randomBucketToken();
         }
 
-        String bucketUrl = String.format(urlTemplate, token);
+        // BASE_URL is a jdk-dialect URL (ADR-006); translate it to the commons-vfs dialect this
+        // module's S3FileNameParser understands, substituting the bucket-name token.
+        String bucketUrl = RemoteEndpoint.toCommonsVfsUrl(urlTemplate, token);
 
         log.info("EnvironmentBasedSuite — provisioning fresh bucket at {}", bucketUrl);
 

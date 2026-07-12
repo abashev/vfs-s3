@@ -45,7 +45,9 @@ public final class RemoteBucketCleaner {
             return;
         }
 
-        String bucketUrl = String.format(urlTemplate, token);
+        // BASE_URL is a jdk-dialect URL (ADR-006); translate it to the commons-vfs dialect,
+        // matching exactly what EnvironmentBasedSuite provisioned so we target the same bucket.
+        String bucketUrl = RemoteEndpoint.toCommonsVfsUrl(urlTemplate, token);
 
         S3FileSystemOptions options = new S3FileSystemOptions();
         options.setCredentialsProvider(DefaultCredentialsProvider.create());

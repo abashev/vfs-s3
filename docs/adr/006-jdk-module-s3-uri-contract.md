@@ -3,6 +3,9 @@
 **Status:** Accepted
 **Date:** 2026-07-09
 **Author:** @abashev
+**Amended:** 2026-07-12 — the remote-CI `BASE_URL` was flipped to this dialect, so the jdk suite
+consumes it natively and the commons-vfs suite now carries the translating adapter (see the
+`RemoteEndpoint` bullet under Consequences).
 
 ## Context
 
@@ -123,10 +126,14 @@ FileSystems.newFileSystem(
   not just static keys.
 - One naming vocabulary (`region` / `endpoint`) spans both the query string and the env
   map; there is nothing to learn twice and no mapping table.
-- `RemoteEndpoint` stays a **test-only** adapter: it parses a commons-vfs `BASE_URL`
-  (region-in-host, path-style/virtual bucket, userinfo credentials) and produces the jdk env map,
-  purely so the remote suite can ride the existing AWS/Yandex CI environments. The jdk provider
-  itself never parses commons-vfs URLs; the two URL dialects stay separate by design.
+- The remote-CI `BASE_URL` is now written in **this** (jdk) dialect, making it the canonical
+  remote-test variable. The jdk remote suite consumes it natively — its `RemoteEndpoint` is a thin
+  split into `(bucket, region, endpoint)` that feeds the production `S3FileSystemConfig.from(uri,
+  env)` path a real caller uses. The translating adapter moved to the *other* side:
+  `modules/commons-vfs`'s remote suite carries a **test-only** `RemoteEndpoint` that rebuilds a
+  commons-vfs-dialect URL (endpoint/region-in-host) from this URI, leaving commons-vfs production
+  code (`S3FileNameParser`) untouched. The two URL dialects still stay separate by design — only
+  the direction of the test-only bridge flipped.
 - Implementation work this ADR authorizes: `S3FileSystemConfig` gains URI-query merging under the
   precedence rule above; `S3FileSystem` passes the URI (not just the env map) into it; the provider
   rejects a URI carrying userinfo or an unknown query parameter.

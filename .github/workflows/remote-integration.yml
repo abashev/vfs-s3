@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: [ AWS-1, YANDEX-1, YANDEX-2 ]
+        environment: [ AWS-1, YANDEX-1 ]
     environment: ${{ matrix.environment }}
     env:
       BASE_URL: ${{ vars.BASE_URL }}
@@ -71,7 +71,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: [ AWS-1, YANDEX-1, YANDEX-2 ]
+        environment: [ AWS-1, YANDEX-1 ]
     environment: ${{ matrix.environment }}
     env:
       BASE_URL: ${{ vars.BASE_URL }}

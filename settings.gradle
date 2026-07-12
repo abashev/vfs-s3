@@ -19,5 +19,4 @@ rootProject.name = 'vfs-s3'
 
 include ':modules:commons-vfs'
 include ':modules:jdk'
-include ':modules:spring-6'
-include ':modules:spring-7'
+include ':modules:spring'

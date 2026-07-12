@@ -5,6 +5,16 @@ plugins {
 
 description = 'Amazon S3 driver for VFS (Apache Commons Virtual File System)'
 
+// Published as `vfs-commons` while the Gradle module / folder / package stay `:modules:commons-vfs`
+// / `com.github.vfss3.commonsvfs`. Only the Maven artifactId changes.
+base {
+    archivesName = 'vfs-commons'
+}
+publishing.publications.mavenJava {
+    artifactId = 'vfs-commons'
+    pom.name.set("${project.group}:vfs-commons")
+}
+
 dependencies {
     api libs.commons.vfs2
     api libs.aws.sdk.s3

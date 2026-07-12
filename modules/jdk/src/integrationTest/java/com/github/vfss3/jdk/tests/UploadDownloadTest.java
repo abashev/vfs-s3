@@ -115,4 +115,29 @@ class UploadDownloadTest {
             Files.deleteIfExists(temp);
         }
     }
+
+    /** Step 6: cross-provider round-trip — {@code Files.copy(local, s3)} up, then {@code Files.copy(s3, local)} down. */
+    @Test
+    @DisplayName("Step 6: local↔S3 round-trip via Files.copy(Path, Path)")
+    void step6_crossProviderCopyRoundTrip() throws IOException {
+        var localSource = Files.createTempFile("vfs-jdk-src.", ".bin");
+        var localTarget = Files.createTempFile("vfs-jdk-dst.", ".bin");
+        var remote = fs.getPath(PREFIX + "roundtrip.bin");
+        try {
+            Files.write(localSource, payload);
+
+            // Upload: local (default FS) path -> S3 path. Different providers, so NIO.2 streams the
+            // bytes across via newInputStream/newOutputStream rather than S3FileSystemProvider.copy().
+            Files.copy(localSource, remote);
+            assertTrue(Files.exists(remote), "Uploaded S3 object should exist");
+            assertEquals(payload.length, Files.size(remote));
+
+            // Download: S3 path -> local (default FS) path. localTarget already exists (temp file).
+            Files.copy(remote, localTarget, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            assertArrayEquals(payload, Files.readAllBytes(localTarget), "Downloaded content should match the source");
+        } finally {
+            Files.deleteIfExists(localSource);
+            Files.deleteIfExists(localTarget);
+        }
+    }
 }

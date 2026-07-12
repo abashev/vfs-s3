@@ -46,8 +46,7 @@ jreleaser {
                     applyMavenCentralRules = true
                     stagingRepository('modules/commons-vfs/build/staging-deploy')
                     stagingRepository('modules/jdk/build/staging-deploy')
-                    stagingRepository('modules/spring-6/build/staging-deploy')
-                    stagingRepository('modules/spring-7/build/staging-deploy')
+                    stagingRepository('modules/spring/build/staging-deploy')
                 }
             }
         }
@@ -57,6 +56,5 @@ jreleaser {
 tasks.named('jreleaserDeploy') {
     dependsOn ':modules:commons-vfs:publishAllPublicationsToStagingRepository'
     dependsOn ':modules:jdk:publishAllPublicationsToStagingRepository'
-    dependsOn ':modules:spring-6:publishAllPublicationsToStagingRepository'
-    dependsOn ':modules:spring-7:publishAllPublicationsToStagingRepository'
+    dependsOn ':modules:spring:publishAllPublicationsToStagingRepository'
 }
