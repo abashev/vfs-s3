@@ -18,7 +18,7 @@ package com.github.vfss3.commonsvfs;
 
 import static org.apache.commons.vfs2.FileName.ROOT_PATH;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -161,7 +161,7 @@ abstract class CachingFileProvider extends AbstractFileProvider {
         writeLock.lock();
 
         try {
-            List<FileSystemKey> keys = new LinkedList<>();
+            List<FileSystemKey> keys = new ArrayList<>();
 
             for (Map.Entry<FileSystemKey, FileSystem> entry : fileSystems.entrySet()) {
                 if (entry.getValue().equals(fileSystem)) {

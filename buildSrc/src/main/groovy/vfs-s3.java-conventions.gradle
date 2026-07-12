@@ -105,6 +105,8 @@ tasks.withType(JavaCompile).configureEach {
         error('JUnitClassModifiers')
         error('MissingSummary')
         error('AlmostJavadoc')
+        error('BadImport')
+        error('JdkObsolete')
         // NonStaticImport (Picnic) is the inverse of StaticImport above and pushes some members the
         // other way; we enforce StaticImport, so silence its counterpart to avoid contradictory advice.
         disable('NonStaticImport')

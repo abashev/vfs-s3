@@ -3,7 +3,6 @@ package com.github.vfss3.commonsvfs;
 import static com.github.vfss3.commonsvfs.operations.Acl.Permission.READ;
 import static com.github.vfss3.commonsvfs.operations.Acl.Permission.WRITE;
 import static java.util.Objects.requireNonNull;
-import static java.util.Optional.of;
 import static org.apache.commons.vfs2.FileName.ROOT_PATH;
 import static org.apache.commons.vfs2.FileName.SEPARATOR;
 import static org.apache.commons.vfs2.FileType.*;
@@ -629,7 +628,7 @@ public class S3FileObject extends AbstractFileObject<S3FileSystem> {
             throw new FileSystemException("Not able to fetch real metadata from " + getName());
         }
 
-        return of(objectMetadataHolder).map(ObjectMetadataHolder::getServerSideEncryption);
+        return Optional.of(objectMetadataHolder).map(ObjectMetadataHolder::getServerSideEncryption);
     }
 
     public String getCacheFile() throws FileSystemException {
