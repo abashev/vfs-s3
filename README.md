@@ -13,6 +13,11 @@ Formerly **vfs-s3** — the Amazon S3 driver for Apache Commons VFS.
 Read and write Amazon S3 — and any S3-compatible storage — from Java without dropping down to the
 AWS SDK's object API.
 
+> **Scope.** This project is not meant to be a complete implementation of the S3 API. It exists to
+> simplify the handful of use-cases that come up most often: reading and writing config files,
+> uploading user-generated content to storage, and serving access to it. For anything beyond that,
+> reach for the AWS SDK directly.
+
 - **Integrate S3 into Java libraries and apps** to access S3 data through standard abstractions:
   JDK **NIO.2** (`java.nio.file.Path` / `FileSystem`), Apache **Commons VFS** (`FileObject`), and
   **Spring** (`Resource` / `ResourceLoader`).
