@@ -159,6 +159,7 @@ jobs:
         run: echo "BUCKET_TOKEN=${GITHUB_SHA::12}-${ENVIRONMENT,,}-commonsvfs" >> "$GITHUB_ENV"
 
       - name: Run EnvironmentBasedSuite against ${{ matrix.environment }}
+        id: suite
         run: ./gradlew :modules:commons-vfs:integrationTest --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite"
 
       - name: Publish Test Report
@@ -174,6 +175,27 @@ jobs:
       - name: Drop remote test bucket
         if: always()
         run: ./gradlew :modules:commons-vfs:dropRemoteBucket
+
+      # Publish this cell's pass/fail to its OWN shields.io endpoint gist, so the README "Cloud
+      # providers" table shows a live per-provider badge. One gist per cell (module × provider)
+      # means concurrent matrix jobs never PATCH the same gist — no update races. Gist IDs are
+      # public, so they live here in git; only the write token (GIST_SECRET) is secret. Skipped
+      # when the token is absent (forks / PRs), so it stays a no-op until configured. Uses the
+      # pre-installed gh CLI (no extra pinned action). See the setup note in README.md.
+      - name: Update status badge (commons-vfs / ${{ matrix.environment }})
+        if: ${{ always() && env.GH_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GIST_SECRET }}
+          OUTCOME: ${{ steps.suite.outcome }}
+          # One gist per cell. Replace the placeholders with the real gist IDs (see README).
+          GIST_ID: ${{ matrix.environment == 'AWS-1' && 'c8e92c5273b3a71fee46cc9717c48bf2' || '50a0153e062bd2853c43c74df6ee5a5b' }}
+        run: |
+          set -euo pipefail
+          if [ "$OUTCOME" = "success" ]; then msg=passing; color=brightgreen; else msg=failing; color=red; fi
+          content=$(jq -nc --arg m "$msg" --arg c "$color" '{schemaVersion:1,label:"",message:$m,color:$c}')
+          jq -nc --arg content "$content" '{files: {"status.json": {content: $content}}}' \
+            | gh api -X PATCH "gists/$GIST_ID" --input - >/dev/null
+          echo "Updated gist $GIST_ID (commons-vfs / ${{ matrix.environment }}) -> $msg"
 
   jdk-remote-suites:
     name: JDK module remote — ${{ matrix.environment }}
@@ -207,6 +229,7 @@ jobs:
         run: echo "BUCKET_TOKEN=${GITHUB_SHA::12}-${ENVIRONMENT,,}-jdk" >> "$GITHUB_ENV"
 
       - name: Run EnvironmentBasedSuite against ${{ matrix.environment }}
+        id: suite
         run: ./gradlew :modules:jdk:integrationTest --tests "com.github.vfss3.jdk.remote.EnvironmentBasedSuite"
 
       - name: Publish Test Report
@@ -222,3 +245,20 @@ jobs:
       - name: Drop remote test bucket
         if: always()
         run: ./gradlew :modules:jdk:dropRemoteBucket
+
+      # See commons-vfs-remote-suites' identical step — one gist per cell, publishes this cell's
+      # status to its own gist for the README table's jdk column.
+      - name: Update status badge (jdk / ${{ matrix.environment }})
+        if: ${{ always() && env.GH_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GIST_SECRET }}
+          OUTCOME: ${{ steps.suite.outcome }}
+          # One gist per cell. Replace the placeholders with the real gist IDs (see README).
+          GIST_ID: ${{ matrix.environment == 'AWS-1' && 'bb4022ae143839ab84d016c9bc39fd85' || 'cc5795cc9160971453f4aad772ecc508' }}
+        run: |
+          set -euo pipefail
+          if [ "$OUTCOME" = "success" ]; then msg=passing; color=brightgreen; else msg=failing; color=red; fi
+          content=$(jq -nc --arg m "$msg" --arg c "$color" '{schemaVersion:1,label:"",message:$m,color:$c}')
+          jq -nc --arg content "$content" '{files: {"status.json": {content: $content}}}' \
+            | gh api -X PATCH "gists/$GIST_ID" --input - >/dev/null
+          echo "Updated gist $GIST_ID (jdk / ${{ matrix.environment }}) -> $msg"
