@@ -1,7 +1,7 @@
 [versions]
 commons-vfs2 = "2.10.0"
 aws-sdk-v2 = "2.47.1"
-junit-jupiter = "6.1.1"
+junit-jupiter = "6.1.2"
 commons-io = "2.22.0"
 logback = "1.5.37"
 slf4j = "2.0.18"
