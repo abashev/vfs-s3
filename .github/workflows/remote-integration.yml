@@ -8,6 +8,11 @@ name: Remote integration tests (manual)
 # NOTE: the "Run workflow" button appears in the Actions tab only once this file is present on the
 # repository's DEFAULT branch (currently branch-2.4.x). Until then it exists but isn't dispatchable
 # from the UI.
+#
+# NOTE: this workflow deliberately does NOT update the README status-badge gists (see the "Update
+# status badge" steps in main-build.yml). Badges must reflect the state of the 17.0 branch, and
+# this workflow runs the remote suites on arbitrary feature branches — publishing from here would
+# make the badges lie. Do not "fix" this by copying the badge steps over.
 on:
   workflow_dispatch:
 

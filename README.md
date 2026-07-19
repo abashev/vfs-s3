@@ -13,6 +13,11 @@ Formerly **vfs-s3** — the Amazon S3 driver for Apache Commons VFS.
 Read and write Amazon S3 — and any S3-compatible storage — from Java without dropping down to the
 AWS SDK's object API.
 
+> **Scope.** This project is not meant to be a complete implementation of the S3 API. It exists to
+> simplify the handful of use-cases that come up most often: reading and writing config files,
+> uploading user-generated content to storage, and serving access to it. For anything beyond that,
+> reach for the AWS SDK directly.
+
 - **Integrate S3 into Java libraries and apps** to access S3 data through standard abstractions:
   JDK **NIO.2** (`java.nio.file.Path` / `FileSystem`), Apache **Commons VFS** (`FileObject`), and
   **Spring** (`Resource` / `ResourceLoader`).
@@ -52,8 +57,8 @@ S3-compatible emulators (via Testcontainers) and against real AWS and Yandex.
 
 | Provider | `jdk` | `commons-vfs` | `spring` |
 | --- | :---: | :---: | :---: |
-| [Amazon S3](https://aws.amazon.com/s3/) | ✅ | ✅ | — |
-| [Yandex Object Storage](https://yandex.cloud/en/services/storage) | ✅ | ✅ | — |
+| [Amazon S3](https://aws.amazon.com/s3/) | [![jdk / AWS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fbb4022ae143839ab84d016c9bc39fd85%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / AWS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fc8e92c5273b3a71fee46cc9717c48bf2%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
+| [Yandex Object Storage](https://yandex.cloud/en/services/storage) | [![jdk / Yandex](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fcc5795cc9160971453f4aad772ecc508%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / Yandex](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F50a0153e062bd2853c43c74df6ee5a5b%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
 
 > The `spring` module is covered by unit tests only — it ships a mock backend today (see
 > [Modules](#modules)).

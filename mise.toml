@@ -13,33 +13,35 @@ run = "./gradlew spotlessCheck"
 description = "Stage, sign, and publish the release to Maven Central with JReleaser"
 run = "./gradlew clean jreleaserDeploy"
 
-# Local reproduction of the remote CI jobs: runs both modules' EnvironmentBasedSuite against real
-# AWS, with credentials read from 1Password at run time (same op:// refs as gh:env-secrets — run
-# `op signin` first). BASE_URL is the same jdk-dialect value as the AWS-1 GitHub environment; the
-# per-run bucket token is left unset, so each suite provisions a random bucket and drops it in its
-# @AfterSuite (a hard Ctrl-C mid-run can still leak one).
-[tasks."test:remote"]
-description = "Run the remote integration suites (commons-vfs + jdk) against AWS; creds from 1Password (op)"
+# Local reproduction of the remote CI jobs: runs both modules' EnvironmentBasedSuite against a real
+# S3-compatible backend, with credentials read from 1Password at run time (same op:// refs as
+# gh:env-secrets — run `op signin` first). BASE_URL mirrors the matching GitHub environment
+# (AWS-1 / YANDEX-1). One backend per task so the AWS and Yandex credential/endpoint pairs never mix.
+
+[tasks."test:remote-aws"]
+description = "Run the remote integration suites (commons-vfs + jdk) against AWS S3; creds from 1Password (op)"
 shell = "bash -c"
-quiet = true
 run = '''
 set -euo pipefail
-
-AWS_ACCESS_KEY_ID="$(op read "op://Private/vfs-s3/AWS/access")"
-AWS_SECRET_ACCESS_KEY="$(op read "op://Private/vfs-s3/AWS/secret")"
-export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+export AWS_ACCESS_KEY_ID="$(op read "op://Private/vfs-s3/AWS/access")"
+export AWS_SECRET_ACCESS_KEY="$(op read "op://Private/vfs-s3/AWS/secret")"
 export BASE_URL='s3://s3-tests-%s?region=eu-central-1'
+./gradlew :modules:commons-vfs:integrationTest :modules:jdk:integrationTest \
+    --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite" \
+    --tests "com.github.vfss3.jdk.remote.EnvironmentBasedSuite"
+'''
 
-# Run both suites even if the first fails, so one invocation shows both modules' results.
-set +e
-rc=0
-echo "▶ commons-vfs remote suite (AWS)"
-./gradlew :modules:commons-vfs:integrationTest -i --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite" --console=plain || rc=1
-echo "▶ jdk remote suite (AWS)"
-./gradlew :modules:jdk:integrationTest -i --tests "com.github.vfss3.jdk.remote.EnvironmentBasedSuite" --console=plain || rc=1
-
-[ "$rc" -eq 0 ] && echo "✓ both remote suites passed" || echo "✗ a remote suite failed — see the gradle output above / build/reports"
-exit $rc
+[tasks."test:remote-yandex"]
+description = "Run the remote integration suites (commons-vfs + jdk) against Yandex Object Storage; creds from 1Password (op)"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+export AWS_ACCESS_KEY_ID="$(op read "op://Private/vfs-s3/Yandex/access")"
+export AWS_SECRET_ACCESS_KEY="$(op read "op://Private/vfs-s3/Yandex/secret")"
+export BASE_URL='s3://s3-tests-%s?region=ru-central1&endpoint=https://storage.yandexcloud.net'
+./gradlew :modules:commons-vfs:integrationTest :modules:jdk:integrationTest \
+    --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite" \
+    --tests "com.github.vfss3.jdk.remote.EnvironmentBasedSuite"
 '''
 
 # ---- GitHub Actions environment config for the remote integration suites ----
