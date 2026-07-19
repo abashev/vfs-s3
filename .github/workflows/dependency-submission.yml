@@ -21,3 +21,9 @@ jobs:
 
       - name: Submit Dependency Snapshot
         uses: gradle/actions/dependency-submission@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        env:
+          # Only runtime-classpath dependencies of the published modules count as 'runtime';
+          # buildSrc plugins, errorprone processors and test-only dependencies are reported
+          # as 'development' so Dependabot auto-triage rules can dismiss their alerts.
+          DEPENDENCY_GRAPH_RUNTIME_INCLUDE_CONFIGURATIONS: 'runtimeClasspath'
+          DEPENDENCY_GRAPH_RUNTIME_EXCLUDE_PROJECTS: ':buildSrc'
