@@ -52,6 +52,11 @@ jobs:
     name: commons-vfs local suite — ${{ matrix.suite }}
     needs: build
     runs-on: ubuntu-latest
+    # See commons-vfs-remote-suites — serialized per module × suite so back-to-back runs
+    # update this cell's status-badge gist in commit order.
+    concurrency:
+      group: local-commonsvfs-${{ matrix.suite }}
+      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:
@@ -76,6 +81,7 @@ jobs:
           cache: 'gradle'
 
       - name: Run ${{ matrix.suite }}
+        id: suite
         run: ./gradlew :modules:commons-vfs:integrationTest --tests "com.github.vfss3.commonsvfs.local.${{ matrix.suite }}"
 
       - name: Publish Test Report
@@ -86,10 +92,44 @@ jobs:
           annotate_only: true
           job_summary: true
 
+      # See commons-vfs-remote-suites' identical step — one gist per cell (module × emulator),
+      # publishes this cell's status to its own gist for the README "Local emulators" table.
+      - name: Update status badge (commons-vfs / ${{ matrix.suite }})
+        if: ${{ !cancelled() && env.GH_TOKEN != '' && (steps.suite.outcome == 'success' || steps.suite.outcome == 'failure') }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GIST_SECRET }}
+          OUTCOME: ${{ steps.suite.outcome }}
+          SUITE: ${{ matrix.suite }}
+        run: |
+          set -euo pipefail
+          case "$SUITE" in
+            LocalStackSuite)  GIST_ID=b4b0eaf73f6efc7d4f6f00430acb113c ;;
+            MinioSuite)       GIST_ID=515d7a1f7c705dcb4bdb94ed2bc3d3fb ;;
+            CloudServerSuite) GIST_ID=da9fc57b268821a47cb4c47585429682 ;;
+            SeaweedFsSuite)   GIST_ID=e8f1b6ee501823c0c054a2b488e914de ;;
+            MiniStackSuite)   GIST_ID=02ddb7d6113f08bb47756e1f912ceb75 ;;
+            FlociSuite)       GIST_ID=aeb19af30275b1f5fc1d1e97d28b4eb6 ;;
+            S3MockSuite)      GIST_ID=d0600d6bb8c5af06ed82cec023dd4f28 ;;
+            GarageSuite)      GIST_ID=acf0cdd3085b634070007b65ca877e62 ;;
+            RustFsSuite)      GIST_ID=fa59ec4a46dc16a438ec63c76f2ad731 ;;
+            *) echo "::notice::No badge gist configured for $SUITE — skipping"; exit 0 ;;
+          esac
+          if [ "$OUTCOME" = "success" ]; then msg=passing; color=brightgreen; else msg=failing; color=red; fi
+          content=$(jq -nc --arg m "$msg" --arg c "$color" '{schemaVersion:1,label:"",message:$m,color:$c}')
+          jq -nc --arg content "$content" '{files: {"status.json": {content: $content}}}' \
+            | gh api -X PATCH "gists/$GIST_ID" --input - >/dev/null
+          echo "Updated gist $GIST_ID (commons-vfs / ${{ matrix.suite }}) -> $msg"
+
   jdk-local-suites:
     name: JDK module local suite — ${{ matrix.suite }}
     needs: build
     runs-on: ubuntu-latest
+    # See commons-vfs-remote-suites — serialized per module × suite so back-to-back runs
+    # update this cell's status-badge gist in commit order.
+    concurrency:
+      group: local-jdk-${{ matrix.suite }}
+      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:
@@ -114,6 +154,7 @@ jobs:
           cache: 'gradle'
 
       - name: Run ${{ matrix.suite }}
+        id: suite
         run: ./gradlew :modules:jdk:integrationTest --tests "com.github.vfss3.jdk.local.${{ matrix.suite }}"
 
       - name: Publish Test Report
@@ -123,6 +164,35 @@ jobs:
           report_paths: '**/build/test-results/integrationTest/*.xml'
           annotate_only: true
           job_summary: true
+
+      # See commons-vfs-remote-suites' identical step — one gist per cell (module × emulator),
+      # publishes this cell's status to its own gist for the README "Local emulators" table.
+      - name: Update status badge (jdk / ${{ matrix.suite }})
+        if: ${{ !cancelled() && env.GH_TOKEN != '' && (steps.suite.outcome == 'success' || steps.suite.outcome == 'failure') }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GIST_SECRET }}
+          OUTCOME: ${{ steps.suite.outcome }}
+          SUITE: ${{ matrix.suite }}
+        run: |
+          set -euo pipefail
+          case "$SUITE" in
+            LocalStackSuite)  GIST_ID=5a8157db7a423426d6e431e017eab6de ;;
+            MinioSuite)       GIST_ID=f259b78ba82183bf7e0c6a452f2a2614 ;;
+            CloudServerSuite) GIST_ID=f7194330b0c4fd817c44d4f7d45901e5 ;;
+            SeaweedFsSuite)   GIST_ID=24e9575d7a33c12d934401da4a5d8c6f ;;
+            MiniStackSuite)   GIST_ID=cb82d1e0a019835c2c564c35a79c2629 ;;
+            FlociSuite)       GIST_ID=1e37cb827338e47bb32b30f83dc81a8c ;;
+            S3MockSuite)      GIST_ID=3183b7b16ea01b3c898741c23b4569c3 ;;
+            GarageSuite)      GIST_ID=f46a1f533f24872a42fa876ba39dd7f8 ;;
+            RustFsSuite)      GIST_ID=6ffd075203e61144baeea52ab61b5c5a ;;
+            *) echo "::notice::No badge gist configured for $SUITE — skipping"; exit 0 ;;
+          esac
+          if [ "$OUTCOME" = "success" ]; then msg=passing; color=brightgreen; else msg=failing; color=red; fi
+          content=$(jq -nc --arg m "$msg" --arg c "$color" '{schemaVersion:1,label:"",message:$m,color:$c}')
+          jq -nc --arg content "$content" '{files: {"status.json": {content: $content}}}' \
+            | gh api -X PATCH "gists/$GIST_ID" --input - >/dev/null
+          echo "Updated gist $GIST_ID (jdk / ${{ matrix.suite }}) -> $msg"
 
   commons-vfs-remote-suites:
     name: commons-vfs remote — ${{ matrix.environment }}
