@@ -17,6 +17,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 @SelectPackages("com.github.vfss3.jdk.tests")
 @Suite
 @SuiteDisplayName("Adobe S3Mock integration tests")
+@SuppressWarnings("NullAway")
 public class S3MockSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("adobe/s3mock:5.0.0");
     private static final int HTTP_PORT = 9090;

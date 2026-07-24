@@ -18,6 +18,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 @SelectPackages("com.github.vfss3.commonsvfs.tests")
 @Suite
 @SuiteDisplayName("MiniStack integration tests")
+@SuppressWarnings("NullAway")
 public class MiniStackSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("ministackorg/ministack:1.3");
     private static final int API_PORT = 4566;

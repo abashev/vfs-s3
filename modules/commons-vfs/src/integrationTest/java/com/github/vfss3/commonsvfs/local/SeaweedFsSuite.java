@@ -18,6 +18,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 @SelectPackages("com.github.vfss3.commonsvfs.tests")
 @Suite
 @SuiteDisplayName("SeaweedFS integration tests")
+@SuppressWarnings("NullAway")
 public class SeaweedFsSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("chrislusf/seaweedfs:4.22");
     private static final int S3_PORT = 8333;

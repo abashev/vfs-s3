@@ -16,6 +16,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 @SelectPackages("com.github.vfss3.jdk.tests")
 @Suite
 @SuiteDisplayName("MinIO integration tests")
+@SuppressWarnings("NullAway")
 public class MinioSuite {
     private static final DockerImageName MINIO_IMAGE =
             DockerImageName.parse("minio/minio:RELEASE.2025-09-07T16-13-09Z");
