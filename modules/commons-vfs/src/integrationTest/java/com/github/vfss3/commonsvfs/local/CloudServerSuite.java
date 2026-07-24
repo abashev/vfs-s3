@@ -17,6 +17,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 @SelectPackages("com.github.vfss3.commonsvfs.tests")
 @Suite
 @SuiteDisplayName("CloudServer integration tests")
+@SuppressWarnings("NullAway")
 public class CloudServerSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("zenko/cloudserver:latest-7.70.10");
     private static final int API_PORT = 8000;

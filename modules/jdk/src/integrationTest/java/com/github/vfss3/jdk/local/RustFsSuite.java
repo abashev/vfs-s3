@@ -16,6 +16,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 @SelectPackages("com.github.vfss3.jdk.tests")
 @Suite
 @SuiteDisplayName("RustFS integration tests")
+@SuppressWarnings("NullAway")
 public class RustFsSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("rustfs/rustfs:1.0.0-alpha.99");
     private static final int API_PORT = 9000;

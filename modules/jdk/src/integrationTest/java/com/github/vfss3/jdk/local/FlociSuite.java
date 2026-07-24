@@ -18,6 +18,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 @SelectPackages("com.github.vfss3.jdk.tests")
 @Suite
 @SuiteDisplayName("Floci integration tests")
+@SuppressWarnings("NullAway")
 public class FlociSuite {
     private static final DockerImageName IMAGE = DockerImageName.parse("floci/floci:1.5.8");
     private static final int API_PORT = 4566;
