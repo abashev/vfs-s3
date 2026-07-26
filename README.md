@@ -36,32 +36,29 @@ Commons VFS provider for backward compatibility.
 
 ### Tested against
 
-Every push builds and runs the `jdk` and `commons-vfs` integration suites against nine
+Every push builds and runs the `jdk`, `commons-vfs` and `spring` integration suites against nine
 S3-compatible emulators (via Testcontainers) and against real AWS and Yandex.
 
 **Local emulators (Testcontainers):**
 
 | Backend | `jdk` | `commons-vfs` | `spring` |
 | --- | :---: | :---: | :---: |
-| [LocalStack](https://www.localstack.cloud/) | [![jdk / LocalStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F5a8157db7a423426d6e431e017eab6de%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / LocalStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fb4b0eaf73f6efc7d4f6f00430acb113c%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
-| [MinIO](https://min.io/) | [![jdk / MinIO](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Ff259b78ba82183bf7e0c6a452f2a2614%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / MinIO](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F515d7a1f7c705dcb4bdb94ed2bc3d3fb%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
-| [Garage](https://garagehq.deuxfleurs.fr/) | [![jdk / Garage](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Ff46a1f533f24872a42fa876ba39dd7f8%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / Garage](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Facf0cdd3085b634070007b65ca877e62%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
-| [SeaweedFS](https://github.com/seaweedfs/seaweedfs) | [![jdk / SeaweedFS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F24e9575d7a33c12d934401da4a5d8c6f%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / SeaweedFS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fe8f1b6ee501823c0c054a2b488e914de%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
-| [Adobe S3Mock](https://github.com/adobe/S3Mock) | [![jdk / S3Mock](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F3183b7b16ea01b3c898741c23b4569c3%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / S3Mock](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fd0600d6bb8c5af06ed82cec023dd4f28%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
-| [Zenko CloudServer](https://github.com/scality/cloudserver) | [![jdk / CloudServer](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Ff7194330b0c4fd817c44d4f7d45901e5%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / CloudServer](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fda9fc57b268821a47cb4c47585429682%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
-| [RustFS](https://hub.docker.com/r/rustfs/rustfs) | [![jdk / RustFS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F6ffd075203e61144baeea52ab61b5c5a%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / RustFS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Ffa59ec4a46dc16a438ec63c76f2ad731%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
-| [MiniStack](https://hub.docker.com/r/ministackorg/ministack) | [![jdk / MiniStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fcb82d1e0a019835c2c564c35a79c2629%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / MiniStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F02ddb7d6113f08bb47756e1f912ceb75%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
-| [Floci](https://hub.docker.com/r/floci/floci) | [![jdk / Floci](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F1e37cb827338e47bb32b30f83dc81a8c%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / Floci](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Faeb19af30275b1f5fc1d1e97d28b4eb6%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
+| [LocalStack](https://www.localstack.cloud/) | [![jdk / LocalStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F5a8157db7a423426d6e431e017eab6de%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / LocalStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fb4b0eaf73f6efc7d4f6f00430acb113c%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / LocalStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fc77436e3016d4d2e9721a7c44c871aca%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
+| [MinIO](https://min.io/) | [![jdk / MinIO](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Ff259b78ba82183bf7e0c6a452f2a2614%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / MinIO](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F515d7a1f7c705dcb4bdb94ed2bc3d3fb%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / MinIO](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Faea35bf96cf017ec2a5dabae35d95dde%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
+| [Garage](https://garagehq.deuxfleurs.fr/) | [![jdk / Garage](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Ff46a1f533f24872a42fa876ba39dd7f8%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / Garage](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Facf0cdd3085b634070007b65ca877e62%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / Garage](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F17d044c2ea78d64256f18142657b8a3c%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
+| [SeaweedFS](https://github.com/seaweedfs/seaweedfs) | [![jdk / SeaweedFS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F24e9575d7a33c12d934401da4a5d8c6f%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / SeaweedFS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fe8f1b6ee501823c0c054a2b488e914de%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / SeaweedFS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F1fe06162635daf3bc1eb41101aa81c4a%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
+| [Adobe S3Mock](https://github.com/adobe/S3Mock) | [![jdk / S3Mock](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F3183b7b16ea01b3c898741c23b4569c3%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / S3Mock](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fd0600d6bb8c5af06ed82cec023dd4f28%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / S3Mock](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F0b7616cc952f817d5679dc23171f3a1a%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
+| [Zenko CloudServer](https://github.com/scality/cloudserver) | [![jdk / CloudServer](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Ff7194330b0c4fd817c44d4f7d45901e5%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / CloudServer](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fda9fc57b268821a47cb4c47585429682%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / CloudServer](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fd4d4ad377a4b5b2953a6c13772dcf461%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
+| [RustFS](https://hub.docker.com/r/rustfs/rustfs) | [![jdk / RustFS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F6ffd075203e61144baeea52ab61b5c5a%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / RustFS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Ffa59ec4a46dc16a438ec63c76f2ad731%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / RustFS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F866889ab974df9c0ceaa7ea39e4d7d6c%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
+| [MiniStack](https://hub.docker.com/r/ministackorg/ministack) | [![jdk / MiniStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fcb82d1e0a019835c2c564c35a79c2629%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / MiniStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F02ddb7d6113f08bb47756e1f912ceb75%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / MiniStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F46294de3336be9decc8cd01265f8b34d%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
+| [Floci](https://hub.docker.com/r/floci/floci) | [![jdk / Floci](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F1e37cb827338e47bb32b30f83dc81a8c%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / Floci](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Faeb19af30275b1f5fc1d1e97d28b4eb6%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / Floci](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F84544a5f0cb2783c356548a0bc693c2f%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
 
 **Cloud providers (remote suites):**
 
 | Provider | `jdk` | `commons-vfs` | `spring` |
 | --- | :---: | :---: | :---: |
-| [Amazon S3](https://aws.amazon.com/s3/) | [![jdk / AWS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fbb4022ae143839ab84d016c9bc39fd85%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / AWS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fc8e92c5273b3a71fee46cc9717c48bf2%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
-| [Yandex Object Storage](https://yandex.cloud/en/services/storage) | [![jdk / Yandex](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fcc5795cc9160971453f4aad772ecc508%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / Yandex](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F50a0153e062bd2853c43c74df6ee5a5b%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | — |
-
-> The `spring` module is covered by unit tests only — it ships a mock backend today (see
-> [Modules](#modules)).
+| [Amazon S3](https://aws.amazon.com/s3/) | [![jdk / AWS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fbb4022ae143839ab84d016c9bc39fd85%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / AWS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fc8e92c5273b3a71fee46cc9717c48bf2%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / AWS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F69bd6dc6c83e0e6e4f891bf764cbdd0f%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
+| [Yandex Object Storage](https://yandex.cloud/en/services/storage) | [![jdk / Yandex](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fcc5795cc9160971453f4aad772ecc508%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / Yandex](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F50a0153e062bd2853c43c74df6ee5a5b%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / Yandex](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F2d18a93295dc0efec97ef105d1dac03a%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
 
 ### Versioning
 
@@ -84,11 +81,8 @@ All published under the `com.github.abashev` group, at one shared version:
 | --- | --- | --- | --- |
 | jdk | `com.github.abashev:vfs-jdk` | JDK NIO.2 `FileSystemProvider` — `s3://…` via `java.nio.file` | [canonical](#url-scheme) |
 | commons-vfs | `com.github.abashev:vfs-commons` | Apache Commons VFS provider (`FileObject`) | [legacy](#legacy-commons-vfs-format) |
-| spring | `com.github.abashev:vfs-spring` | Spring `Resource` / `ResourceLoader` — **preview** | canonical |
+| spring | `com.github.abashev:vfs-spring` | Spring `Resource` / `ResourceLoader` / `ResourcePatternResolver` | canonical |
 
-> ⚠️ **The `spring` module is a preview.** It implements the Spring `Resource` API but is backed by
-> a local-temp mock today; the real S3 backend is in development. Not for production yet.
->
 > **`commons-vfs` is in maintenance mode** — not under active development. Its URL format is frozen
 > for backward compatibility; new modules use the canonical [URL scheme](#url-scheme).
 
@@ -98,8 +92,9 @@ All published under the `com.github.abashev` group, at one shared version:
 - **AWS SDK for Java v2** — pulled in transitively; no separate dependency needed. It is not yet
   shaded, so align its version with any AWS SDK you already depend on.
 - **`commons-vfs`** additionally needs **Apache Commons VFS 2.x** on the classpath.
-- **`spring`** is declared `compileOnly`, so it **pulls no Spring into your build** (its published
-  POM has no dependencies) — your application provides Spring. It is compiled against **Spring 6.x**.
+- **`spring`** declares Spring itself as `compileOnly`, so it **pulls no Spring into your build**
+  (its published POM carries only the AWS SDK) — your application provides Spring. It is compiled
+  against **Spring 6.x**.
 
 ### Installation
 
@@ -108,7 +103,7 @@ Depend on the module you need (Gradle shown; Maven is analogous):
 ```gradle
 implementation 'com.github.abashev:vfs-jdk:17.0.0'      // JDK NIO.2 FileSystemProvider
 implementation 'com.github.abashev:vfs-commons:17.0.0'  // Apache Commons VFS provider
-implementation 'com.github.abashev:vfs-spring:17.0.0'   // Spring Resource (preview)
+implementation 'com.github.abashev:vfs-spring:17.0.0'   // Spring Resource / ResourceLoader
 ```
 
 ```xml
@@ -121,7 +116,7 @@ implementation 'com.github.abashev:vfs-spring:17.0.0'   // Spring Resource (prev
 
 > **None of the `vfs-*` artifacts are on Maven Central yet** — they publish from the next `17.0.x`
 > release. The current `17.0.0` is available under the old coordinates (`jdk`, `commons-vfs`,
-> `spring-6`, `spring-7`), now retired. `vfs-spring` is additionally a preview (mock backend).
+> `spring-6`, `spring-7`), now retired.
 >
 > Legacy Java 8 line: `com.github.abashev:vfs-s3:4.4.0` (or `vfs-s3-with-awssdk-v1:4.4.0` with the
 > AWS SDK v1 bundled).
@@ -151,7 +146,7 @@ try (FileSystem fs = FileSystems.newFileSystem(bucket, Map.of())) {
 
 → more in [jdk module usage](#jdk-module).
 
-**Spring** (`spring`) — ⚠️ **preview (mock backend today)**:
+**Spring** (`spring`) — the same secret-free `s3://` scheme through the `Resource` API:
 
 ```java
 // package: com.github.vfss3.spring
@@ -163,7 +158,7 @@ try (S3ResourceLoader loader = new S3ResourceLoader()) {
 }
 ```
 
-→ more in [spring module usage](#spring-module-preview).
+→ more in [spring module usage](#spring-module).
 
 **Apache Commons VFS** (`commons-vfs`) — the mature provider using the legacy dialect (region and
 endpoint encoded in the host):
@@ -271,25 +266,52 @@ FileObject b = fs.resolveFile("s3://s3.eu-central-1.amazonaws.com/my-bucket/dir/
 
 Credentials come from the AWS SDK default chain, or from `S3FileSystemOptions.setCredentialsProvider(...)`.
 
-#### spring module (preview)
-
-> ⚠️ **Preview.** `S3ResourceLoader` / `S3Resource` implement the Spring API but write to a local
-> temporary directory today; the real S3 backend is in development. Use for experimentation, not
-> production.
+#### spring module
 
 The `spring` module (package `com.github.vfss3.spring`) exposes an `S3ResourceLoader` that resolves
-`s3://` locations to a Spring `WritableResource`. It is compiled against Spring 6.x; the core
-`Resource` SPI it uses is unchanged in Spring 7.x:
+`s3://` locations to a Spring `WritableResource` backed by the AWS SDK v2: reads stream straight
+from `GetObject`, writes spool to a temporary file and upload on `close()`. It is compiled against
+Spring 6.x; the core `Resource` SPI it uses is unchanged in Spring 7.x.
+
+Locations follow the canonical [URL scheme](#url-scheme): configuration set on the loader wins over
+a location's `?region=…&endpoint=…` query, which wins over the AWS SDK default chains. Credentials
+are never part of a location — pass an `AwsCredentialsProvider` (or rely on the default chain).
+The no-arg loader from the [Quick start](#quick-start) uses the SDK default chains; beyond that:
 
 ```java
-try (S3ResourceLoader loader = new S3ResourceLoader()) {
-    WritableResource resource = (WritableResource) loader.getResource("s3://my-bucket/path/object.txt");
-    try (OutputStream out = resource.getOutputStream()) {
-        out.write("hello".getBytes());
-    }
-    try (InputStream in = resource.getInputStream()) {
-        // read it back
-    }
+// Explicit region/endpoint (any S3-compatible backend), credentials from the default chain:
+var config = S3ClientConfig.defaults()
+        .withRegion("ru-central1")
+        .withEndpoint("https://storage.yandexcloud.net");
+try (S3ResourceLoader loader = new S3ResourceLoader(config)) { /* … */ }
+
+// Bring your own S3Client (DI, metrics, custom retries) — the loader never closes it:
+S3ResourceLoader loader = new S3ResourceLoader(myS3Client);
+```
+
+Register an `S3ProtocolResolver` to make `s3://` work everywhere in an application context —
+`@Value`, `@PropertySource`, any `getResource(…)` call — without replacing the context's own
+`ResourceLoader`:
+
+```java
+var s3Loader = new S3ResourceLoader();
+
+var context = new AnnotationConfigApplicationContext();
+context.addProtocolResolver(new S3ProtocolResolver(s3Loader));   // before refresh()
+context.register(AppConfig.class);
+context.refresh();
+
+// anywhere in the app now:  @Value("s3://my-bucket/config/app.properties") Resource configFile;
+```
+
+`S3ResourcePatternResolver` adds Ant-style wildcard listing (`*` within one key segment, `**`
+across segments) on top of the loader — it lists the bucket under the longest wildcard-free
+prefix and matches keys with Spring's `AntPathMatcher`. The Ant `?` wildcard is not available:
+per the URL scheme, the first `?` of a location always starts the query component.
+
+```java
+try (var resolver = new S3ResourcePatternResolver()) {
+    Resource[] reports = resolver.getResources("s3://my-bucket/reports/*.csv");
 }
 ```
 
@@ -322,8 +344,8 @@ Provide them either way:
 
 2. Or any standard AWS SDK mechanism (IAM role, `~/.aws`, …)
 
-Locally, `mise run test:remote` runs both modules' remote suites against AWS with credentials read
-from 1Password — see `mise.toml`.
+Locally, `mise run test:remote-aws` runs every module's remote suite against AWS with credentials
+read from 1Password — see `mise.toml`.
 
 **Make sure that you never commit your credentials!**
 

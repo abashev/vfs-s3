@@ -1,10 +1,11 @@
-package com.github.vfss3.spring;
+package com.github.vfss3.spring.tests;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
+import com.github.vfss3.spring.S3ResourcePatternResolver;
+import com.github.vfss3.spring.SpringIntegrationContext;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -18,25 +19,29 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.WritableResource;
 
 /**
- * Suite G: Concurrent Access for the Spring Resource mock backend — see
- * {@code docs/test-cases/g-concurrent-access.md}. Many threads write and read independent
- * resources concurrently; any failure on a worker thread fails the test.
+ * Suite G: Concurrent Access through the Spring Resource API — see
+ * {@code docs/test-cases/g-concurrent-access.md}. Many threads write and read resources
+ * concurrently through one shared loader (and its shared, cached {@code S3Client}); any failure
+ * on a worker thread fails the test.
  */
 final class ConcurrentAccessTest {
 
-    private static final String BUCKET = "test-bucket";
-    private static final String PREFIX = "s3://" + BUCKET + "/concurrent/";
+    private static final String PREFIX = "concurrent/";
 
-    private S3ResourceLoader loader;
+    private S3ResourcePatternResolver loader;
 
     @BeforeEach
     void setUp() {
-        loader = new S3ResourceLoader();
+        loader = SpringIntegrationContext.loader();
     }
 
     @AfterEach
-    void tearDown() throws IOException {
-        loader.close();
+    void tearDown() {
+        SpringIntegrationContext.deletePrefix(PREFIX);
+    }
+
+    private WritableResource resource(String key) {
+        return (WritableResource) loader.getResource(SpringIntegrationContext.location(PREFIX + key));
     }
 
     /** Step 1 analog: concurrent write + verify of independent resources. */
@@ -44,7 +49,7 @@ final class ConcurrentAccessTest {
     @Test
     void step1_concurrentWrites() throws Exception {
         runConcurrently(8, 200, i -> {
-            var resource = (WritableResource) loader.getResource(PREFIX + "write/file-" + i + ".bin");
+            var resource = resource("write/file-" + i + ".bin");
             byte[] body = ("payload-" + i).getBytes(UTF_8);
             try (OutputStream out = resource.getOutputStream()) {
                 out.write(body);
@@ -57,14 +62,14 @@ final class ConcurrentAccessTest {
     @DisplayName("Step 2: concurrent reads of a shared resource")
     @Test
     void step2_concurrentReads() throws Exception {
-        var shared = (WritableResource) loader.getResource(PREFIX + "read/shared.bin");
+        var shared = resource("read/shared.bin");
         byte[] body = "shared-content".getBytes(UTF_8);
         try (OutputStream out = shared.getOutputStream()) {
             out.write(body);
         }
 
         runConcurrently(8, 200, i -> {
-            var resource = loader.getResource(PREFIX + "read/shared.bin");
+            var resource = resource("read/shared.bin");
             assertTrue(resource.exists());
             try (InputStream in = resource.getInputStream()) {
                 assertArrayEquals(body, in.readAllBytes());
@@ -78,7 +83,7 @@ final class ConcurrentAccessTest {
         try {
             for (int i = 0; i < iterations; i++) {
                 final int index = i;
-                pool.submit(() -> {
+                var unused = pool.submit(() -> {
                     try {
                         task.run(index);
                     } catch (Throwable t) {
@@ -88,7 +93,7 @@ final class ConcurrentAccessTest {
             }
         } finally {
             pool.shutdown();
-            assertTrue(pool.awaitTermination(60, TimeUnit.SECONDS), "Tasks should finish within 60s");
+            assertTrue(pool.awaitTermination(120, TimeUnit.SECONDS), "Tasks should finish within 120s");
         }
         Throwable first = failures.peek();
         if (first != null) {

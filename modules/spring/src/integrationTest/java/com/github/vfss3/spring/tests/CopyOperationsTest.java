@@ -1,10 +1,12 @@
-package com.github.vfss3.spring;
+package com.github.vfss3.spring.tests;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.vfss3.spring.S3ResourcePatternResolver;
+import com.github.vfss3.spring.SpringIntegrationContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.WritableResource;
 
 /**
- * Suite E: Copy Operations for the Spring Resource mock backend — see
+ * Suite E: Copy Operations through the Spring Resource API — see
  * {@code docs/test-cases/e-copy-operations.md}.
  *
  * <p>The Spring {@link org.springframework.core.io.Resource} API has no native copy or
@@ -24,32 +26,35 @@ import org.springframework.core.io.WritableResource;
  */
 final class CopyOperationsTest {
 
-    private static final String BUCKET = "test-bucket";
-    private static final String PREFIX = "s3://" + BUCKET + "/copy/";
+    private static final String PREFIX = "copy/";
     private static final byte[] CONTENT = "content-to-copy".getBytes(UTF_8);
 
-    private S3ResourceLoader loader;
+    private S3ResourcePatternResolver loader;
 
     @BeforeEach
     void setUp() {
-        loader = new S3ResourceLoader();
+        loader = SpringIntegrationContext.loader();
     }
 
     @AfterEach
-    void tearDown() throws IOException {
-        loader.close();
+    void tearDown() {
+        SpringIntegrationContext.deletePrefix(PREFIX);
+    }
+
+    private WritableResource resource(String key) {
+        return (WritableResource) loader.getResource(SpringIntegrationContext.location(PREFIX + key));
     }
 
     /** Copy a single resource by streaming source → target; verify content and size match. */
     @DisplayName("Copy a resource by streaming source into target")
     @Test
     void copySingleResource() throws IOException {
-        var source = (WritableResource) loader.getResource(PREFIX + "child-file.tmp");
+        var source = resource("child-file.tmp");
         try (OutputStream out = source.getOutputStream()) {
             out.write(CONTENT);
         }
 
-        var target = (WritableResource) loader.getResource(PREFIX + "child-file-copy.tmp");
+        var target = resource("child-file-copy.tmp");
         try (InputStream in = source.getInputStream();
                 OutputStream out = target.getOutputStream()) {
             in.transferTo(out);

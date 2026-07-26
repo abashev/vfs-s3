@@ -1,4 +1,4 @@
-package com.github.vfss3.spring;
+package com.github.vfss3.spring.tests;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.vfss3.spring.S3ResourcePatternResolver;
+import com.github.vfss3.spring.SpringIntegrationContext;
 import java.io.IOException;
 import java.io.InputStream;
 import org.junit.jupiter.api.AfterEach;
@@ -18,30 +20,33 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.core.io.WritableResource;
 
 /**
- * Suite A: File Lifecycle tests for the Spring Resource mock backend.
+ * Suite A: File Lifecycle through the Spring Resource API — see
+ * {@code docs/test-cases/a-file-lifecycle.md}. Runs against whatever real S3-compatible backend
+ * the enclosing {@code @Suite} wired up via {@link SpringIntegrationContext}.
  *
- * <p>Tests use the Spring {@link org.springframework.core.io.Resource} API via
- * {@link S3ResourceLoader}. The mock backend stores all data in a temporary directory.
- *
- * <p>Note: Spring Resource API does not have native move/rename — those Suite A steps
- * are skipped. Focus is on read/write/exists/metadata operations.
+ * <p>Note: the Spring Resource API has no native move/rename — those Suite A steps are skipped.
+ * Focus is on read/write/exists/metadata operations.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 final class FileLifecycleTest {
 
-    private static final String BUCKET = "test-bucket";
+    private static final String PREFIX = "file-lifecycle/";
     private static final String CONTENT = "Hello, Spring S3!";
 
-    private S3ResourceLoader loader;
+    private S3ResourcePatternResolver loader;
 
     @BeforeEach
     void setUp() {
-        loader = new S3ResourceLoader();
+        loader = SpringIntegrationContext.loader();
     }
 
     @AfterEach
-    void tearDown() throws IOException {
-        loader.close();
+    void tearDown() {
+        SpringIntegrationContext.deletePrefix(PREFIX);
+    }
+
+    private WritableResource resource(String key) {
+        return (WritableResource) loader.getResource(SpringIntegrationContext.location(PREFIX + key));
     }
 
     /** Step 1: Write file via WritableResource.getOutputStream(). Verify exists and content. */
@@ -49,7 +54,7 @@ final class FileLifecycleTest {
     @Order(1)
     @Test
     void step1_writeFileAndVerifyExistsAndContent() throws IOException {
-        var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
+        var resource = resource("file.txt");
 
         try (var out = resource.getOutputStream()) {
             out.write(CONTENT.getBytes(UTF_8));
@@ -67,7 +72,7 @@ final class FileLifecycleTest {
     @Order(2)
     @Test
     void step2_getFilenameReturnsLastSegment() throws IOException {
-        var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
+        var resource = resource("file.txt");
 
         try (var out = resource.getOutputStream()) {
             out.write(CONTENT.getBytes(UTF_8));
@@ -81,7 +86,7 @@ final class FileLifecycleTest {
     @Order(3)
     @Test
     void step2b_createFileWithSpacesInName() throws IOException {
-        var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/name with spaces.txt");
+        var resource = resource("name with spaces.txt");
 
         try (var out = resource.getOutputStream()) {
             out.write(CONTENT.getBytes(UTF_8));
@@ -96,7 +101,7 @@ final class FileLifecycleTest {
     @Order(4)
     @Test
     void step4_lastModifiedReturnsPositiveTimestamp() throws IOException {
-        var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
+        var resource = resource("file.txt");
 
         try (var out = resource.getOutputStream()) {
             out.write(CONTENT.getBytes(UTF_8));
@@ -110,7 +115,7 @@ final class FileLifecycleTest {
     @Order(5)
     @Test
     void step5_contentLengthMatchesWrittenBytes() throws IOException {
-        var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
+        var resource = resource("file.txt");
         var contentBytes = CONTENT.getBytes(UTF_8);
 
         try (var out = resource.getOutputStream()) {
@@ -125,7 +130,7 @@ final class FileLifecycleTest {
     @Order(6)
     @Test
     void step6_nonExistentResourceExistsFalseAndGetInputStreamThrows() {
-        var resource = loader.getResource("s3://" + BUCKET + "/file-lifecycle/nonexistent.txt");
+        var resource = resource("nonexistent.txt");
 
         assertFalse(resource.exists(), "Non-existent resource should return false for exists()");
         assertThrows(
@@ -134,12 +139,11 @@ final class FileLifecycleTest {
                 "getInputStream() on non-existent resource should throw IOException");
     }
 
-    /** isWritable() returns true for mock-backed resources. */
-    @DisplayName("isWritable() returns true for mock-backed S3Resource")
+    /** Step 7: A deeply nested non-existent key — exists() is false, no exception thrown. */
+    @DisplayName("Step 7: deeply nested non-existent key returns false without exception")
     @Order(7)
     @Test
-    void isWritableReturnsTrueForMockResource() {
-        var resource = (WritableResource) loader.getResource("s3://" + BUCKET + "/file-lifecycle/file.txt");
-        assertTrue(resource.isWritable(), "isWritable() should return true for mock-backed S3Resource");
+    void step7_deeplyNestedNonExistentKeyDoesNotExist() {
+        assertFalse(resource("does/not/exist.txt").exists(), "Nested non-existent key should return false");
     }
 }

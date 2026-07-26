@@ -1,140 +1,112 @@
 package com.github.vfss3.spring;
 
-import static java.util.Comparator.reverseOrder;
+import static java.util.Objects.requireNonNull;
 
 import java.io.Closeable;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
+import software.amazon.awssdk.services.s3.S3Client;
 
 /**
- * Spring {@link org.springframework.core.io.ResourceLoader} that resolves {@code s3://} URIs
- * to {@link S3Resource} instances, delegating all other URIs to Spring's default resolution.
+ * Spring {@link org.springframework.core.io.ResourceLoader} that resolves {@code s3://} locations
+ * to {@link S3Resource} instances backed by a real {@link S3Client}, delegating all other
+ * locations to Spring's default resolution.
  *
- * <p>Initially backed by a local-tmp mock — all S3 paths are stored under a temporary
- * directory as {@code {tmpDir}/bucket/key}. Real S3 backend will be added in a follow-up.
+ * <p>Locations follow the canonical {@code s3://<bucket>[/<key>][?region=…&endpoint=…]} contract
+ * (see {@code docs/adr/006-jdk-module-s3-uri-contract.md}): configuration set on the loader wins
+ * over a location's query parameters, which win over the AWS SDK default chains. Credentials are
+ * never read from a location — supply an {@link AwsCredentialsProvider} through
+ * {@link S3ClientConfig} (or rely on the SDK default chain).
+ *
+ * <p>The loader lazily builds one {@link S3Client} per distinct effective (region, endpoint)
+ * pair and caches it; {@link #close()} closes every client the loader built. A pre-built client
+ * supplied through {@link #S3ResourceLoader(S3Client)} is used for every location instead and is
+ * never closed here — the caller owns it.
  *
  * <p>Usage:
+ *
  * <pre>{@code
  * try (S3ResourceLoader loader = new S3ResourceLoader()) {
  *     WritableResource resource = (WritableResource) loader.getResource("s3://my-bucket/path/to/object.txt");
  *     try (OutputStream out = resource.getOutputStream()) { ... }
  * }
  * }</pre>
+ *
+ * <p>Instances are thread-safe.
  */
 public class S3ResourceLoader extends DefaultResourceLoader implements Closeable {
 
-    private final Path tmpDir;
+    /** Base config for built clients; {@code null} iff {@link #fixedClient} is set. */
+    @Nullable
+    private final S3ClientConfig config;
 
-    /**
-     * Creates a new {@code S3ResourceLoader} with a fresh temporary directory for mock I/O.
-     *
-     * @throws RuntimeException if the temp directory cannot be created
-     */
+    /** Caller-owned client used for every location; {@code null} unless supplied. */
+    @Nullable
+    private final S3Client fixedClient;
+
+    private final Map<S3ClientConfig, S3Client> clients = new ConcurrentHashMap<>();
+    private volatile boolean closed;
+
+    /** Loader using the AWS SDK default credentials and region chains. */
     public S3ResourceLoader() {
-        try {
-            this.tmpDir = Files.createTempDirectory("vfs-s3-spring-mock-");
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create mock temp directory for S3ResourceLoader", e);
-        }
+        this(S3ClientConfig.defaults());
     }
 
     /**
-     * Creates a new {@code S3ResourceLoader} using an existing directory as the mock backend.
-     *
-     * @param tmpDir the base directory for mock S3 storage
+     * Loader that builds and caches one {@link S3Client} per distinct effective (region,
+     * endpoint) pair, starting from the given config. Built clients are closed by
+     * {@link #close()}.
      */
-    public S3ResourceLoader(Path tmpDir) {
-        this.tmpDir = tmpDir;
+    public S3ResourceLoader(S3ClientConfig config) {
+        this.config = requireNonNull(config, "config");
+        this.fixedClient = null;
     }
 
     /**
-     * Returns the base temporary directory used by the mock backend.
-     *
-     * <p>Useful for test teardown.
+     * Loader that uses the given pre-built client for every {@code s3://} location. The caller
+     * keeps ownership — {@link #close()} does not close it. Location query parameters
+     * ({@code ?region=…&endpoint=…}) are still validated but have no effect on a fixed client.
      */
-    public Path getTmpDir() {
-        return tmpDir;
+    public S3ResourceLoader(S3Client client) {
+        this.config = null;
+        this.fixedClient = requireNonNull(client, "client");
     }
 
     @Override
     public Resource getResource(String location) {
-        if (location != null && location.startsWith(S3Resource.S3_SCHEME + "://")) {
-            var uri = parseS3Uri(location);
-            var localPath = toLocalPath(uri);
-            return new S3Resource(uri, localPath);
+        if (!S3Uris.isS3Location(location)) {
+            return super.getResource(location);
         }
-        return super.getResource(location);
+        var parsed = S3Uris.parse(location);
+        return new S3Resource(S3Uris.toUri(parsed.bucket(), parsed.key()), clientFor(parsed.query()));
     }
 
     /**
-     * Parses an s3:// location string into a {@link URI}, properly encoding any special
-     * characters (such as spaces) in the path.
-     *
-     * <p>Uses the multi-argument {@link URI} constructor so that spaces and other chars
-     * in bucket names or keys are percent-encoded in the URI but decoded back in
-     * {@link URI#getPath()}.
+     * The client for a location's validated query parameters — the fixed client when one was
+     * supplied, else a cached (possibly freshly built) client for the effective (region,
+     * endpoint) pair.
      */
-    private static URI parseS3Uri(String location) {
-        // Strip the "s3://" prefix and split bucket from key
-        var withoutScheme = location.substring((S3Resource.S3_SCHEME + "://").length());
-        var slashIdx = withoutScheme.indexOf('/');
-        String bucket;
-        String path;
-        if (slashIdx < 0) {
-            bucket = withoutScheme;
-            path = "";
-        } else {
-            bucket = withoutScheme.substring(0, slashIdx);
-            path = withoutScheme.substring(slashIdx); // includes leading slash
+    S3Client clientFor(Map<String, String> query) {
+        if (fixedClient != null) {
+            return fixedClient;
         }
-        try {
-            // Multi-arg constructor encodes the path, preserving spaces in getPath()
-            return new URI(S3Resource.S3_SCHEME, bucket, path, null);
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Invalid S3 URI: " + location, e);
+        if (closed) {
+            throw new IllegalStateException("S3ResourceLoader is closed");
         }
+        return clients.computeIfAbsent(requireNonNull(config).resolve(query), S3ClientConfig::buildS3Client);
     }
 
     /**
-     * Maps an S3 URI to a local path under the mock temp directory.
-     *
-     * <p>{@code s3://my-bucket/path/to/file.txt} → {@code {tmpDir}/my-bucket/path/to/file.txt}
-     */
-    private Path toLocalPath(URI uri) {
-        var bucket = uri.getHost();
-        var key = uri.getPath();
-        if (key != null && key.startsWith("/")) {
-            key = key.substring(1);
-        }
-        if (key == null || key.isEmpty()) {
-            return tmpDir.resolve(bucket);
-        }
-        return tmpDir.resolve(bucket).resolve(key);
-    }
-
-    /**
-     * Closes this loader and deletes the mock temp directory.
-     *
-     * <p>Should be called in test teardown to avoid leaving orphaned temp files.
+     * Closes every {@link S3Client} this loader built. A pre-built client supplied through
+     * {@link #S3ResourceLoader(S3Client)} is left open — the caller owns it. Idempotent.
      */
     @Override
-    public void close() throws IOException {
-        if (!Files.exists(tmpDir)) {
-            return;
-        }
-        try (var walk = Files.walk(tmpDir)) {
-            walk.sorted(reverseOrder()).forEach(p -> {
-                try {
-                    Files.deleteIfExists(p);
-                } catch (IOException ignored) {
-                    // best-effort cleanup
-                }
-            });
-        }
+    public void close() {
+        closed = true;
+        clients.values().forEach(S3Client::close);
+        clients.clear();
     }
 }

@@ -1,9 +1,10 @@
-package com.github.vfss3.spring;
+package com.github.vfss3.spring.tests;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.vfss3.spring.SpringIntegrationContext;
 import java.io.IOException;
 import java.io.OutputStream;
 import org.junit.jupiter.api.AfterEach;
@@ -13,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.WritableResource;
 
 /**
- * Suite D: File Metadata for the Spring Resource mock backend — see
+ * Suite D: File Metadata through the Spring Resource API — see
  * {@code docs/test-cases/d-file-metadata.md}.
  *
  * <p>Only the metadata the Spring {@link org.springframework.core.io.Resource} API exposes is
@@ -22,25 +23,23 @@ import org.springframework.core.io.WritableResource;
  */
 final class FileMetadataTest {
 
-    private static final String BUCKET = "test-bucket";
-    private static final String KEY = "s3://" + BUCKET + "/metadata/backup.bin";
+    private static final String PREFIX = "metadata/";
     private static final byte[] CONTENT = "the-backup-payload".getBytes(UTF_8);
 
-    private S3ResourceLoader loader;
     private WritableResource resource;
 
     @BeforeEach
     void setUp() throws IOException {
-        loader = new S3ResourceLoader();
-        resource = (WritableResource) loader.getResource(KEY);
+        resource = (WritableResource)
+                SpringIntegrationContext.loader().getResource(SpringIntegrationContext.location(PREFIX + "backup.bin"));
         try (OutputStream out = resource.getOutputStream()) {
             out.write(CONTENT);
         }
     }
 
     @AfterEach
-    void tearDown() throws IOException {
-        loader.close();
+    void tearDown() {
+        SpringIntegrationContext.deletePrefix(PREFIX);
     }
 
     /** Step 2: content size matches the written payload. */
