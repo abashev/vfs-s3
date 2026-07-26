@@ -4,11 +4,11 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Random;
 import org.springframework.lang.Nullable;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 
 /**
  * Process-wide data holder shared between a backend-specific {@code @Suite} (MinIO, LocalStack,
@@ -88,18 +88,21 @@ public final class SpringIntegrationContext {
         return "s3://" + requireNonNull(bucket, "SpringIntegrationContext is not initialized") + "/" + key;
     }
 
-    /** Deletes every object under the given key prefix — cleanup between scenarios. */
+    /**
+     * Deletes every object under the given key prefix — cleanup between scenarios.
+     *
+     * <p>Deletes one key at a time rather than with a batch {@code DeleteObjects}: the batch
+     * call carries a payload checksum that some emulators (Zenko CloudServer) reject with a
+     * Content-MD5 mismatch. The sibling modules' suites delete per key for the same reason.
+     */
     public static void deletePrefix(String keyPrefix) {
         var client = requireNonNull(cleanupClient, "SpringIntegrationContext is not initialized");
         var bucketName = requireNonNull(bucket, "SpringIntegrationContext is not initialized");
+        var keys = new ArrayList<String>();
         for (var page : client.listObjectsV2Paginator(b -> b.bucket(bucketName).prefix(keyPrefix))) {
-            var keys = page.contents().stream()
-                    .map(o -> ObjectIdentifier.builder().key(o.key()).build())
-                    .toList();
-            if (!keys.isEmpty()) {
-                client.deleteObjects(b -> b.bucket(bucketName).delete(d -> d.objects(keys)));
-            }
+            page.contents().forEach(object -> keys.add(object.key()));
         }
+        keys.forEach(key -> client.deleteObject(b -> b.bucket(bucketName).key(key)));
     }
 
     /**
