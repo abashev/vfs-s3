@@ -13,35 +13,37 @@ run = "./gradlew spotlessCheck"
 description = "Stage, sign, and publish the release to Maven Central with JReleaser"
 run = "./gradlew clean jreleaserDeploy"
 
-# Local reproduction of the remote CI jobs: runs both modules' EnvironmentBasedSuite against a real
+# Local reproduction of the remote CI jobs: runs every module's EnvironmentBasedSuite against a real
 # S3-compatible backend, with credentials read from 1Password at run time (same op:// refs as
 # gh:env-secrets — run `op signin` first). BASE_URL mirrors the matching GitHub environment
 # (AWS-1 / YANDEX-1). One backend per task so the AWS and Yandex credential/endpoint pairs never mix.
 
 [tasks."test:remote-aws"]
-description = "Run the remote integration suites (commons-vfs + jdk) against AWS S3; creds from 1Password (op)"
+description = "Run the remote integration suites (commons-vfs + jdk + spring) against AWS S3; creds from 1Password (op)"
 shell = "bash -c"
 run = '''
 set -euo pipefail
 export AWS_ACCESS_KEY_ID="$(op read "op://Private/vfs-s3/AWS/access")"
 export AWS_SECRET_ACCESS_KEY="$(op read "op://Private/vfs-s3/AWS/secret")"
 export BASE_URL='s3://s3-tests-%s?region=eu-central-1'
-./gradlew :modules:commons-vfs:integrationTest :modules:jdk:integrationTest \
+./gradlew :modules:commons-vfs:integrationTest :modules:jdk:integrationTest :modules:spring:integrationTest \
     --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite" \
-    --tests "com.github.vfss3.jdk.remote.EnvironmentBasedSuite"
+    --tests "com.github.vfss3.jdk.remote.EnvironmentBasedSuite" \
+    --tests "com.github.vfss3.spring.remote.EnvironmentBasedSuite"
 '''
 
 [tasks."test:remote-yandex"]
-description = "Run the remote integration suites (commons-vfs + jdk) against Yandex Object Storage; creds from 1Password (op)"
+description = "Run the remote integration suites (commons-vfs + jdk + spring) against Yandex Object Storage; creds from 1Password (op)"
 shell = "bash -c"
 run = '''
 set -euo pipefail
 export AWS_ACCESS_KEY_ID="$(op read "op://Private/vfs-s3/Yandex/access")"
 export AWS_SECRET_ACCESS_KEY="$(op read "op://Private/vfs-s3/Yandex/secret")"
 export BASE_URL='s3://s3-tests-%s?region=ru-central1&endpoint=https://storage.yandexcloud.net'
-./gradlew :modules:commons-vfs:integrationTest :modules:jdk:integrationTest \
+./gradlew :modules:commons-vfs:integrationTest :modules:jdk:integrationTest :modules:spring:integrationTest \
     --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite" \
-    --tests "com.github.vfss3.jdk.remote.EnvironmentBasedSuite"
+    --tests "com.github.vfss3.jdk.remote.EnvironmentBasedSuite" \
+    --tests "com.github.vfss3.spring.remote.EnvironmentBasedSuite"
 '''
 
 # ---- GitHub Actions environment config for the remote integration suites ----

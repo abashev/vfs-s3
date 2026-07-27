@@ -1,10 +1,12 @@
-package com.github.vfss3.spring;
+package com.github.vfss3.spring.tests;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.vfss3.spring.S3ResourcePatternResolver;
+import com.github.vfss3.spring.SpringIntegrationContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,32 +18,33 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.WritableResource;
 
 /**
- * Suite C: Upload &amp; Download for the Spring Resource mock backend — see
+ * Suite C: Upload &amp; Download through the Spring Resource API — see
  * {@code docs/test-cases/c-upload-download.md}. Uses {@link WritableResource#getOutputStream()}
- * and {@link org.springframework.core.io.Resource#getInputStream()}.
+ * and {@link org.springframework.core.io.Resource#getInputStream()} against whatever real
+ * S3-compatible backend the enclosing {@code @Suite} wired up via
+ * {@link SpringIntegrationContext}.
  */
 final class UploadDownloadTest {
 
-    private static final String BUCKET = "test-bucket";
-    private static final String PREFIX = "s3://" + BUCKET + "/upload/";
+    private static final String PREFIX = "upload/";
 
-    private S3ResourceLoader loader;
+    private S3ResourcePatternResolver loader;
     private byte[] payload;
 
     @BeforeEach
     void setUp() {
-        loader = new S3ResourceLoader();
+        loader = SpringIntegrationContext.loader();
         payload = new byte[64 * 1024];
         new Random(42).nextBytes(payload);
     }
 
     @AfterEach
-    void tearDown() throws IOException {
-        loader.close();
+    void tearDown() {
+        SpringIntegrationContext.deletePrefix(PREFIX);
     }
 
     private WritableResource resource(String key) {
-        return (WritableResource) loader.getResource(PREFIX + key);
+        return (WritableResource) loader.getResource(SpringIntegrationContext.location(PREFIX + key));
     }
 
     /** Step 1: upload a payload to a key. */
@@ -86,8 +89,8 @@ final class UploadDownloadTest {
         }
     }
 
-    /** Step 4: writing to a deep key auto-creates the intermediate folders. */
-    @DisplayName("Step 4: nested upload writes through intermediate folders")
+    /** Step 4: a deep key writes without any intermediate "folders" — S3 keys are flat. */
+    @DisplayName("Step 4: nested upload needs no intermediate folders")
     @Test
     void step4_nestedUpload() throws IOException {
         var dest = resource("deep/sub1/sub2/backup.bin");

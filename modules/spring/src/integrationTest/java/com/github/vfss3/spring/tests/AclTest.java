@@ -1,4 +1,4 @@
-package com.github.vfss3.spring;
+package com.github.vfss3.spring.tests;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;

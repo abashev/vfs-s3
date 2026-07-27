@@ -1,144 +1,147 @@
 package com.github.vfss3.spring;
 
-import java.io.File;
+import static java.util.Objects.requireNonNull;
+
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
+import java.util.Optional;
+import org.springframework.core.io.AbstractResource;
 import org.springframework.core.io.WritableResource;
+import org.springframework.lang.Nullable;
+import org.springframework.util.StringUtils;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /**
- * Spring {@link WritableResource} implementation for {@code s3://bucket/key} URIs.
+ * Spring {@link WritableResource} for a single S3 object, backed by a real {@link S3Client}.
  *
- * <p>Initially backed by a local-tmp mock — all S3 paths are stored under a temporary
- * directory as {@code {tmpDir}/bucket/key}. Real S3 backend will be added in a follow-up.
+ * <p>Reads stream straight from S3 ({@code GetObject} — the response stream is passed through,
+ * nothing is buffered); writes spool to a local temporary file and upload the whole object with
+ * one {@code PutObject} when the stream is closed. Metadata calls ({@link #exists()},
+ * {@link #contentLength()}, {@link #lastModified()}) each issue a fresh {@code HeadObject} —
+ * like Spring's own file-system resources, an {@code S3Resource} is a cheap, re-checkable
+ * descriptor, not a stateful handle.
  *
- * <p>Usage (via loader):
+ * <p>Instances are usually obtained from an {@link S3ResourceLoader}:
+ *
  * <pre>{@code
- * S3ResourceLoader loader = new S3ResourceLoader();
- * WritableResource resource = (WritableResource) loader.getResource("s3://my-bucket/path/to/object.txt");
- * try (OutputStream out = resource.getOutputStream()) {
- *     out.write("Hello".getBytes());
- * }
- * try (InputStream in = resource.getInputStream()) {
- *     // read back
+ * try (S3ResourceLoader loader = new S3ResourceLoader()) {
+ *     WritableResource resource = (WritableResource) loader.getResource("s3://my-bucket/path/to/object.txt");
+ *     try (OutputStream out = resource.getOutputStream()) {
+ *         out.write("Hello".getBytes());
+ *     }
+ *     try (InputStream in = resource.getInputStream()) {
+ *         // read back
+ *     }
  * }
  * }</pre>
  */
-public class S3Resource implements WritableResource {
-
-    static final String S3_SCHEME = "s3";
+public class S3Resource extends AbstractResource implements WritableResource {
 
     private final URI uri;
+    private final S3Client client;
 
     /**
-     * Local path for mock backend. When {@code null}, I/O operations throw; {@link #exists()}
-     * returns {@code false}.
+     * Creates a resource for an {@code s3://bucket/key} location string backed by the given
+     * client. Query configuration parameters ({@code ?region=…&endpoint=…}) are validated but
+     * have no effect — the given client is used as-is.
+     *
+     * @param location the location, e.g. {@code s3://my-bucket/path/to/object.txt}
+     * @param client the client to talk to S3 with; the caller keeps ownership
+     * @throws IllegalArgumentException if the location is not a valid {@code s3://} location
      */
-    private final Path localPath;
+    public S3Resource(String location, S3Client client) {
+        var parsed = S3Uris.parse(location);
+        this.uri = S3Uris.toUri(parsed.bucket(), parsed.key());
+        this.client = requireNonNull(client, "client");
+    }
 
     /**
-     * Creates a new {@code S3Resource} from a {@code s3://} URI string (no mock backend).
+     * Creates a resource for an {@code s3://} URI backed by the given client. Any query
+     * component of the URI is ignored — the given client is used as-is.
      *
      * @param uri the S3 URI, e.g. {@code s3://my-bucket/path/to/object.txt}
-     * @throws IllegalArgumentException if the URI scheme is not {@code s3}
+     * @param client the client to talk to S3 with; the caller keeps ownership
+     * @throws IllegalArgumentException if the URI scheme is not {@code s3}, the bucket is
+     *     missing, or the URI carries userinfo credentials
      */
-    public S3Resource(String uri) {
-        this(URI.create(uri), null);
+    public S3Resource(URI uri, S3Client client) {
+        var parsed = S3Uris.parse(requireNonNull(uri, "uri"));
+        this.uri = S3Uris.toUri(parsed.bucket(), parsed.key());
+        this.client = requireNonNull(client, "client");
     }
 
-    /**
-     * Creates a new {@code S3Resource} from a {@link URI} (no mock backend).
-     *
-     * @param uri the S3 URI
-     * @throws IllegalArgumentException if the URI scheme is not {@code s3}
-     */
-    public S3Resource(URI uri) {
-        this(uri, null);
-    }
-
-    /**
-     * Creates a new {@code S3Resource} backed by a local file for mock I/O.
-     *
-     * @param uri       the S3 URI
-     * @param localPath the local path where S3 data is stored (mock mode); may be {@code null}
-     * @throws IllegalArgumentException if the URI scheme is not {@code s3}
-     */
-    S3Resource(URI uri, Path localPath) {
-        if (!S3_SCHEME.equalsIgnoreCase(uri.getScheme())) {
-            throw new IllegalArgumentException("URI scheme must be 's3': " + uri);
-        }
-        this.uri = uri;
-        this.localPath = localPath;
-    }
-
-    /** Returns the bucket extracted from the URI host. */
+    /** The bucket name (the URI host). */
     public String getBucket() {
         return uri.getHost();
     }
 
-    /** Returns the object key extracted from the URI path (leading slash removed). */
+    /** The object key (the URI path without its leading slash), decoded. */
     public String getKey() {
-        var path = uri.getPath();
-        return path != null && path.startsWith("/") ? path.substring(1) : path;
+        return S3Uris.key(uri);
     }
 
+    /**
+     * Whether the object exists, via {@code HeadObject}. A 403 also reads as {@code false}: S3
+     * answers 403 for present and missing objects alike when the caller lacks permission, so
+     * existence cannot be confirmed. Any other failure propagates as the SDK's unchecked
+     * exception rather than masquerading as a missing object.
+     */
     @Override
     public boolean exists() {
-        if (localPath == null) {
-            return false;
+        try {
+            return tryHead().isPresent();
+        } catch (S3Exception e) {
+            if (e.statusCode() == 403) {
+                return false;
+            }
+            throw e;
         }
-        return Files.exists(localPath);
     }
 
     @Override
-    public URL getURL() throws IOException {
-        return uri.toURL();
-    }
-
-    @Override
-    public URI getURI() throws IOException {
+    public URI getURI() {
         return uri;
     }
 
     @Override
-    public File getFile() throws IOException {
-        throw new IOException("S3 resources cannot be resolved as java.io.File");
-    }
-
-    @Override
     public long contentLength() throws IOException {
-        requireLocalPath("contentLength");
-        return Files.size(localPath);
+        return requireHead().contentLength();
     }
 
     @Override
     public long lastModified() throws IOException {
-        requireLocalPath("lastModified");
-        return Files.getLastModifiedTime(localPath).toMillis();
+        return requireHead().lastModified().toEpochMilli();
     }
 
+    /**
+     * A resource for a path relative to this one, sharing this resource's client. Follows
+     * Spring's usual sibling semantics ({@link StringUtils#applyRelativePath}): relative to the
+     * containing "directory" of this key, so a key not ending in {@code /} resolves siblings.
+     */
     @Override
-    public S3Resource createRelative(String relativePath) throws IOException {
-        var base = uri.toString();
-        if (!base.endsWith("/")) {
-            base = base + "/";
-        }
-        return new S3Resource(URI.create(base + relativePath), null);
+    public S3Resource createRelative(String relativePath) {
+        return new S3Resource(S3Uris.toUri(getBucket(), StringUtils.applyRelativePath(getKey(), relativePath)), client);
     }
 
+    @Nullable
     @Override
     public String getFilename() {
-        var path = uri.getPath();
-        if (path == null || path.isEmpty()) {
+        var key = getKey();
+        if (key.isEmpty()) {
             return null;
         }
-        var idx = path.lastIndexOf('/');
-        return idx < 0 ? path : path.substring(idx + 1);
+        var idx = key.lastIndexOf('/');
+        return idx < 0 ? key : key.substring(idx + 1);
     }
 
     @Override
@@ -146,50 +149,138 @@ public class S3Resource implements WritableResource {
         return "S3 resource [" + uri + "]";
     }
 
+    /**
+     * Opens the object for reading — a single {@code GetObject} whose response stream is
+     * returned directly, so content is streamed rather than buffered. Close the stream to
+     * release the connection.
+     *
+     * @throws FileNotFoundException if the object does not exist
+     */
     @Override
     public InputStream getInputStream() throws IOException {
-        requireLocalPath("getInputStream");
-        if (!Files.exists(localPath)) {
-            throw new IOException("S3 resource does not exist: " + uri);
+        try {
+            return client.getObject(b -> b.bucket(getBucket()).key(getKey()));
+        } catch (NoSuchKeyException e) {
+            throw notFound(e);
+        } catch (S3Exception e) {
+            if (e.statusCode() == 404) {
+                throw notFound(e);
+            }
+            throw new IOException("Failed to open " + getDescription(), e);
         }
-        return Files.newInputStream(localPath);
     }
 
     @Override
     public boolean isWritable() {
-        return localPath != null;
+        return true;
     }
 
+    /**
+     * Opens the object for writing. Bytes are spooled to a local temporary file and uploaded
+     * with a single {@code PutObject} when the stream is closed — memory use stays bounded for
+     * uploads of any size, and readers of the key never observe a partially written object.
+     */
     @Override
     public OutputStream getOutputStream() throws IOException {
-        requireLocalPath("getOutputStream");
-        var parent = localPath.getParent();
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
-        return Files.newOutputStream(localPath);
+        return new S3OutputStream(client, getBucket(), getKey(), getDescription());
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof S3Resource other)) return false;
-        return Objects.equals(uri, other.uri);
+    public boolean equals(Object other) {
+        return this == other || (other instanceof S3Resource that && uri.equals(that.uri));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(uri);
+        return uri.hashCode();
     }
 
-    @Override
-    public String toString() {
-        return getDescription();
+    /** HEAD on the object; empty when S3 reports 404/NoSuchKey, any other failure rethrown. */
+    private Optional<HeadObjectResponse> tryHead() {
+        try {
+            return Optional.of(client.headObject(b -> b.bucket(getBucket()).key(getKey())));
+        } catch (NoSuchKeyException e) {
+            return Optional.empty();
+        } catch (S3Exception e) {
+            if (e.statusCode() == 404) {
+                return Optional.empty();
+            }
+            throw e;
+        }
     }
 
-    private void requireLocalPath(String operation) throws IOException {
-        if (localPath == null) {
-            throw new IOException("Cannot perform " + operation + " without a mock backend — real S3 backend pending");
+    /** HEAD on the object, mapping a missing object and S3 failures to {@link IOException}s. */
+    private HeadObjectResponse requireHead() throws IOException {
+        Optional<HeadObjectResponse> head;
+        try {
+            head = tryHead();
+        } catch (S3Exception e) {
+            throw new IOException("Failed to read metadata of " + getDescription(), e);
+        }
+        return head.orElseThrow(() -> new FileNotFoundException(getDescription() + " does not exist"));
+    }
+
+    private FileNotFoundException notFound(Throwable cause) {
+        var e = new FileNotFoundException(getDescription() + " does not exist");
+        e.initCause(cause);
+        return e;
+    }
+
+    /**
+     * Buffers writes in a local temporary file and uploads the whole object with one
+     * {@code PutObject} on {@link #close()}. Close is idempotent, and the temporary file is
+     * always removed — whether the upload succeeded or not.
+     */
+    private static final class S3OutputStream extends OutputStream {
+
+        private final S3Client client;
+        private final String bucket;
+        private final String key;
+        private final String description;
+        private final Path tempFile;
+        private final OutputStream delegate;
+        private boolean closed;
+
+        S3OutputStream(S3Client client, String bucket, String key, String description) throws IOException {
+            this.client = client;
+            this.bucket = bucket;
+            this.key = key;
+            this.description = description;
+            this.tempFile = Files.createTempFile("vfs-spring-", ".s3");
+            this.delegate = Files.newOutputStream(tempFile);
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            delegate.write(b);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            delegate.write(b, off, len);
+        }
+
+        @Override
+        public void flush() throws IOException {
+            // Flushes the local spool only — S3 has no partial-object write; the upload
+            // happens on close().
+            delegate.flush();
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            try {
+                delegate.close();
+                client.putObject(b -> b.bucket(bucket).key(key), RequestBody.fromFile(tempFile));
+            } catch (SdkException e) {
+                throw new IOException("Failed to upload " + description, e);
+            } finally {
+                Files.deleteIfExists(tempFile);
+            }
         }
     }
 }
