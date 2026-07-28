@@ -18,7 +18,8 @@ import software.amazon.awssdk.services.s3.S3Client;
  * <p>Locations follow the canonical {@code s3://<bucket>[/<key>][?region=…&endpoint=…]} contract
  * (see {@code docs/adr/006-jdk-module-s3-uri-contract.md}): configuration set on the loader wins
  * over a location's query parameters, which win over the AWS SDK default chains. Credentials are
- * never read from a location — supply an {@link AwsCredentialsProvider} through
+ * never read from a location — supply an
+ * {@link software.amazon.awssdk.auth.credentials.AwsCredentialsProvider} through
  * {@link S3ClientConfig} (or rely on the SDK default chain).
  *
  * <p>The loader lazily builds one {@link S3Client} per distinct effective (region, endpoint)
