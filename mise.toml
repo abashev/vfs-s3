@@ -46,6 +46,20 @@ export BASE_URL='s3://s3-tests-%s?region=ru-central1&endpoint=https://storage.ya
     --tests "com.github.vfss3.spring.remote.EnvironmentBasedSuite"
 '''
 
+[tasks."test:remote-digitalocean"]
+description = "Run the remote integration suites (commons-vfs + jdk + spring) against DigitalOcean Spaces; creds from 1Password (op)"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+export AWS_ACCESS_KEY_ID="$(op read "op://Private/vfs-s3/DigitalOcean/access")"
+export AWS_SECRET_ACCESS_KEY="$(op read "op://Private/vfs-s3/DigitalOcean/secret")"
+export BASE_URL='s3://s3-tests-%s?region=ams3&endpoint=https://ams3.digitaloceanspaces.com'
+./gradlew :modules:commons-vfs:integrationTest :modules:jdk:integrationTest :modules:spring:integrationTest \
+    --tests "com.github.vfss3.commonsvfs.remote.EnvironmentBasedSuite" \
+    --tests "com.github.vfss3.jdk.remote.EnvironmentBasedSuite" \
+    --tests "com.github.vfss3.spring.remote.EnvironmentBasedSuite"
+'''
+
 # ---- GitHub Actions environment config for the remote integration suites ----
 # Non-secret variables live here in git; secrets are read from 1Password at apply time and are
 # never stored in the repo. Both tasks are idempotent and skip any entry still set to a TODO
@@ -64,7 +78,8 @@ set -euo pipefail
 # BASE_URL per environment, in the jdk s3://<bucket>?region=…&endpoint=… dialect (ADR-006, the
 # canonical CI variable — commons-vfs translates it to its own dialect in a test-only adapter).
 # The %s in the bucket is the per-run bucket-name token, shared by both modules' remote suites.
-# Only AWS-1 and YANDEX-1 are in the remote matrix; DIGITALOCEAN-1 is set but not wired into a suite.
+# Only AWS-1 and YANDEX-1 are in the CI remote matrix; DIGITALOCEAN-1 is set here too but only
+# wired into a local task (test:remote-digitalocean), not into the CI workflow.
 apply() {
   local env="$1" base_url="$2"
   if [[ "$base_url" == TODO* ]]; then
