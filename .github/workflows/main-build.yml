@@ -280,7 +280,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: [ AWS-1, YANDEX-1 ]
+        environment: [ AWS-1, YANDEX-1, DIGITALOCEAN-1 ]
     environment: ${{ matrix.environment }}
     env:
       BASE_URL: ${{ vars.BASE_URL }}
@@ -346,8 +346,9 @@ jobs:
           # One gist per cell — explicit mapping so a newly added environment can't silently
           # overwrite another cell's gist (a ternary default would). Unknown env = no badge.
           case "$ENVIRONMENT" in
-            AWS-1)    GIST_ID=c8e92c5273b3a71fee46cc9717c48bf2 ;;
-            YANDEX-1) GIST_ID=50a0153e062bd2853c43c74df6ee5a5b ;;
+            AWS-1)          GIST_ID=c8e92c5273b3a71fee46cc9717c48bf2 ;;
+            YANDEX-1)       GIST_ID=50a0153e062bd2853c43c74df6ee5a5b ;;
+            DIGITALOCEAN-1) GIST_ID=81d4560d27b100dc0b3f310d417048cd ;;
             *) echo "::notice::No badge gist configured for $ENVIRONMENT — skipping"; exit 0 ;;
           esac
           if [ "$OUTCOME" = "success" ]; then msg=passing; color=brightgreen; else msg=failing; color=red; fi
@@ -368,7 +369,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: [ AWS-1, YANDEX-1 ]
+        environment: [ AWS-1, YANDEX-1, DIGITALOCEAN-1 ]
     environment: ${{ matrix.environment }}
     env:
       BASE_URL: ${{ vars.BASE_URL }}
@@ -422,8 +423,9 @@ jobs:
         run: |
           set -euo pipefail
           case "$ENVIRONMENT" in
-            AWS-1)    GIST_ID=bb4022ae143839ab84d016c9bc39fd85 ;;
-            YANDEX-1) GIST_ID=cc5795cc9160971453f4aad772ecc508 ;;
+            AWS-1)          GIST_ID=bb4022ae143839ab84d016c9bc39fd85 ;;
+            YANDEX-1)       GIST_ID=cc5795cc9160971453f4aad772ecc508 ;;
+            DIGITALOCEAN-1) GIST_ID=c9a5a9d7f46130f1a547cb6bc00ca372 ;;
             *) echo "::notice::No badge gist configured for $ENVIRONMENT — skipping"; exit 0 ;;
           esac
           if [ "$OUTCOME" = "success" ]; then msg=passing; color=brightgreen; else msg=failing; color=red; fi
@@ -444,7 +446,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: [ AWS-1, YANDEX-1 ]
+        environment: [ AWS-1, YANDEX-1, DIGITALOCEAN-1 ]
     environment: ${{ matrix.environment }}
     env:
       BASE_URL: ${{ vars.BASE_URL }}
@@ -498,8 +500,9 @@ jobs:
         run: |
           set -euo pipefail
           case "$ENVIRONMENT" in
-            AWS-1)    GIST_ID=69bd6dc6c83e0e6e4f891bf764cbdd0f ;;
-            YANDEX-1) GIST_ID=2d18a93295dc0efec97ef105d1dac03a ;;
+            AWS-1)          GIST_ID=69bd6dc6c83e0e6e4f891bf764cbdd0f ;;
+            YANDEX-1)       GIST_ID=2d18a93295dc0efec97ef105d1dac03a ;;
+            DIGITALOCEAN-1) GIST_ID=530ac1eeeae87b82c91c65ac917ad821 ;;
             *) echo "::notice::No badge gist configured for $ENVIRONMENT — skipping"; exit 0 ;;
           esac
           if [ "$OUTCOME" = "success" ]; then msg=passing; color=brightgreen; else msg=failing; color=red; fi

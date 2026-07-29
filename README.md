@@ -59,6 +59,7 @@ S3-compatible emulators (via Testcontainers) and against real AWS and Yandex.
 | --- | :---: | :---: | :---: |
 | [Amazon S3](https://aws.amazon.com/s3/) | [![jdk / AWS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fbb4022ae143839ab84d016c9bc39fd85%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / AWS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fc8e92c5273b3a71fee46cc9717c48bf2%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / AWS](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F69bd6dc6c83e0e6e4f891bf764cbdd0f%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
 | [Yandex Object Storage](https://yandex.cloud/en/services/storage) | [![jdk / Yandex](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fcc5795cc9160971453f4aad772ecc508%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / Yandex](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F50a0153e062bd2853c43c74df6ee5a5b%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / Yandex](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F2d18a93295dc0efec97ef105d1dac03a%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
+| [DigitalOcean Spaces](https://www.digitalocean.com/products/spaces) | [![jdk / DigitalOcean](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fc9a5a9d7f46130f1a547cb6bc00ca372%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / DigitalOcean](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F81d4560d27b100dc0b3f310d417048cd%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / DigitalOcean](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F530ac1eeeae87b82c91c65ac917ad821%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
 
 ### Versioning
 
@@ -101,23 +102,19 @@ All published under the `com.github.abashev` group, at one shared version:
 Depend on the module you need (Gradle shown; Maven is analogous):
 
 ```gradle
-implementation 'com.github.abashev:vfs-jdk:17.0.0'      // JDK NIO.2 FileSystemProvider
-implementation 'com.github.abashev:vfs-commons:17.0.0'  // Apache Commons VFS provider
-implementation 'com.github.abashev:vfs-spring:17.0.0'   // Spring Resource / ResourceLoader
+implementation 'com.github.abashev:vfs-jdk:17.0.1'      // JDK NIO.2 FileSystemProvider
+implementation 'com.github.abashev:vfs-commons:17.0.1'  // Apache Commons VFS provider
+implementation 'com.github.abashev:vfs-spring:17.0.1'   // Spring Resource / ResourceLoader
 ```
 
 ```xml
 <dependency>
     <groupId>com.github.abashev</groupId>
     <artifactId>vfs-jdk</artifactId>
-    <version>17.0.0</version>
+    <version>17.0.1</version>
 </dependency>
 ```
 
-> **None of the `vfs-*` artifacts are on Maven Central yet** — they publish from the next `17.0.x`
-> release. The current `17.0.0` is available under the old coordinates (`jdk`, `commons-vfs`,
-> `spring-6`, `spring-7`), now retired.
->
 > Legacy Java 8 line: `com.github.abashev:vfs-s3:4.4.0` (or `vfs-s3-with-awssdk-v1:4.4.0` with the
 > AWS SDK v1 bundled).
 
@@ -325,8 +322,9 @@ This project uses [mise](https://mise.jdx.dev/) to manage the local Java toolcha
     mise exec -- ./gradlew :modules:jdk:test     # one module's unit tests
 
 Handy `mise` tasks (see `mise.toml`): `mise run format`, `mise run format.check`, and
-`mise run test:remote` (remote suites against AWS). Integration tests spin up S3-compatible
-containers (LocalStack, MinIO, Garage, …) via Testcontainers.
+`mise run test:remote-aws` / `test:remote-yandex` / `test:remote-digitalocean` (remote suites
+against each provider). Integration tests spin up S3-compatible containers (LocalStack, MinIO,
+Garage, …) via Testcontainers.
 
 On CI (GitHub Actions) Java is installed via `actions/setup-java`, so `./gradlew` runs directly
 without `mise`.
@@ -344,8 +342,9 @@ Provide them either way:
 
 2. Or any standard AWS SDK mechanism (IAM role, `~/.aws`, …)
 
-Locally, `mise run test:remote-aws` runs every module's remote suite against AWS with credentials
-read from 1Password — see `mise.toml`.
+Locally, `mise run test:remote-aws` / `test:remote-yandex` / `test:remote-digitalocean` run every
+module's remote suite against AWS, Yandex Object Storage, and DigitalOcean Spaces respectively,
+with credentials read from 1Password — see `mise.toml`.
 
 **Make sure that you never commit your credentials!**
 
