@@ -1,10 +1,10 @@
-# Self-contained playground for the `spring` module: a local MinIO container plus the one-file
-# jbang application in S3SpringSample.java, which writes and reads an s3:// object injected
-# with @Value.
+# Self-contained playground for the three modules: one local MinIO container plus the single-file
+# jbang applications next to this file, each writing and reading one s3:// object.
 #
-#   mise trust            # once — mise only runs configs you have trusted
-#   mise run demo         # start MinIO, create the bucket, run the application
-#   mise run down         # stop and remove the container
+#   mise trust                  # once — mise only runs configs you have trusted
+#   mise run demo               # start MinIO, create the bucket, run all three samples
+#   mise run demo:jdk           # … or just one of them (jdk / commons-vfs / spring)
+#   mise run down               # stop and remove the container
 #
 # Docker has to be running and port 9000 free; Java and jbang are installed by mise itself.
 
@@ -13,15 +13,16 @@ java = "liberica-17"
 "aqua:jbangdev/jbang" = "0.141.0"
 
 [env]
-# MinIO's root user doubles as the S3 access key/secret. The application reads all four values
-# from the environment (see env(…) in S3SpringSample.java) and falls back to the same defaults,
-# so it stays runnable on its own — `jbang S3SpringSample.java`.
+# MinIO's root user doubles as the S3 access key/secret. Every sample reads these values from the
+# environment (see env(…) in each file) and falls back to the same defaults, so each one also runs
+# on its own — `jbang jdk/S3JdkSample.java`.
 AWS_ACCESS_KEY_ID = "minioadmin"
 AWS_SECRET_ACCESS_KEY = "minioadmin"
 AWS_REGION = "us-east-1"
 S3_ENDPOINT = "http://localhost:9000"
 
-# Must match the bucket in the @Value location of S3SpringSample.java.
+# One bucket for all three samples, one key prefix each. The spring sample takes the bucket from
+# its @Value location rather than the environment, so keep the name in sync with it.
 BUCKET = "vfs-s3-sample"
 CONTAINER = "vfs-s3-sample-minio"
 IMAGE = "minio/minio:RELEASE.2025-09-07T16-13-09Z"
@@ -57,9 +58,28 @@ exit 1
 '''
 
 [tasks.demo]
+description = "Run all three samples against the local MinIO"
+depends = ["up"]
+run = [
+    "jbang {{config_root}}/jdk/S3JdkSample.java",
+    "jbang {{config_root}}/commons-vfs/S3CommonsVfsSample.java",
+    "jbang {{config_root}}/spring/S3SpringSample.java",
+]
+
+[tasks."demo:jdk"]
+description = "Run the JDK NIO.2 sample against the local MinIO"
+depends = ["up"]
+run = "jbang {{config_root}}/jdk/S3JdkSample.java"
+
+[tasks."demo:commons-vfs"]
+description = "Run the Apache Commons VFS sample against the local MinIO"
+depends = ["up"]
+run = "jbang {{config_root}}/commons-vfs/S3CommonsVfsSample.java"
+
+[tasks."demo:spring"]
 description = "Run the Spring sample against the local MinIO"
 depends = ["up"]
-run = "jbang {{config_root}}/S3SpringSample.java"
+run = "jbang {{config_root}}/spring/S3SpringSample.java"
 
 [tasks.down]
 description = "Stop and remove the MinIO container"

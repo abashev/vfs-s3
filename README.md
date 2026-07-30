@@ -170,6 +170,24 @@ try (OutputStream out = file.getContent().getOutputStream()) {
 
 → more in [commons-vfs module usage](#commons-vfs-module).
 
+### Runnable samples
+
+Each snippet above also exists as a single-file [jbang](https://www.jbang.dev/) application in
+[`samples/`](samples) — same three lines of real work, wired to a local MinIO instead of AWS.
+Docker is the only prerequisite; `mise` installs Java and jbang itself:
+
+    cd samples
+    mise trust
+    mise run demo               # start MinIO, create the bucket, run all three samples
+    mise run demo:jdk           # … or just one of them (jdk / commons-vfs / spring)
+    mise run down               # stop and remove the container
+
+| Module | Sample | What it shows |
+| --- | --- | --- |
+| jdk | [S3JdkSample.java](samples/jdk/S3JdkSample.java) | a bucket opened as a `FileSystem`, then plain `Files.writeString` / `readString` |
+| commons-vfs | [S3CommonsVfsSample.java](samples/commons-vfs/S3CommonsVfsSample.java) | a `FileObject` resolved from a legacy-dialect URL, written and read back |
+| spring | [S3SpringSample.java](samples/spring/S3SpringSample.java) | an `s3://` object injected with `@Value`, written and read back |
+
 ### URL scheme
 
 The canonical scheme is a plain, secret-free `s3://` URI — the bucket is the host, and the only
@@ -243,6 +261,9 @@ try (FileSystem fs = FileSystems.newFileSystem(bucket, env)) {
 }
 ```
 
+Runnable version: [samples/jdk/S3JdkSample.java](samples/jdk/S3JdkSample.java) — see
+[runnable samples](#runnable-samples).
+
 #### commons-vfs module
 
 The mature Apache Commons VFS provider. It resolves `s3://` URLs in its own [legacy
@@ -262,6 +283,9 @@ FileObject b = fs.resolveFile("s3://s3.eu-central-1.amazonaws.com/my-bucket/dir/
 ```
 
 Credentials come from the AWS SDK default chain, or from `S3FileSystemOptions.setCredentialsProvider(...)`.
+
+Runnable version: [samples/commons-vfs/S3CommonsVfsSample.java](samples/commons-vfs/S3CommonsVfsSample.java) —
+see [runnable samples](#runnable-samples).
 
 #### spring module
 
@@ -311,6 +335,9 @@ try (var resolver = new S3ResourcePatternResolver()) {
     Resource[] reports = resolver.getResources("s3://my-bucket/reports/*.csv");
 }
 ```
+
+Runnable version: [samples/spring/S3SpringSample.java](samples/spring/S3SpringSample.java) — see
+[runnable samples](#runnable-samples).
 
 ### Local development
 

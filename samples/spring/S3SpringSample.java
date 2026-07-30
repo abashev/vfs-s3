@@ -34,7 +34,7 @@ public class S3SpringSample {
      * injected exactly like a {@code classpath:} or {@code file:} one. No AWS SDK type in sight —
      * the bucket only has to exist, the object does not.
      */
-    @Value("s3://vfs-s3-sample/reports/hello.txt")
+    @Value("s3://vfs-s3-sample/spring/hello.txt")
     private WritableResource report;
 
     private void run() throws IOException {
