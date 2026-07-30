@@ -1,0 +1,67 @@
+# Self-contained playground for the `spring` module: a local MinIO container plus the one-file
+# jbang application in S3SpringSample.java, which writes and reads an s3:// object injected
+# with @Value.
+#
+#   mise trust            # once — mise only runs configs you have trusted
+#   mise run demo         # start MinIO, create the bucket, run the application
+#   mise run down         # stop and remove the container
+#
+# Docker has to be running and port 9000 free; Java and jbang are installed by mise itself.
+
+[tools]
+java = "liberica-17"
+"aqua:jbangdev/jbang" = "0.141.0"
+
+[env]
+# MinIO's root user doubles as the S3 access key/secret. The application reads all four values
+# from the environment (see env(…) in S3SpringSample.java) and falls back to the same defaults,
+# so it stays runnable on its own — `jbang S3SpringSample.java`.
+AWS_ACCESS_KEY_ID = "minioadmin"
+AWS_SECRET_ACCESS_KEY = "minioadmin"
+AWS_REGION = "us-east-1"
+S3_ENDPOINT = "http://localhost:9000"
+
+# Must match the bucket in the @Value location of S3SpringSample.java.
+BUCKET = "vfs-s3-sample"
+CONTAINER = "vfs-s3-sample-minio"
+IMAGE = "minio/minio:RELEASE.2025-09-07T16-13-09Z"
+
+[tasks.up]
+description = "Start the local MinIO container and create the sample bucket (idempotent)"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+
+if [ -z "$(docker ps --quiet --filter "name=^${CONTAINER}$")" ]; then
+    docker rm --force "$CONTAINER" >/dev/null 2>&1 || true
+    docker run --detach --name "$CONTAINER" --publish 9000:9000 \
+        --env MINIO_ROOT_USER="$AWS_ACCESS_KEY_ID" \
+        --env MINIO_ROOT_PASSWORD="$AWS_SECRET_ACCESS_KEY" \
+        "$IMAGE" server /data >/dev/null
+fi
+
+# `mc` ships inside the MinIO image, so creating the bucket needs no extra tooling on the host.
+# Its first successful call is also the readiness check for the S3 API.
+for _ in $(seq 30); do
+    if docker exec "$CONTAINER" mc alias set sample \
+            http://127.0.0.1:9000 "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" >/dev/null 2>&1; then
+        docker exec "$CONTAINER" mc mb --ignore-existing "sample/$BUCKET" >/dev/null
+        echo "MinIO is ready on $S3_ENDPOINT, bucket '$BUCKET' exists"
+        exit 0
+    fi
+    sleep 1
+done
+
+echo "MinIO did not become ready within 30s — check 'docker logs $CONTAINER'" >&2
+exit 1
+'''
+
+[tasks.demo]
+description = "Run the Spring sample against the local MinIO"
+depends = ["up"]
+run = "jbang {{config_root}}/S3SpringSample.java"
+
+[tasks.down]
+description = "Stop and remove the MinIO container"
+shell = "bash -c"
+run = 'docker rm --force "$CONTAINER" >/dev/null 2>&1 || true'
