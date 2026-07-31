@@ -6,11 +6,26 @@ CACHE_DIR="${HOME}/.cache/palantir-java-format"
 BINARY="${CACHE_DIR}/palantir-java-format-${FORMATTER_VERSION}"
 BASE_URL="https://repo1.maven.org/maven2/com/palantir/javaformat/palantir-java-format-native/${FORMATTER_VERSION}"
 
-# Collect staged Java files. `samples/` is excluded: those files are standalone scripts whose
-# tool directives (jbang's `///usr/bin/env`, `//DEPS`, …) the formatter would rewrite into
-# ordinary comments and break. They are outside every Gradle source set, so spotless skips them
-# too — see the `target 'src/*/java/**/*.java'` in buildSrc's java-conventions.
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM -- '*.java' ':(exclude)samples/**' || true)
+# Read exclude patterns from .palantir-java-format-exclude (repo root), if present.
+# Each non-empty, non-comment line is a git pathspec whose matches are skipped.
+# This file is the single source of exclusions, shared with the GitHub Action.
+EXCLUDES=()
+EXCLUDE_FILE=".palantir-java-format-exclude"
+if [ -f "$EXCLUDE_FILE" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
+        case "$line" in ''|\#*) continue ;; esac
+        EXCLUDES+=(":(exclude)$line")
+    done < "$EXCLUDE_FILE"
+fi
+
+# Collect staged Java files (respecting excludes)
+if [ ${#EXCLUDES[@]} -gt 0 ]; then
+    STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM -- '*.java' "${EXCLUDES[@]}" || true)
+else
+    STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM -- '*.java' || true)
+fi
 
 if [ -z "$STAGED_FILES" ]; then
     exit 0
