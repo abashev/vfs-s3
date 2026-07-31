@@ -1,0 +1,7 @@
+# Paths palantir-java-format must not touch. Git pathspecs, one per line; read by both the
+# format-check workflow and .githooks/pre-commit, so the two never drift apart.
+
+# Standalone jbang scripts: the formatter rewrites their `//DEPS` directives into ordinary
+# `// DEPS` comments, and jbang then stops resolving the dependencies. These files are outside
+# every Gradle source set, so spotless never covered them either.
+samples/**
