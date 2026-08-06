@@ -105,6 +105,7 @@ jobs:
         run: |
           set -euo pipefail
           case "$SUITE" in
+            CephSuite)        GIST_ID=d250da08c07fe233e625f79513459997 ;;
             LocalStackSuite)  GIST_ID=b4b0eaf73f6efc7d4f6f00430acb113c ;;
             MinioSuite)       GIST_ID=515d7a1f7c705dcb4bdb94ed2bc3d3fb ;;
             CloudServerSuite) GIST_ID=da9fc57b268821a47cb4c47585429682 ;;
@@ -179,6 +180,7 @@ jobs:
         run: |
           set -euo pipefail
           case "$SUITE" in
+            CephSuite)        GIST_ID=df4931187971a0c68a0461827423cd9c ;;
             LocalStackSuite)  GIST_ID=5a8157db7a423426d6e431e017eab6de ;;
             MinioSuite)       GIST_ID=f259b78ba82183bf7e0c6a452f2a2614 ;;
             CloudServerSuite) GIST_ID=f7194330b0c4fd817c44d4f7d45901e5 ;;
@@ -253,6 +255,7 @@ jobs:
         run: |
           set -euo pipefail
           case "$SUITE" in
+            CephSuite)        GIST_ID=d5e8053ff3df3561f7c8b6691fb0099d ;;
             LocalStackSuite)  GIST_ID=c77436e3016d4d2e9721a7c44c871aca ;;
             MinioSuite)       GIST_ID=aea35bf96cf017ec2a5dabae35d95dde ;;
             CloudServerSuite) GIST_ID=d4d4ad377a4b5b2953a6c13772dcf461 ;;
