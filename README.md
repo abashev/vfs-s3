@@ -25,7 +25,7 @@ AWS SDK's object API.
   URL (see [URL scheme](#url-scheme)).
 - **Built on the AWS SDK for Java v2**, Java 17.
 - **Works with real AWS and many S3-compatible backends** — Yandex Object Storage, DigitalOcean
-  Spaces, MinIO, Garage, LocalStack, and more.
+  Spaces, Ceph, MinIO, Garage, LocalStack, and more.
 
 ### History
 
@@ -36,13 +36,14 @@ Commons VFS provider for backward compatibility.
 
 ### Tested against
 
-Every push builds and runs the `jdk`, `commons-vfs` and `spring` integration suites against nine
-S3-compatible emulators (via Testcontainers) and against real AWS and Yandex.
+Every push builds and runs the `jdk`, `commons-vfs` and `spring` integration suites against ten
+S3-compatible backends (via Testcontainers) and against real AWS and Yandex.
 
-**Local emulators (Testcontainers):**
+**Local backends (Testcontainers):**
 
 | Backend | `jdk` | `commons-vfs` | `spring` |
 | --- | :---: | :---: | :---: |
+| [Ceph](https://ceph.io/) | [![jdk / Ceph](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fdf4931187971a0c68a0461827423cd9c%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / Ceph](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fd250da08c07fe233e625f79513459997%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / Ceph](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fd5e8053ff3df3561f7c8b6691fb0099d%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
 | [LocalStack](https://www.localstack.cloud/) | [![jdk / LocalStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F5a8157db7a423426d6e431e017eab6de%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / LocalStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fb4b0eaf73f6efc7d4f6f00430acb113c%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / LocalStack](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Fc77436e3016d4d2e9721a7c44c871aca%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
 | [MinIO](https://min.io/) | [![jdk / MinIO](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Ff259b78ba82183bf7e0c6a452f2a2614%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / MinIO](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F515d7a1f7c705dcb4bdb94ed2bc3d3fb%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / MinIO](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Faea35bf96cf017ec2a5dabae35d95dde%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |
 | [Garage](https://garagehq.deuxfleurs.fr/) | [![jdk / Garage](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Ff46a1f533f24872a42fa876ba39dd7f8%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![commons-vfs / Garage](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2Facf0cdd3085b634070007b65ca877e62%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) | [![spring / Garage](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fabashev%2F17d044c2ea78d64256f18142657b8a3c%2Fraw%2Fstatus.json&style=flat-square)](https://github.com/abashev/vfs-s3/actions/workflows/main-build.yml?query=branch%3A17.0) |

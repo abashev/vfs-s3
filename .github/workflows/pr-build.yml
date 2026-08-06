@@ -57,6 +57,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - CephSuite
           - LocalStackSuite
           - MinioSuite
           - CloudServerSuite
@@ -95,6 +96,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - CephSuite
           - LocalStackSuite
           - MinioSuite
           - CloudServerSuite
@@ -133,6 +135,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - CephSuite
           - LocalStackSuite
           - MinioSuite
           - CloudServerSuite
