@@ -22,9 +22,9 @@ fi
 
 # Collect staged Java files (respecting excludes)
 if [ ${#EXCLUDES[@]} -gt 0 ]; then
-    STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM -- '*.java' "${EXCLUDES[@]}" || true)
+    STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR -- '*.java' "${EXCLUDES[@]}" || true)
 else
-    STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM -- '*.java' || true)
+    STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR -- '*.java' || true)
 fi
 
 if [ -z "$STAGED_FILES" ]; then
