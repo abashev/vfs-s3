@@ -7,7 +7,7 @@ repositories {
 }
 
 configurations.configureEach {
-    resolutionStrategy.force 'org.eclipse.jgit:org.eclipse.jgit:5.13.5.202508271544-r'
+    resolutionStrategy.force 'org.eclipse.jgit:org.eclipse.jgit:7.7.1.202607240634-r'
 }
 
 dependencies {
