@@ -11,7 +11,7 @@ configurations.configureEach {
 }
 
 dependencies {
-    implementation 'com.diffplug.spotless:spotless-plugin-gradle:8.9.0'
+    implementation 'com.diffplug.spotless:spotless-plugin-gradle:8.10.0'
     implementation 'net.ltgt.gradle:gradle-errorprone-plugin:4.4.0'
     implementation 'net.ltgt.gradle:gradle-nullaway-plugin:3.0.0'
     implementation 'io.freefair.gradle:lombok-plugin:9.5.0'
