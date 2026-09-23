@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-FORMATTER_VERSION="2.96.0"
-CACHE_DIR="${HOME}/.cache/palantir-java-format"
-BINARY="${CACHE_DIR}/palantir-java-format-${FORMATTER_VERSION}"
-BASE_URL="https://repo1.maven.org/maven2/com/palantir/javaformat/palantir-java-format-native/${FORMATTER_VERSION}"
+FORMATTER_VERSION="2.98.0.3"
+CACHE_DIR="${HOME}/.cache/open-java-format"
+BASE_URL="https://repo1.maven.org/maven2/dev/openjavaformat/open-java-format-native/${FORMATTER_VERSION}"
 
-# Read exclude patterns from .palantir-java-format-exclude (repo root), if present.
+# The Windows binary is an .exe, on Maven Central and on disk.
+case "$(uname -s)" in
+    MINGW* | MSYS* | CYGWIN*) EXTENSION="exe"; EXE=".exe" ;;
+    *) EXTENSION="bin"; EXE="" ;;
+esac
+BINARY="${CACHE_DIR}/open-java-format-${FORMATTER_VERSION}${EXE}"
+
+# Read exclude patterns from .open-java-format-exclude (repo root), if present.
 # Each non-empty, non-comment line is a git pathspec whose matches are skipped.
 # This file is the single source of exclusions, shared with the GitHub Action.
 EXCLUDES=()
-EXCLUDE_FILE=".palantir-java-format-exclude"
+EXCLUDE_FILE=".open-java-format-exclude"
 if [ -f "$EXCLUDE_FILE" ]; then
     while IFS= read -r line || [ -n "$line" ]; do
         line="${line#"${line%%[![:space:]]*}"}"
@@ -40,22 +46,24 @@ if [ ! -x "$BINARY" ]; then
         Linux-x86_64)  SUFFIX="linux-glibc_x86-64" ;;
         Linux-aarch64) SUFFIX="linux-glibc_aarch64" ;;
         Darwin-arm64)  SUFFIX="macos_aarch64" ;;
+        Darwin-x86_64) SUFFIX="macos_x86-64" ;;
+        MINGW*-x86_64 | MSYS*-x86_64 | CYGWIN*-x86_64) SUFFIX="windows_x86-64" ;;
         *)
-            echo "ERROR: No palantir-java-format native binary for ${OS}-${ARCH}."
-            echo "       Supported: Linux x86_64, Linux aarch64, macOS aarch64."
+            echo "ERROR: No open-java-format native binary for ${OS}-${ARCH}."
+            echo "       Supported: Linux x86_64, Linux aarch64, macOS aarch64, macOS x86_64, Windows x86_64."
             exit 1
             ;;
     esac
 
-    ARTIFACT="palantir-java-format-native-${FORMATTER_VERSION}-nativeImage-${SUFFIX}.bin"
+    ARTIFACT="open-java-format-native-${FORMATTER_VERSION}-nativeImage-${SUFFIX}.${EXTENSION}"
     DOWNLOAD_URL="${BASE_URL}/${ARTIFACT}"
 
-    echo "Downloading palantir-java-format ${FORMATTER_VERSION} (${SUFFIX})..."
+    echo "Downloading open-java-format ${FORMATTER_VERSION} (${SUFFIX})..."
     mkdir -p "$CACHE_DIR"
 
     if ! curl -sSfL -o "$BINARY" "$DOWNLOAD_URL"; then
         rm -f "$BINARY"
-        echo "ERROR: Failed to download palantir-java-format from:"
+        echo "ERROR: Failed to download open-java-format from:"
         echo "       $DOWNLOAD_URL"
         exit 1
     fi
@@ -67,7 +75,7 @@ fi
 UNFORMATTED=()
 for FILE in $STAGED_FILES; do
     if [ -f "$FILE" ]; then
-        if ! "$BINARY" --palantir --dry-run --set-exit-if-changed "$FILE" > /dev/null 2>&1; then
+        if ! "$BINARY" --dry-run --set-exit-if-changed "$FILE" > /dev/null 2>&1; then
             UNFORMATTED+=("$FILE")
         fi
     fi
@@ -75,7 +83,7 @@ done
 
 if [ ${#UNFORMATTED[@]} -gt 0 ]; then
     echo ""
-    echo "ERROR: The following files are not formatted with palantir-java-format:"
+    echo "ERROR: The following files are not formatted with open-java-format:"
     echo ""
     for FILE in "${UNFORMATTED[@]}"; do
         echo "  $FILE"
@@ -83,7 +91,7 @@ if [ ${#UNFORMATTED[@]} -gt 0 ]; then
     echo ""
     echo "Run the following command to fix:"
     echo ""
-    echo "  $BINARY --palantir --replace ${UNFORMATTED[*]}"
+    echo "  $BINARY --replace ${UNFORMATTED[*]}"
     echo ""
     exit 1
 fi

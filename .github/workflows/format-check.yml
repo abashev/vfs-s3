@@ -1,4 +1,4 @@
-name: Palantir Java Format Check
+name: Open Java Format Check
 
 on:
   pull_request:
@@ -12,9 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Exclusions live in .palantir-java-format-exclude at the repo root — the action and
+      # Exclusions live in .open-java-format-exclude at the repo root — the action and
       # .githooks/pre-commit both read that file, so there is nothing to configure here.
-      - uses: abashev/palantir-java-format-action@ed91d1afe3e00201f6ef4126b6215d697737f75b # v1
+      - uses: openjavaformat/open-java-format-action@98bff05a5779abc30b2edf030aa5455ea21eab8c # v2
         with:
-          version: '2.96.0'
+          version: '2.98.0.3'
           mode: 'all'
