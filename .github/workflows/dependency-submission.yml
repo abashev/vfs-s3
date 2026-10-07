@@ -20,7 +20,7 @@ jobs:
           distribution: 'liberica'
 
       - name: Submit Dependency Snapshot
-        uses: gradle/actions/dependency-submission@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        uses: gradle/actions/dependency-submission@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         env:
           # Only runtime-classpath dependencies of the published modules count as 'runtime';
           # buildSrc plugins, errorprone processors and test-only dependencies are reported
