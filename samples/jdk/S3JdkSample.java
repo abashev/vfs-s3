@@ -32,8 +32,8 @@ public class S3JdkSample {
         // in the query. Against real AWS the query is usually just `?region=…`, or nothing at all.
         // Credentials are never part of a URL — they travel in the env map below, and without one
         // the AWS SDK default chain is used.
-        var bucket = URI.create("s3://" + env("BUCKET", "vfs-s3-sample") + "?region="
-                + env("AWS_REGION", "us-east-1") + "&endpoint=" + env("S3_ENDPOINT", "http://localhost:9000"));
+        var bucket = URI.create("s3://" + env("BUCKET", "vfs-s3-sample") + "?region=" + env("AWS_REGION", "us-east-1")
+                + "&endpoint=" + env("S3_ENDPOINT", "http://localhost:9000"));
         var credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create(
                 env("AWS_ACCESS_KEY_ID", "minioadmin"), env("AWS_SECRET_ACCESS_KEY", "minioadmin")));
 

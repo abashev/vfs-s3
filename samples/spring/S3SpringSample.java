@@ -37,17 +37,6 @@ public class S3SpringSample {
     @Value("s3://vfs-s3-sample/spring/hello.txt")
     private WritableResource report;
 
-    private void run() throws IOException {
-        try (var out = report.getOutputStream()) {
-            out.write("Hello from Spring @Value!\n".getBytes(UTF_8));
-        }
-        System.out.println("wrote     " + report.getURI() + " (" + report.contentLength() + " bytes)");
-
-        try (var in = report.getInputStream()) {
-            System.out.println("read back " + new String(in.readAllBytes(), UTF_8).strip());
-        }
-    }
-
     public static void main(String[] args) throws IOException {
         // The only S3-aware lines in the whole application. Against real AWS this is just
         // `new S3ResourceLoader()` — region and credentials then come from the AWS SDK default
@@ -74,5 +63,16 @@ public class S3SpringSample {
     private static String env(String name, String fallback) {
         var value = System.getenv(name);
         return (value == null || value.isBlank()) ? fallback : value;
+    }
+
+    private void run() throws IOException {
+        try (var out = report.getOutputStream()) {
+            out.write("Hello from Spring @Value!\n".getBytes(UTF_8));
+        }
+        System.out.println("wrote     " + report.getURI() + " (" + report.contentLength() + " bytes)");
+
+        try (var in = report.getInputStream()) {
+            System.out.println("read back " + new String(in.readAllBytes(), UTF_8).strip());
+        }
     }
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
-@Grab(group='com.github.abashev', module='vfs-s3', version='4.4.0')
-@Grab(group='commons-httpclient', module='commons-httpclient', version='3.1')
+@Grab(group = 'com.github.abashev', module = 'vfs-s3', version = '4.4.0')
+@Grab(group = 'commons-httpclient', module = 'commons-httpclient', version = '3.1')
 
 import org.apache.commons.vfs2.*
 

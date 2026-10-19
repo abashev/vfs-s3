@@ -18,6 +18,6 @@ jobs:
       # .githooks/pre-commit both read that file, so there is nothing to configure here.
       - uses: openjavaformat/open-java-format-action@25979c34db6868d68055ed40456860345cf72d4d # v3
         with:
-          version: '2.98.0.3'
+          version: '2.98.0.6'
           mode: 'all'
           code-scanning: true

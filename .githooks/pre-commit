@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-FORMATTER_VERSION="2.98.0.3"
+FORMATTER_VERSION="2.98.0.6"
 CACHE_DIR="${HOME}/.cache/open-java-format"
 BASE_URL="https://repo1.maven.org/maven2/dev/openjavaformat/open-java-format-native/${FORMATTER_VERSION}"
 

@@ -48,8 +48,8 @@ public class S3CommonsVfsSample {
             try (var out = file.getContent().getOutputStream()) {
                 out.write("Hello from Commons VFS!\n".getBytes(UTF_8));
             }
-            System.out.println(
-                    "wrote     " + file.getName().getURI() + " (" + file.getContent().getSize() + " bytes)");
+            System.out.println("wrote     " + file.getName().getURI() + " ("
+                    + file.getContent().getSize() + " bytes)");
 
             try (var in = file.getContent().getInputStream()) {
                 System.out.println("read back " + new String(in.readAllBytes(), UTF_8).strip());
