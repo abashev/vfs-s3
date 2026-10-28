@@ -16,7 +16,7 @@ jobs:
 
       # Exclusions live in .open-java-format-exclude at the repo root — the action and
       # .githooks/pre-commit both read that file, so there is nothing to configure here.
-      - uses: openjavaformat/open-java-format-action@25979c34db6868d68055ed40456860345cf72d4d # v3
+      - uses: openjavaformat/open-java-format-action@47d995198ae0cd7dfa0e532caa436cf4e22b6500 # v4
         with:
           version: '2.98.0.6'
           mode: 'all'
