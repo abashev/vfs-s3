@@ -1,7 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-FORMATTER_VERSION="2.98.0.6"
+# The version to check with comes from .open-java-format-version in the repository root, the file
+# the GitHub Action reads too, so that the two cannot drift apart.
+VERSION_FILE=".open-java-format-version"
+if [ ! -f "$VERSION_FILE" ]; then
+    echo "ERROR: No $VERSION_FILE in the repository root."
+    echo "       Put the open-java-format version to check with in it, one of the releases at"
+    echo "       https://github.com/openjavaformat/open-java-format/releases, for example:"
+    echo "         echo 21.0.1 > $VERSION_FILE"
+    exit 1
+fi
+FORMATTER_VERSION=$(head -n1 "$VERSION_FILE" | tr -d '[:space:]')
+if ! [[ "$FORMATTER_VERSION" =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
+    echo "ERROR: $VERSION_FILE holds '$FORMATTER_VERSION', not an open-java-format version such as 21.0.1."
+    exit 1
+fi
 CACHE_DIR="${HOME}/.cache/open-java-format"
 BASE_URL="https://repo1.maven.org/maven2/dev/openjavaformat/open-java-format-native/${FORMATTER_VERSION}"
 
